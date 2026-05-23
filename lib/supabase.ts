@@ -50,3 +50,28 @@ export type SalonMessage = {
   created_at: string
   profiles?: Profile
 }
+
+export type Block = {
+  blocker_id: string
+  blocked_id: string
+  created_at: string
+}
+
+export type Wizzz = {
+  id: string
+  sender_id: string
+  receiver_id: string
+  sent_at: string
+}
+
+export type MusicProfile = {
+  user_id: string
+  instruments: string[]
+  genres: string[]
+  influences: string[]
+  mood_text?: string
+  looking_for: string[]
+  favorite_artists: string[]
+  level?: 'Débutant' | 'Intermédiaire' | 'Confirmé' | 'Pro'
+  updated_at: string
+}
