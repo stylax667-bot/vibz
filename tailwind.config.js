@@ -8,21 +8,21 @@ module.exports = {
     extend: {
       colors: {
         vibz: {
-          pink: '#D4537E',
-          'pink-light': '#FBEAF0',
-          'pink-dark': '#4B1528',
-          teal: '#1D9E75',
-          'teal-light': '#E1F5EE',
-          purple: '#7F77DD',
-          'purple-light': '#EEEDFE',
-          amber: '#EF9F27',
-          'amber-light': '#FAEEDA',
-          coral: '#D85A30',
+          pink: '#C4547A',
+          'pink-light': '#FDE8F2',
+          'pink-dark': '#7A1F40',
+          teal: '#3BAD7A',
+          'teal-light': '#D6F5E6',
+          purple: '#A78BDB',
+          'purple-light': '#EDE8F8',
+          amber: '#E8A06A',
+          'amber-light': '#FAEEE0',
+          coral: '#E07A7A',
         }
       },
       fontFamily: {
-        syne: ['Syne', 'sans-serif'],
-        mono: ['Space Mono', 'monospace'],
+        nunito: ['Nunito', 'sans-serif'],
+        mono: ['Nunito', 'sans-serif'],
       }
     },
   },
