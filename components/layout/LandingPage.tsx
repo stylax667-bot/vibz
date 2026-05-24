@@ -108,12 +108,13 @@ export default function LandingPage() {
       color:'#9B7A8A', fontSize:12, fontWeight:700,
     },
     switchLink: { textAlign:'center' as const, marginTop:14, fontSize:13, color:'#9B7A8A' },
-    msgBox: (err: boolean): React.CSSProperties => ({
-      marginTop:12, padding:'10px 14px', borderRadius:12, fontSize:13, fontWeight:700,
-      background: err ? '#FDE8F2' : '#D6F5E6',
-      color: err ? '#7A1F40' : '#1A6645',
-    }),
   }
+
+  const msgBox = (err: boolean): React.CSSProperties => ({
+    marginTop:12, padding:'10px 14px', borderRadius:12, fontSize:13, fontWeight:700,
+    background: err ? '#FDE8F2' : '#D6F5E6',
+    color: err ? '#7A1F40' : '#1A6645',
+  })
 
   // ── Charte modal ────────────────────────────────────────────────────────
   const CharterModal = () => (
@@ -309,7 +310,7 @@ export default function LandingPage() {
               {loading ? '...' : mode === 'login' ? 'Se connecter' : 'Créer mon compte'}
             </button>
 
-            {message && <div style={s.msgBox(isError)}>{message}</div>}
+            {message && <div style={msgBox(isError)}>{message}</div>}
 
             <div style={s.switchLink}>
               {mode === 'login' ? (
