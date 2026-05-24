@@ -193,11 +193,11 @@ export default function LandingPage() {
       <div style={s.page}>
         {showCharter && <CharterModal />}
         <nav style={s.nav}>
-          <div style={s.logo}>
+          <div style={{ ...s.logo, cursor:'pointer' }} onClick={() => { setMode('landing'); setMessage('') }}>
             <div style={s.logoBox}>✉️</div>
             Vib<span style={{ color:pink }}>z</span>
           </div>
-          <button onClick={() => setMode('landing')} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:13, color:'#9B7A8A', fontFamily:font, fontWeight:700 }}>
+          <button onClick={() => { setMode('landing'); setMessage('') }} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:13, color:'#9B7A8A', fontFamily:font, fontWeight:700 }}>
             ← Retour
           </button>
         </nav>

@@ -12,11 +12,11 @@ interface Props { user: User }
 const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   padding: '7px 16px',
   borderRadius: 20,
-  border: active ? '0.5px solid #D4537E' : '0.5px solid transparent',
-  background: active ? '#FBEAF0' : 'transparent',
-  color: active ? '#4B1528' : '#6b7280',
+  border: active ? '1px solid #C4547A' : '1px solid transparent',
+  background: active ? '#FDE8F2' : 'transparent',
+  color: active ? '#7A1F40' : '#9B7A8A',
   fontWeight: 700, fontSize: 13,
-  cursor: 'pointer', fontFamily: 'Syne, sans-serif',
+  cursor: 'pointer', fontFamily: 'Nunito, sans-serif',
   display: 'flex', alignItems: 'center', gap: 6,
   transition: 'all 0.15s',
 })
@@ -34,11 +34,15 @@ export default function AppLayout({ user }: Props) {
   const initials = (user.email || 'U').slice(0, 2).toUpperCase()
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#f9f8f7', fontFamily: 'Syne, sans-serif' }}>
-      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 60, background: 'white', borderBottom: '0.5px solid rgba(0,0,0,0.08)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 22, fontWeight: 800, letterSpacing: -1, color: '#1a1a1a' }}>
-          <div style={{ width: 32, height: 26, background: '#D4537E', borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✉️</div>
-          Vib<span style={{ color: '#D4537E' }}>z</span>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#FFF5F8', fontFamily: 'Nunito, sans-serif' }}>
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', height: 60, background: 'white', borderBottom: '1px solid rgba(196,84,122,0.1)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div
+          onClick={() => setTab('discover')}
+          title="Retour à l'accueil"
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 22, fontWeight: 800, letterSpacing: -1, color: '#2D1A25', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <div style={{ width: 32, height: 26, background: '#C4547A', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>✉️</div>
+          Vib<span style={{ color: '#C4547A' }}>z</span>
         </div>
 
         <div style={{ display: 'flex', gap: 4 }}>
@@ -50,14 +54,14 @@ export default function AppLayout({ user }: Props) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: '#E1F5EE', color: '#085041', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
-            <div style={{ width: 7, height: 7, background: '#1D9E75', borderRadius: '50%' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: '#D6F5E6', color: '#1A6645', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>
+            <div style={{ width: 7, height: 7, background: '#3BAD7A', borderRadius: '50%' }} />
             IA Guard actif
           </div>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#EEEDFE', color: '#3C3489', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, cursor: 'pointer' }} onClick={() => setTab('profile')}>
+          <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#FDE8F2', color: '#C4547A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, cursor: 'pointer' }} onClick={() => setTab('profile')}>
             {initials}
           </div>
-          <button style={{ padding: '6px 12px', border: '0.5px solid rgba(0,0,0,0.1)', borderRadius: 8, background: 'transparent', fontSize: 12, cursor: 'pointer', fontFamily: 'Syne, sans-serif', color: '#6b7280' }} onClick={() => supabase.auth.signOut()}>
+          <button style={{ padding: '6px 12px', border: '1px solid rgba(196,84,122,0.15)', borderRadius: 20, background: 'transparent', fontSize: 12, cursor: 'pointer', fontFamily: 'Nunito, sans-serif', fontWeight: 700, color: '#9B7A8A' }} onClick={() => supabase.auth.signOut()}>
             Déconnexion
           </button>
         </div>
