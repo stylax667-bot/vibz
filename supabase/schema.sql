@@ -41,6 +41,7 @@ create table public.profiles (
   show_socials boolean default true,
   show_location boolean default true,
   allow_messages_from text default 'all' check (allow_messages_from in ('all','matches','none')),
+  social_visibility jsonb default '{"soundcloud":true,"instagram":true,"youtube":true,"linkedin":true,"facebook":true,"tiktok":true,"email":true}',
   -- Timestamps
   created_at timestamptz default now(),
   updated_at timestamptz default now()
