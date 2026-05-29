@@ -33,12 +33,16 @@ const wizzBtnStyle = (wizzing: boolean): React.CSSProperties => ({
   animation: wizzing ? 'wizz 0.5s ease' : 'none',
 })
 
+type ReportState = 'idle' | 'open' | 'blocked' | 'accepted'
+
 export default function MessengerPage({ user }: Props) {
   const [selected, setSelected] = useState(CONTACTS[0])
   const [messages, setMessages] = useState(INITIAL_MESSAGES)
   const [input, setInput] = useState('')
   const [wizzing, setWizzing] = useState(false)
   const [wizzNotif, setWizzNotif] = useState(false)
+  const [reportState, setReportState] = useState<ReportState>('idle')
+  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
   const endRef = useRef<HTMLDivElement>(null)
 
   useEffect(()=>{ endRef.current?.scrollIntoView({behavior:'smooth'}) },[messages])
@@ -64,8 +68,68 @@ export default function MessengerPage({ user }: Props) {
     setTimeout(()=>setWizzNotif(false),3000)
   }
 
+  const handleReport = () => setReportState('open')
+  const handleBlock = () => {
+    setBlockedIds(p => new Set([...Array.from(p), selected.id]))
+    setReportState('blocked')
+    setTimeout(() => setReportState('idle'), 4000)
+  }
+  const handleAccept = () => {
+    setReportState('accepted')
+    setTimeout(() => setReportState('idle'), 3000)
+  }
+
+  const HarassmentModal = () => (
+    <div style={{
+      position:'fixed', inset:0, zIndex:200,
+      background:'rgba(45,26,37,0.65)', backdropFilter:'blur(4px)',
+      display:'flex', alignItems:'center', justifyContent:'center', padding:20,
+    }}>
+      <div className="animate-slide-up" style={{
+        background:'white', borderRadius:24, maxWidth:400, width:'100%',
+        padding:28, boxShadow:'0 24px 64px rgba(196,84,122,0.25)',
+        border:'1px solid rgba(196,84,122,0.15)',
+      }}>
+        <div style={{ fontSize:40, textAlign:'center', marginBottom:12 }}>🚨</div>
+        <div style={{ fontWeight:800, fontSize:17, textAlign:'center', marginBottom:8, color:'#2D1A25' }}>
+          Signalement reçu
+        </div>
+        <div style={{ fontSize:13, color:'#9B7A8A', textAlign:'center', lineHeight:1.6, marginBottom:24 }}>
+          <strong style={{ color:'#2D1A25' }}>{selected.name}</strong> a été signalé(e) pour comportement inapproprié par notre IA Guard.<br/>
+          <strong>Que souhaitez-vous faire ?</strong>
+        </div>
+        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+          <button onClick={handleBlock} style={{
+            padding:'13px', borderRadius:14, border:'none', cursor:'pointer',
+            background:'linear-gradient(135deg,#E07A7A,#C4547A)', color:'white',
+            fontWeight:800, fontSize:14, fontFamily:'Nunito,sans-serif',
+            boxShadow:'0 4px 16px rgba(196,84,122,0.3)',
+          }}>
+            🚫 Bloquer définitivement {selected.name}
+          </button>
+          <button onClick={handleAccept} style={{
+            padding:'13px', borderRadius:14, border:'none', cursor:'pointer',
+            background:'linear-gradient(135deg,#3BAD7A,#1D9E75)', color:'white',
+            fontWeight:800, fontSize:14, fontFamily:'Nunito,sans-serif',
+            boxShadow:'0 4px 16px rgba(59,173,122,0.3)',
+          }}>
+            ✅ Continuer la discussion
+          </button>
+          <button onClick={() => setReportState('idle')} style={{
+            padding:'10px', borderRadius:14, border:'1px solid rgba(196,84,122,0.15)',
+            background:'transparent', cursor:'pointer', fontSize:13, color:'#9B7A8A',
+            fontFamily:'Nunito,sans-serif', fontWeight:700,
+          }}>
+            Décider plus tard
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
     <div style={{display:'grid',gridTemplateColumns:'220px 1fr',minHeight:'calc(100vh - 60px)',background:'white'}}>
+      {reportState === 'open' && <HarassmentModal />}
       <div style={{borderRight:'0.5px solid rgba(0,0,0,0.08)',background:'#f9f8f7',display:'flex',flexDirection:'column'}}>
         <div style={{padding:'16px 14px 12px',borderBottom:'0.5px solid rgba(0,0,0,0.08)'}}>
           <div style={{fontSize:14,fontWeight:700,marginBottom:6}}>💬 Messagerie</div>
@@ -74,7 +138,7 @@ export default function MessengerPage({ user }: Props) {
             Vous êtes en ligne
           </div>
         </div>
-        {CONTACTS.map(c=>(
+        {CONTACTS.filter(c => !blockedIds.has(c.id)).map(c=>(
           <div key={c.id} style={contactItemStyle(selected.id===c.id)} onClick={()=>setSelected(c)}>
             <div style={{width:36,height:36,borderRadius:'50%',background:c.bg,color:c.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:700,position:'relative',flexShrink:0}}>
               {c.initials}
@@ -98,9 +162,12 @@ export default function MessengerPage({ user }: Props) {
             <div style={{fontSize:15,fontWeight:700}}>{selected.name} 🎸</div>
             <div style={{fontSize:12,color:selected.online?'#1D9E75':'#6b7280'}}>{selected.online?'● En ligne':'○ Hors ligne'}</div>
           </div>
-          <div style={{display:'flex',gap:8}}>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
             <button style={wizzBtnStyle(wizzing)} onClick={sendWizz}>⚡ Wizz !</button>
-            <button style={{padding:'6px 12px',borderRadius:20,border:'0.5px solid rgba(0,0,0,0.1)',background:'transparent',cursor:'pointer',fontSize:12,fontFamily:'Syne,sans-serif',color:'#6b7280'}}>🚫 Bloquer</button>
+            <button
+              onClick={handleReport}
+              style={{padding:'6px 12px',borderRadius:20,border:'0.5px solid rgba(224,122,122,0.4)',background:'#FDE8F2',cursor:'pointer',fontSize:12,fontFamily:'Nunito,sans-serif',color:'#C4547A',fontWeight:700}}
+            >🚩 Signaler</button>
           </div>
         </div>
 
@@ -117,6 +184,16 @@ export default function MessengerPage({ user }: Props) {
 
         <div style={{flex:1,padding:'16px 20px',overflowY:'auto',display:'flex',flexDirection:'column',gap:10,minHeight:320,maxHeight:'calc(100vh - 280px)'}}>
           {wizzNotif && <div style={{textAlign:'center',fontSize:13,color:'#EF9F27',fontWeight:700,padding:'4px 0'}}>⚡⚡ Tu as envoyé un Wizz à {selected.name} ! ⚡⚡</div>}
+          {reportState === 'blocked' && (
+            <div className="animate-slide-up" style={{padding:'12px 16px',background:'#FDE8F2',borderRadius:12,fontSize:13,fontWeight:700,color:'#7A1F40',textAlign:'center'}}>
+              🚫 {selected.name} a été bloqué(e) définitivement. Vous ne recevrez plus de messages de cet utilisateur.
+            </div>
+          )}
+          {reportState === 'accepted' && (
+            <div className="animate-slide-up" style={{padding:'12px 16px',background:'#D6F5E6',borderRadius:12,fontSize:13,fontWeight:700,color:'#1A6645',textAlign:'center'}}>
+              ✅ Discussion maintenue. Notre modération examine le signalement sous 24h.
+            </div>
+          )}
           {messages.map(msg=>(
             <div key={msg.id} style={{display:'flex',gap:8,alignItems:'flex-end',flexDirection:msg.from==='me'?'row-reverse':'row'}}>
               <div style={{width:28,height:28,borderRadius:'50%',background:msg.from==='me'?'#FBEAF0':selected.bg,color:msg.from==='me'?'#72243E':selected.color,display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:700,flexShrink:0}}>

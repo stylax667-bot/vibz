@@ -15,7 +15,7 @@ const SALONS = [
   { id:'8', icon:'🎧', name:'DJ & Électro', count:56, hasMod:true },
 ]
 
-type Msg = { id:string; author:string; initials:string; bg:string; color:string; content:string; isMod?:boolean; isBot?:boolean }
+type Msg = { id:string; author:string; initials:string; bg:string; color:string; content:string; isMod?:boolean; isBot?:boolean; lang?:string; translated?:string }
 
 const INIT: Record<string, Msg[]> = {
   '1': [
@@ -26,6 +26,12 @@ const INIT: Record<string, Msg[]> = {
   '3': [
     {id:'1',author:'VibzGuard',initials:'🤖',bg:'#FAEEDA',color:'#633806',content:'💑 Salon dédié aux rencontres sincères.',isBot:true},
     {id:'2',author:'Sophie L.',initials:'SL',bg:'#FBEAF0',color:'#72243E',content:'Bonsoir ! Qui est musicien(ne) ici ? 😊'},
+  ],
+  '6': [
+    {id:'1',author:'VibzGuard',initials:'🤖',bg:'#FAEEDA',color:'#633806',content:'🌍 Salon International — Traduction IA activée ! Parlez votre langue.',isBot:true},
+    {id:'2',author:'Yuki 🇯🇵',initials:'YK',bg:'#EEEDFE',color:'#3C3489',content:'こんにちは！ギターを弾く人いますか？',lang:'🇯🇵 Japonais',translated:'Bonjour ! Y a-t-il des guitaristes ici ?'},
+    {id:'3',author:'Carlos 🇧🇷',initials:'CA',bg:'#E1F5EE',color:'#085041',content:'Olá! Sou baterista, procuro colaborar!',lang:'🇧🇷 Portugais',translated:'Salut ! Je suis batteur, je cherche à collaborer !'},
+    {id:'4',author:'Anna 🇩🇪',initials:'AN',bg:'#FBEAF0',color:'#72243E',content:'Ich spiele Klavier, wer möchte eine Session machen?',lang:'🇩🇪 Allemand',translated:'Je joue du piano, qui veut faire une session ?'},
   ],
 }
 
@@ -41,14 +47,17 @@ export default function SalonsPage({ user }: Props) {
   const [messages, setMessages] = useState<Msg[]>(INIT['1'] || [])
   const [input, setInput] = useState('')
   const [warning, setWarning] = useState('')
+  const [translateOn, setTranslateOn] = useState(true)
   const endRef = useRef<HTMLDivElement>(null)
   const username = user.email?.split('@')[0] || 'Vous'
+  const isIntl = salon.id === '6'
 
   useEffect(() => { endRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages])
 
   const selectSalon = (s: typeof SALONS[0]) => {
     setSalon(s)
     setMessages(INIT[s.id] || [{id:'1',author:'VibzGuard',initials:'🤖',bg:'#FAEEDA',color:'#633806',content:`🛡️ Bienvenue dans ${s.name} !`,isBot:true}])
+    if (s.id === '6') setTranslateOn(true)
   }
 
   const send = () => {
@@ -87,6 +96,14 @@ export default function SalonsPage({ user }: Props) {
             <div style={{fontSize:16,fontWeight:700}}>{salon.name}</div>
             <div style={{fontSize:12,color:'#6b7280'}}>{salon.count} connectés · {salon.hasMod?'Modéré humain + IA':'Modéré par IA'}</div>
           </div>
+          {isIntl && (
+            <button
+              onClick={() => setTranslateOn(v => !v)}
+              style={{padding:'5px 12px',borderRadius:20,border:`0.5px solid ${translateOn?'#7F77DD':'rgba(0,0,0,0.1)'}`,background:translateOn?'#EEEDFE':'white',color:translateOn?'#3C3489':'#6b7280',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:5}}
+            >
+              🌍 Traduction {translateOn ? 'ON' : 'OFF'}
+            </button>
+          )}
           <div style={{display:'flex',alignItems:'center',gap:5,padding:'5px 12px',background:'#E1F5EE',color:'#085041',borderRadius:20,fontSize:11,fontWeight:700}}>
             <div style={{width:7,height:7,background:'#1D9E75',borderRadius:'50%'}}/>
             IA Guard actif
@@ -108,6 +125,12 @@ export default function SalonsPage({ user }: Props) {
                 <div style={{fontSize:13,padding:msg.isBot?'8px 12px':'0',background:msg.isBot?'#FAEEDA':'transparent',borderLeft:msg.isBot?'3px solid #EF9F27':'none',borderRadius:msg.isBot?'0 8px 8px 0':0,color:msg.isBot?'#633806':'#1a1a1a',lineHeight:1.5}}>
                   {msg.content}
                 </div>
+                {isIntl && translateOn && msg.lang && msg.translated && (
+                  <div style={{marginTop:6,padding:'6px 10px',background:'#EEEDFE',borderRadius:'0 8px 8px 0',borderLeft:'3px solid #7F77DD',fontSize:12,color:'#3C3489'}}>
+                    <span style={{fontSize:10,fontWeight:700,opacity:0.7}}>{msg.lang} → 🌍 Traduit automatiquement</span>
+                    <div style={{fontWeight:700,marginTop:2}}>{msg.translated}</div>
+                  </div>
+                )}
               </div>
             </div>
           ))}

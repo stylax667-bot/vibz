@@ -63,10 +63,45 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.8; }
+  75%, 100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .animate-wizz { animation: wizz 0.5s ease; }
 .animate-fade-in { animation: fadeIn 0.3s ease; }
 .animate-match { animation: matchPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .pulse-dot { animation: pulse-dot 1.5s infinite; }
+.map-ping { animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-slide-up { animation: slideUp 0.35s ease; }
+
+.feature-card {
+  background: rgba(255,255,255,0.88);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(212,83,126,0.1);
+  border-radius: 18px;
+  padding: 18px 22px;
+  text-align: center;
+  min-width: 140px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s, background 0.2s;
+}
+.feature-card:hover {
+  background: rgba(255,255,255,0.98);
+  box-shadow: 0 10px 32px rgba(212,83,126,0.13), 0 4px 12px rgba(69,184,71,0.08);
+  transform: translateY(-4px);
+}
 
 /* Components */
 .vibz-card {
