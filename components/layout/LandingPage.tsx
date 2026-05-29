@@ -113,82 +113,92 @@ export default function LandingPage() {
 
   // ── Styles ───────────────────────────────────────────────────────────────
   const font = 'Nunito, sans-serif'
-  const pink = '#D4537E'
-  const green = '#45B847'
+  const pink  = '#E07A9A'
+  const green = '#52C07A'
+  const blue  = '#6BB8E8'
 
   const s: Record<string, React.CSSProperties> = {
     page: {
       minHeight: '100vh',
-      background: 'linear-gradient(150deg, #FFD6E8 0%, #FAFFFE 48%, #BDEABD 100%)',
+      background: '#FFFFFF',
       display: 'flex', flexDirection: 'column', fontFamily: font,
     },
     nav: {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       padding: '14px 40px',
-      background: 'rgba(255,255,255,0.88)', backdropFilter: 'blur(14px)',
-      borderBottom: '1px solid rgba(212,83,126,0.12)',
-      boxShadow: '0 1px 0 rgba(69,184,71,0.1), 0 4px 20px rgba(212,83,126,0.06)',
+      background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(14px)',
+      borderBottom: '1px solid #F0EEF6',
+      boxShadow: '0 2px 16px rgba(110,150,220,0.08)',
     },
     logo: { display:'flex', alignItems:'center', gap:10, fontSize:24, fontWeight:800, letterSpacing:-1 },
-    logoBox: { width:36, height:28, background:'linear-gradient(135deg,#E8547A 0%,#45B847 100%)', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontSize:16 },
+    logoBox: {
+      width:38, height:38, borderRadius:12,
+      background: 'linear-gradient(135deg, #FADADD 0%, #C8E6F5 50%, #C8EFD4 100%)',
+      border: '1.5px solid rgba(224,122,154,0.25)',
+      display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
+    },
     hero: { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 20px', textAlign:'center' },
     formCard: {
-      background:'white', borderRadius:28, padding:32, width:'100%', maxWidth:420,
-      border:'1px solid rgba(196,84,122,0.12)',
-      boxShadow:'0 24px 64px rgba(196,84,122,0.12)',
+      background:'#FFFFFF', borderRadius:24, padding:32, width:'100%', maxWidth:420,
+      border:'1px solid #EEF0F8',
+      boxShadow:'0 8px 40px rgba(107,184,232,0.12), 0 2px 8px rgba(224,122,154,0.08)',
     },
     input: {
       width:'100%', padding:'12px 16px',
-      border:'1px solid rgba(196,84,122,0.15)', borderRadius:12,
+      border:'1.5px solid #EEF0F8', borderRadius:12,
       fontSize:14, fontFamily:font, outline:'none',
-      marginBottom:12, background:'#FFF5F8', color:'#2D1A25', boxSizing:'border-box',
+      marginBottom:12, background:'#F8FBFF', color:'#1E2535', boxSizing:'border-box',
     },
     btnPrimary: {
       width:'100%', padding:'13px',
-      background:`linear-gradient(135deg,${pink},#F9A8C9)`,
+      background: `linear-gradient(135deg, ${pink} 0%, ${blue} 100%)`,
       color:'white', border:'none', borderRadius:32,
       fontSize:15, fontWeight:800, fontFamily:font, cursor:'pointer',
-      boxShadow:'0 4px 16px rgba(196,84,122,0.3)', transition:'opacity 0.15s',
+      boxShadow:'0 4px 18px rgba(107,184,232,0.3)', transition:'opacity 0.15s',
     },
     btnDisabled: {
       width:'100%', padding:'13px',
-      background:'#F0E8EC', color:'#C4A0AE',
+      background:'#F0F2F8', color:'#B0B8CC',
       border:'none', borderRadius:32, fontSize:15, fontWeight:800, fontFamily:font, cursor:'not-allowed',
     },
     btnOAuth: {
-      width:'100%', padding:'11px 16px', borderRadius:32, border:'1px solid rgba(0,0,0,0.1)',
-      background:'white', fontFamily:font, fontSize:14, fontWeight:700,
+      width:'100%', padding:'11px 16px', borderRadius:32,
+      border:'1.5px solid #EEF0F8',
+      background:'#FAFBFF', fontFamily:font, fontSize:14, fontWeight:700,
+      color:'#1E2535',
       cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:10,
-      transition:'background 0.1s',
+      transition:'background 0.15s, box-shadow 0.15s',
+      boxShadow:'0 1px 4px rgba(107,184,232,0.08)',
     },
     divider: {
       display:'flex', alignItems:'center', gap:12, margin:'16px 0',
-      color:'#9B7A8A', fontSize:12, fontWeight:700,
+      color:'#B0B8CC', fontSize:12, fontWeight:700,
     },
-    switchLink: { textAlign:'center' as const, marginTop:14, fontSize:13, color:'#9B7A8A' },
+    switchLink: { textAlign:'center' as const, marginTop:14, fontSize:13, color:'#9BA8C0' },
     captchaBox: {
       display:'flex', alignItems:'center', gap:10, marginBottom:14,
       padding:'12px 14px', borderRadius:14,
-      background:'linear-gradient(135deg,#FFF5F8,#F5F0FF)',
-      border:'1px solid rgba(196,84,122,0.15)',
+      background:'linear-gradient(135deg,#F8FBFF,#FFF5F9)',
+      border:'1.5px solid #EEF0F8',
     },
-    captchaQuestion: { flex:1, fontSize:13, fontWeight:800, color:'#2D1A25' },
+    captchaQuestion: { flex:1, fontSize:13, fontWeight:800, color:'#1E2535' },
     captchaInput: {
       width:64, padding:'8px 10px', textAlign:'center' as const,
-      border:'1px solid rgba(196,84,122,0.2)', borderRadius:10,
+      border:'1.5px solid #EEF0F8', borderRadius:10,
       fontSize:15, fontWeight:800, fontFamily: 'Nunito, sans-serif',
-      background:'white', color:'#2D1A25', outline:'none',
+      background:'white', color:'#1E2535', outline:'none',
     },
     captchaRefresh: {
       background:'none', border:'none', cursor:'pointer',
-      fontSize:18, color:'#9B7A8A', padding:4, lineHeight:1,
+      fontSize:18, color:'#B0B8CC', padding:4, lineHeight:1,
     },
   }
 
   const msgBox = (err: boolean): React.CSSProperties => ({
     marginTop:12, padding:'10px 14px', borderRadius:12, fontSize:13, fontWeight:700,
-    background: err ? '#FDE8F2' : '#D6F5E6',
-    color: err ? '#7A1F40' : '#1A6645',
+    background: err ? '#FFF0F4' : '#F0FBF4',
+    color: err ? '#C0345A' : '#2A7A4A',
+    border: `1px solid ${err ? 'rgba(224,122,154,0.25)' : 'rgba(82,192,122,0.25)'}`,
   })
 
   // ── Charte modal ────────────────────────────────────────────────────────
@@ -209,7 +219,10 @@ export default function LandingPage() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:'#2D1A25' }}>Charte Vibz</div>
-              <div style={{ fontSize:12, color:'#9B7A8A', marginTop:2 }}>Conditions générales & politique de confidentialité</div>
+              <div style={{ fontSize:12, color:'#9B7A8A', marginTop:2, display:'flex', gap:12 }}>
+                <a href="/conditions" target="_blank" rel="noopener noreferrer" style={{ color:'#E07A9A', fontWeight:700, textDecoration:'none' }}>CGU →</a>
+                <a href="/confidentialite" target="_blank" rel="noopener noreferrer" style={{ color:'#6BB8E8', fontWeight:700, textDecoration:'none' }}>Confidentialité →</a>
+              </div>
             </div>
             <button onClick={() => setShowCharter(false)} style={{
               width:32, height:32, borderRadius:10, border:'1px solid rgba(196,84,122,0.15)',
@@ -499,7 +512,7 @@ export default function LandingPage() {
         {showCharter && <CharterModal />}
         <nav style={s.nav}>
           <div style={{ ...s.logo, cursor:'pointer' }} onClick={() => { setMode('landing'); setMessage('') }}>
-            <div style={s.logoBox}>✉️</div>
+            <div style={s.logoBox}>🦋</div>
             Vib<span style={{ color:pink }}>z</span>
           </div>
           <button onClick={() => { setMode('landing'); setMessage('') }} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:13, color:'#9B7A8A', fontFamily:font, fontWeight:700 }}>
@@ -654,13 +667,16 @@ export default function LandingPage() {
                 </div>
                 <span style={{ fontSize:12, color:'#9B7A8A', lineHeight:1.5 }}>
                   J&apos;accepte les{' '}
-                  <span
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); setShowCharter(true) }}
+                  <a
+                    href="/conditions"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
                     style={{ color:pink, fontWeight:800, textDecoration:'underline', cursor:'pointer' }}
                   >
-                    conditions générales & la charte Vibz
-                  </span>
-                  {' '}(lecture recommandée avant d&apos;accepter)
+                    Conditions Générales d&apos;Utilisation &amp; Charte Vibz
+                  </a>
+                  {' '}— <strong style={{ color:'#7A1F40' }}>lecture obligatoire avant inscription</strong>
                 </span>
               </label>
             )}
@@ -711,18 +727,18 @@ export default function LandingPage() {
     )
   }
 
-  // ── Landing page — skin MSN Rosé Vert clair ─────────────────────────────
+  // ── Landing page — skin Blanc / Rose pastel / Vert clair / Bleu ciel ───
   type Star = { top:string; left?:string; right?:string; size:number; delay:string; color:string }
   const STARS: Star[] = [
-    { top:'10%', left:'5%',  size:20, delay:'0s',    color:'#FFB0CC' },
-    { top:'22%', left:'2%',  size:13, delay:'0.8s',  color:'#8EDB8E' },
-    { top:'52%', left:'6%',  size:15, delay:'1.5s',  color:'#FFB0CC' },
-    { top:'72%', left:'3%',  size:11, delay:'0.4s',  color:'#8EDB8E' },
-    { top:'88%', left:'8%',  size:14, delay:'1.2s',  color:'#FFB0CC' },
-    { top:'8%',  right:'7%', size:17, delay:'0.6s',  color:'#8EDB8E' },
-    { top:'32%', right:'4%', size:21, delay:'1.3s',  color:'#FFB0CC' },
-    { top:'60%', right:'5%', size:12, delay:'0.9s',  color:'#8EDB8E' },
-    { top:'80%', right:'8%', size:16, delay:'0.2s',  color:'#FFB0CC' },
+    { top:'10%', left:'5%',  size:20, delay:'0s',    color:'#F4A8BF' },
+    { top:'22%', left:'2%',  size:13, delay:'0.8s',  color:'#A8D8F0' },
+    { top:'52%', left:'6%',  size:15, delay:'1.5s',  color:'#A8E8C0' },
+    { top:'72%', left:'3%',  size:11, delay:'0.4s',  color:'#F4A8BF' },
+    { top:'88%', left:'8%',  size:14, delay:'1.2s',  color:'#A8D8F0' },
+    { top:'8%',  right:'7%', size:17, delay:'0.6s',  color:'#A8E8C0' },
+    { top:'32%', right:'4%', size:21, delay:'1.3s',  color:'#F4A8BF' },
+    { top:'60%', right:'5%', size:12, delay:'0.9s',  color:'#A8D8F0' },
+    { top:'80%', right:'8%', size:16, delay:'0.2s',  color:'#A8E8C0' },
   ]
 
   const FRIENDS = ['🎸','🎹','🎤','🥁','🎷','🎻','🪕','🎺']
@@ -733,7 +749,7 @@ export default function LandingPage() {
       {featureModal === 'international' && <InternationalModal />}
       {featureModal === 'gratuit' && <GratuitModal />}
 
-      {/* Étoiles MSN flottantes */}
+      {/* Étoiles flottantes */}
       <div aria-hidden style={{ position:'fixed', inset:0, pointerEvents:'none', zIndex:0, overflow:'hidden' }}>
         {STARS.map((st, i) => (
           <div key={i} className="animate-float" style={{
@@ -743,11 +759,15 @@ export default function LandingPage() {
             animationDelay: st.delay, opacity: 0.65, userSelect: 'none',
           }}>✦</div>
         ))}
-        {/* Papillon MSN watermark */}
+        {/* Papillon Vibz watermark */}
         <div className="animate-float" style={{
           position:'absolute', bottom:'8%', left:'50%', transform:'translateX(-50%)',
-          fontSize:120, opacity:0.04, animationDelay:'1s', pointerEvents:'none',
+          fontSize:120, opacity:0.05, animationDelay:'1s', pointerEvents:'none',
         }}>🦋</div>
+        {/* Cercles décoratifs pastel */}
+        <div style={{ position:'absolute', top:'15%', left:'-4%', width:320, height:320, borderRadius:'50%', background:'radial-gradient(circle, rgba(224,122,154,0.08) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', bottom:'20%', right:'-5%', width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle, rgba(107,184,232,0.10) 0%, transparent 70%)', pointerEvents:'none' }}/>
+        <div style={{ position:'absolute', top:'50%', left:'10%', width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle, rgba(82,192,122,0.08) 0%, transparent 70%)', pointerEvents:'none' }}/>
       </div>
 
       {/* Nav */}
@@ -757,8 +777,8 @@ export default function LandingPage() {
           Vib<span style={{ color:pink }}>z</span>
         </div>
 
-        {/* Barre de statut MSN */}
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#3A7A3A', background:'rgba(189,234,189,0.35)', padding:'5px 14px', borderRadius:20, border:'1px solid rgba(69,184,71,0.2)' }}>
+        {/* Barre de statut */}
+        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#2A7A5A', background:'rgba(200,239,212,0.5)', padding:'5px 14px', borderRadius:20, border:'1px solid rgba(82,192,122,0.25)' }}>
           <div style={{ width:7, height:7, borderRadius:'50%', background:green }} className="pulse-dot"/>
           247 membres en ligne
         </div>
@@ -779,33 +799,33 @@ export default function LandingPage() {
         {/* Papillon animé + icône */}
         <div className="animate-float" style={{ fontSize:72, marginBottom:8, filter:'drop-shadow(0 8px 24px rgba(212,83,126,0.2))' }}>🦋</div>
         <div style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:green, marginBottom:20, opacity:0.8 }}>
-          MSN &amp; Caramail — réinventés
+          Dans l&apos;esprit des années 2000 — réinventé
         </div>
 
-        <h1 style={{ fontSize:56, fontWeight:800, letterSpacing:-2, lineHeight:1.1, marginBottom:20, color:'#1E2D1E' }}>
+        <h1 style={{ fontSize:56, fontWeight:800, letterSpacing:-2, lineHeight:1.1, marginBottom:20, color:'#1A1E2E' }}>
           La rencontre qui<br />
-          <span style={{ color:pink }}>vibre</span> vraiment
+          <span style={{ background:`linear-gradient(90deg, ${pink}, ${blue})`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>vibre</span> vraiment
         </h1>
 
-        <p style={{ fontSize:18, color:'#6B8C6B', maxWidth:520, lineHeight:1.6, marginBottom:40 }}>
-          Amoureuse ou musicale — Vibz connecte des gens qui se ressemblent, sans frontières géographiques, avec la nostalgie de MSN et l&apos;énergie de Caramail.
+        <p style={{ fontSize:18, color:'#7A88AA', maxWidth:520, lineHeight:1.6, marginBottom:40 }}>
+          Amoureuse ou musicale — Vibz connecte des gens qui se ressemblent, sans frontières géographiques, avec la nostalgie du tchat des années 2000 et l&apos;énergie des salons à thèmes.
         </p>
 
-        {/* Cartes features — bordures alternées rose / vert */}
-        <div style={{ display:'flex', gap:16, flexWrap:'wrap', justifyContent:'center', marginBottom:48 }}>
+        {/* Cartes features — rose / vert / bleu en rotation */}
+        <div style={{ display:'flex', gap:14, flexWrap:'wrap', justifyContent:'center', marginBottom:48 }}>
           {([
-            { icon:'💬', label:'Messagerie MSN', sub:'Wizz & émoticônes',       action: () => setMode('login'),              accent: pink },
-            { icon:'🎸', label:'Salons Caramail', sub:'Par instrument & style', action: () => setMode('signup'),             accent: green },
-            { icon:'❤️', label:'Rencontres',      sub:'Amour & collabs',        action: () => setMode('signup'),             accent: pink },
-            { icon:'🛡️', label:'IA Guard',        sub:'Anti-harcèlement',       action: () => setFeatureModal('security'),   accent: green },
-            { icon:'🌍', label:'International',   sub:'Sans frontières',        action: () => setFeatureModal('international'), accent: pink },
-            { icon:'🆓', label:'100% gratuit',    sub:'Pour toujours',          action: () => setFeatureModal('gratuit'),    accent: green },
+            { icon:'💬', label:'Messagerie rétro', sub:'Wizz & émoticônes',      action: () => setMode('login'),                accent: pink,  bg:'#FFF5F8' },
+            { icon:'🎸', label:'Salons à thèmes',  sub:'Collabs & instruments',  action: () => setMode('signup'),               accent: green, bg:'#F4FBF6' },
+            { icon:'❤️', label:'Rencontres',      sub:'Amour & collabs',        action: () => setMode('signup'),               accent: blue,  bg:'#F2F8FD' },
+            { icon:'🛡️', label:'IA Guard',        sub:'Anti-harcèlement',       action: () => setFeatureModal('security'),     accent: pink,  bg:'#FFF5F8' },
+            { icon:'🌍', label:'International',   sub:'Sans frontières',        action: () => setFeatureModal('international'),accent: green, bg:'#F4FBF6' },
+            { icon:'🆓', label:'100% gratuit',    sub:'Pour toujours',          action: () => setFeatureModal('gratuit'),      accent: blue,  bg:'#F2F8FD' },
           ] as const).map(f => (
             <div key={f.label} className="feature-card" onClick={f.action}
-              style={{ borderTop:`3px solid ${f.accent}`, boxShadow:`0 2px 0 ${f.accent}18` }}>
+              style={{ background: f.bg, borderTop:`3px solid ${f.accent}`, boxShadow:`0 4px 16px ${f.accent}18` }}>
               <div style={{ fontSize:28, marginBottom:8 }} className="animate-float">{f.icon}</div>
-              <div style={{ fontSize:13, fontWeight:800, color:'#1E2D1E' }}>{f.label}</div>
-              <div style={{ fontSize:11, color:'#6B8C6B', marginTop:2 }}>{f.sub}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:'#1A1E2E' }}>{f.label}</div>
+              <div style={{ fontSize:11, color:'#9BA8C0', marginTop:2 }}>{f.sub}</div>
             </div>
           ))}
         </div>
@@ -813,35 +833,40 @@ export default function LandingPage() {
         <button onClick={() => setMode('signup')} style={{ ...s.btnPrimary, width:'auto', padding:'16px 48px', fontSize:18, borderRadius:32 }}>
           Rejoindre Vibz gratuitement →
         </button>
-        <p style={{ marginTop:14, fontSize:12, color:'#6B8C6B' }}>
+        <p style={{ marginTop:14, fontSize:12, color:'#9BA8C0' }}>
           Aucune carte bancaire · Gratuit pour toujours · Sécurisé par IA
         </p>
 
-        {/* Rangée d'avatars MSN style */}
+        {/* Rangée d'avatars */}
         <div style={{ marginTop:48, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
-          <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:'#6B8C6B', opacity:0.7 }}>
+          <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:'#9BA8C0' }}>
             Connectés maintenant
           </div>
           <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            {FRIENDS.map((icon, i) => (
-              <div key={i} style={{
-                width:40, height:40, borderRadius:'50%',
-                background: i % 2 === 0
-                  ? 'linear-gradient(135deg,rgba(212,83,126,0.15),rgba(212,83,126,0.08))'
-                  : 'linear-gradient(135deg,rgba(69,184,71,0.15),rgba(69,184,71,0.08))',
-                border:`2px solid ${i % 2 === 0 ? 'rgba(212,83,126,0.25)' : 'rgba(69,184,71,0.25)'}`,
-                display:'flex', alignItems:'center', justifyContent:'center',
-                fontSize:20, position:'relative', cursor:'default',
-              }}>
-                {icon}
-                <div style={{
-                  position:'absolute', bottom:0, right:0,
-                  width:10, height:10, borderRadius:'50%',
-                  background: green, border:'2px solid white',
-                }}/>
-              </div>
-            ))}
-            <div style={{ fontSize:12, color:'#6B8C6B', marginLeft:8, fontWeight:800 }}>
+            {FRIENDS.map((icon, i) => {
+              const colors = [
+                { bg:'rgba(224,122,154,0.12)', border:'rgba(224,122,154,0.3)' },
+                { bg:'rgba(107,184,232,0.12)', border:'rgba(107,184,232,0.3)' },
+                { bg:'rgba(82,192,122,0.12)',  border:'rgba(82,192,122,0.3)'  },
+              ]
+              const c = colors[i % 3]
+              return (
+                <div key={i} style={{
+                  width:40, height:40, borderRadius:'50%',
+                  background: c.bg, border:`2px solid ${c.border}`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:20, position:'relative', cursor:'default',
+                }}>
+                  {icon}
+                  <div style={{
+                    position:'absolute', bottom:0, right:0,
+                    width:10, height:10, borderRadius:'50%',
+                    background: green, border:'2px solid white',
+                  }}/>
+                </div>
+              )
+            })}
+            <div style={{ fontSize:12, color:'#9BA8C0', marginLeft:8, fontWeight:800 }}>
               + 239 musiciens
             </div>
           </div>
