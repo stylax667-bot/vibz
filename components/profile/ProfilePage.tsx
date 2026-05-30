@@ -3,6 +3,8 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
 import { detectPlatform, getEmbedUrl, MUSIC_PLATFORMS, type MusicLink } from '../../lib/musicPlatforms'
+import AvatarUpload from '../shared/AvatarUpload'
+import NotificationSettings from '../shared/NotificationSettings'
 
 interface Props { user: User }
 
@@ -13,8 +15,6 @@ const LEVELS = ['Débutant','Intermédiaire','Confirmé','Pro'] as const
 
 type Level = typeof LEVELS[number]
 
-// ── Réseaux & plateformes — partage libre, toutes destinations ────────────────
-// Organisés par catégorie pour clarté, mais tout est libre
 const SOCIALS_GROUPS = [
   {
     group: '🎵 Musique & Création',
@@ -58,14 +58,11 @@ const SOCIALS_GROUPS = [
   },
 ]
 
-// Liste plate pour traitement uniforme
 const SOCIALS = SOCIALS_GROUPS.flatMap(g => g.items)
 
 const DEFAULT_VISIBILITY: Record<string, boolean> = Object.fromEntries(
   SOCIALS.map(s => [s.visKey, true])
 )
-
-// tagBtnStyle est recréé à l'intérieur du composant pour accéder au thème
 
 const socialBadgeStyle = (color: string): React.CSSProperties => ({
   width:30, height:30, background:color, borderRadius:8,
@@ -88,7 +85,6 @@ export default function ProfilePage({ user }: Props) {
   const MUT  = tk.textMuted
   const INP  = tk.inputBg
 
-  // ── Playlists & sons partagés ──────────────────────────────────────────────
   const [musicLinks, setMusicLinks]   = useState<MusicLink[]>([])
   const [musicInput, setMusicInput]   = useState('')
   const [musicTitle, setMusicTitle]   = useState('')
@@ -114,13 +110,15 @@ export default function ProfilePage({ user }: Props) {
   const toggleEmbed = (id: string) => setMusicLinks(prev => prev.map(l => l.id===id ? {...l,showEmbed:!l.showEmbed} : l))
 
   const [saved, setSaved] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [notifMatch, setNotifMatch] = useState(true)
+  const [notifMessage, setNotifMessage] = useState(true)
   const [profile, setProfile] = useState({
     display_name: user.email?.split('@')[0]||'',
     bio:'', city:'', country:'FR',
     instruments:[] as string[],
     music_genres:[] as string[],
     looking_for:[] as string[],
-    // Tous les réseaux & plateformes
     social_soundcloud:'', social_spotify:'', social_youtube:'',
     social_bandcamp:'', social_deezer:'', social_applemusic:'', social_mixcloud:'',
     social_instagram:'', social_tiktok:'', social_facebook:'',
@@ -143,10 +141,15 @@ export default function ProfilePage({ user }: Props) {
 
   useEffect(() => {
     supabase.from('profiles').select('*').eq('id', user.id).single().then(({ data }) => {
-      if (data) setProfile(p => ({
-        ...p, ...data,
-        social_visibility: { ...DEFAULT_VISIBILITY, ...(data.social_visibility || {}) },
-      }))
+      if (data) {
+        setProfile(p => ({
+          ...p, ...data,
+          social_visibility: { ...DEFAULT_VISIBILITY, ...(data.social_visibility || {}) },
+        }))
+        if (data.avatar_url) setAvatarUrl(data.avatar_url)
+        if (typeof data.notif_new_match === 'boolean') setNotifMatch(data.notif_new_match)
+        if (typeof data.notif_new_message === 'boolean') setNotifMessage(data.notif_new_message)
+      }
     })
     supabase.from('music_profiles').select('*').eq('user_id', user.id).single().then(({ data }) => {
       if (data) setMusicProfile({
@@ -180,7 +183,7 @@ export default function ProfilePage({ user }: Props) {
   }
 
   const save = async () => {
-    await supabase.from('profiles').upsert({ id: user.id, ...profile, updated_at: new Date().toISOString() })
+    await supabase.from('profiles').upsert({ id: user.id, ...profile, avatar_url: avatarUrl, updated_at: new Date().toISOString() })
     await supabase.from('music_profiles').upsert({
       user_id: user.id,
       instruments: profile.instruments,
@@ -195,7 +198,6 @@ export default function ProfilePage({ user }: Props) {
     setTimeout(() => setSaved(false), 2500)
   }
 
-  const initials = (profile.display_name||'U').slice(0,2).toUpperCase()
   const tagBtnStyle = (active: boolean, activeColor = '#A78BDB', activeBg = '#EDE8F8', activeText = '#5B3FAD'): React.CSSProperties => ({
     padding:'6px 14px', borderRadius:20,
     border: active ? `1px solid ${activeColor}` : `1px solid ${BDR}`,
@@ -218,9 +220,13 @@ export default function ProfilePage({ user }: Props) {
 
       {/* ── En-tête profil ── */}
       <div style={{ display:'flex', gap:20, alignItems:'flex-start' }}>
-        <div style={{ width:80, height:80, borderRadius:'50%', background:'#FDE8F2', color:'#C4547A', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:800, border:'2px solid #C4547A', flexShrink:0 }}>
-          {initials}
-        </div>
+        {/* Avatar avec upload */}
+        <AvatarUpload
+          userId={user.id}
+          currentUrl={avatarUrl}
+          displayName={profile.display_name}
+          onUpload={url => setAvatarUrl(url)}
+        />
         <div style={{ flex:1 }}>
           <div style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>
           <div style={{ fontSize:14, color:MUT, margin:'4px 0 12px' }}>{profile.city||'Ajoute ta ville'} · {user.email}</div>
@@ -244,7 +250,7 @@ export default function ProfilePage({ user }: Props) {
         </div>
       </div>
 
-      {/* ── Réseaux & plateformes — partage libre ── */}
+      {/* ── Réseaux & plateformes ── */}
       <div style={card}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
           <span style={lbl}>Mes liens & réseaux</span>
@@ -252,7 +258,6 @@ export default function ProfilePage({ user }: Props) {
             <span style={{ fontSize:11, color:MUT, fontWeight:700 }}>
               {profile.show_socials ? `${visibleCount} visible${visibleCount>1?'s':''} sur ${filledSocials.length}` : 'Mode caché actif'}
             </span>
-            {/* Bouton partage profil */}
             <button
               onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/profil/${user.id}`); setSaved(true); setTimeout(()=>setSaved(false),2000) }}
               title="Copier le lien de mon profil"
@@ -261,13 +266,11 @@ export default function ProfilePage({ user }: Props) {
           </div>
         </div>
 
-        {/* Note de confidentialité */}
         <div style={{ padding:'10px 14px', background:'#F0FBF4', borderRadius:12, border:'1px solid #D6F5E6', fontSize:12, color:'#2A7A4A', fontWeight:600, marginBottom:16, display:'flex', gap:8 }}>
           <span>🛡️</span>
           <span>VibzGuard protège ton identité. Tu choisis ce que tu partages et avec qui. L&apos;œil 👁️ contrôle la visibilité sur ton profil public. Ne partage pas tes coordonnées en chat public.</span>
         </div>
 
-        {/* Groupes de réseaux */}
         {SOCIALS_GROUPS.map(group => {
           const filledInGroup = group.items.filter(s => (profile as unknown as Record<string,string>)[s.key])
           return (
@@ -296,14 +299,12 @@ export default function ProfilePage({ user }: Props) {
                       value={val}
                       onChange={e => setProfile(p => ({ ...p, [s.key]:e.target.value }))}
                     />
-                    {/* Ouvrir le lien */}
                     {val && val.startsWith('http') && (
                       <a href={val} target="_blank" rel="noopener noreferrer" title={`Ouvrir ${s.name}`}
                         style={{ width:32, height:32, borderRadius:9, border:'1px solid rgba(107,184,232,0.2)', background:'#F0F7FD', color:'#2A6090', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, textDecoration:'none' }}>
                         ↗
                       </a>
                     )}
-                    {/* Toggle visibilité */}
                     {val && (
                       <button
                         onClick={() => toggleVisibility(s.visKey)}
@@ -414,12 +415,8 @@ export default function ProfilePage({ user }: Props) {
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════════════
-           🎵 MES PLAYLISTS & SONS — Partage musical multiplateforme
-      ══════════════════════════════════════════════════════════════════ */}
+      {/* ── Playlists & sons ── */}
       <div style={card}>
-
-        {/* En-tête */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
           <span style={lbl}>🎵 Mes playlists &amp; sons</span>
           <span style={{ fontSize:11, color:MUT, fontWeight:700 }}>
@@ -427,31 +424,26 @@ export default function ProfilePage({ user }: Props) {
           </span>
         </div>
 
-        {/* Plateformes supportées — badges visuels */}
         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:20 }}>
           {MUSIC_PLATFORMS.map(p => (
             <span key={p.id} style={{
               display:'inline-flex', alignItems:'center', gap:4,
               padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:800,
-              background: p.bg, color: p.color,
-              border: `1px solid ${p.color}44`,
+              background: p.bg, color: p.color, border: `1px solid ${p.color}44`,
             }}>
               {p.icon} {p.name}
             </span>
           ))}
         </div>
 
-        {/* Formulaire d'ajout */}
         <div style={{ background:BG, borderRadius:16, padding:16, marginBottom:20, border:`1.5px solid ${BDR}` }}>
           <div style={{ fontSize:12, fontWeight:800, color:TXT, marginBottom:10 }}>➕ Partager un lien musical</div>
-
           <input
             style={{ ...inp, marginBottom:8 }}
             placeholder="Titre / Description (optionnel — ex: Ma playlist du soir 🌙)"
             value={musicTitle}
             onChange={e => setMusicTitle(e.target.value)}
           />
-
           <div style={{ display:'flex', gap:8 }}>
             <input
               style={{ ...inp, marginBottom:0, flex:1, fontFamily:'monospace', fontSize:12 }}
@@ -470,15 +462,11 @@ export default function ProfilePage({ user }: Props) {
               }}
             >Ajouter ➤</button>
           </div>
-
-          {/* Erreur */}
           {musicError && (
             <div style={{ marginTop:8, padding:'8px 12px', background:'rgba(224,122,154,0.12)', borderRadius:8, fontSize:12, color:'#E07A9A', fontWeight:700 }}>
               ⚠️ {musicError}
             </div>
           )}
-
-          {/* Détection plateforme en live */}
           {musicInput.startsWith('http') && (() => {
             const p = detectPlatform(musicInput)
             if (!p) return null
@@ -492,7 +480,6 @@ export default function ProfilePage({ user }: Props) {
           })()}
         </div>
 
-        {/* Liste des liens ajoutés */}
         {musicLinks.length === 0 ? (
           <div style={{ textAlign:'center', padding:'28px 20px', color:MUT, fontSize:13 }}>
             <div style={{ fontSize:36, marginBottom:8 }}>🎵</div>
@@ -510,7 +497,6 @@ export default function ProfilePage({ user }: Props) {
                   border:`1.5px solid ${plat ? plat.color+'44' : BDR}`,
                   background: plat ? plat.bg : BG,
                 }}>
-                  {/* Header de la carte */}
                   <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px' }}>
                     <span style={{ fontSize:20, flexShrink:0 }}>{plat?.icon ?? '🎵'}</span>
                     <div style={{ flex:1, minWidth:0 }}>
@@ -522,8 +508,6 @@ export default function ProfilePage({ user }: Props) {
                         {link.url.length > 55 ? link.url.slice(0,55)+'…' : link.url} ↗
                       </a>
                     </div>
-
-                    {/* Actions */}
                     <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                       {embedUrl && (
                         <button onClick={() => toggleEmbed(link.id)} style={{
@@ -544,21 +528,17 @@ export default function ProfilePage({ user }: Props) {
                       }} title="Supprimer">×</button>
                     </div>
                   </div>
-
-                  {/* Lecteur intégré */}
                   {embedUrl && link.showEmbed && (
-                    <div style={{ padding:'0 0 0 0' }}>
-                      <iframe
-                        src={embedUrl}
-                        width="100%"
-                        height={link.platform==='youtube'||link.platform==='youtubemusic' ? 280 : link.platform==='soundcloud' ? 140 : 152}
-                        frameBorder="0"
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        loading="lazy"
-                        title={link.title}
-                        style={{ display:'block', border:'none' }}
-                      />
-                    </div>
+                    <iframe
+                      src={embedUrl}
+                      width="100%"
+                      height={link.platform==='youtube'||link.platform==='youtubemusic' ? 280 : link.platform==='soundcloud' ? 140 : 152}
+                      frameBorder="0"
+                      allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                      loading="lazy"
+                      title={link.title}
+                      style={{ display:'block', border:'none' }}
+                    />
                   )}
                 </div>
               )
@@ -566,7 +546,6 @@ export default function ProfilePage({ user }: Props) {
           </div>
         )}
 
-        {/* Note de confidentialité */}
         <div style={{ marginTop:16, padding:'10px 14px', background:tk.greenLight, borderRadius:12, border:`1px solid ${tk.green}33`, fontSize:12, color:tk.greenDark, fontWeight:600, display:'flex', gap:8 }}>
           <span>🔒</span>
           <span>Tes playlists sont visibles sur ton profil public. N&apos;y partage que des contenus dont tu as les droits ou qui sont en accès libre.</span>
@@ -577,7 +556,6 @@ export default function ProfilePage({ user }: Props) {
       <div style={card}>
         <span style={lbl}>Confidentialité</span>
 
-        {/* Mode caché global */}
         <div style={{
           display:'flex', justifyContent:'space-between', alignItems:'center',
           padding:'14px 16px', borderRadius:16,
@@ -585,13 +563,9 @@ export default function ProfilePage({ user }: Props) {
           marginBottom:16, transition:'background 0.2s',
         }}>
           <div>
-            <div style={{ fontSize:13, fontWeight:800, color: !profile.show_socials ? 'white' : '#2D1A25' }}>
-              Mode caché
-            </div>
+            <div style={{ fontSize:13, fontWeight:800, color: !profile.show_socials ? 'white' : '#2D1A25' }}>Mode caché</div>
             <div style={{ fontSize:11, color: !profile.show_socials ? 'rgba(255,255,255,0.6)' : '#9B7A8A', marginTop:2 }}>
-              {!profile.show_socials
-                ? 'Vos coordonnées sont cachées de tous les profils'
-                : 'Vos coordonnées sont visibles selon vos réglages'}
+              {!profile.show_socials ? 'Vos coordonnées sont cachées de tous les profils' : 'Vos coordonnées sont visibles selon vos réglages'}
             </div>
           </div>
           <button
@@ -600,20 +574,16 @@ export default function ProfilePage({ user }: Props) {
               padding:'8px 18px', borderRadius:20, border:'none', cursor:'pointer',
               fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:800,
               background: !profile.show_socials ? '#C4547A' : 'rgba(196,84,122,0.12)',
-              color: !profile.show_socials ? 'white' : '#C4547A',
-              transition:'all 0.15s',
+              color: !profile.show_socials ? 'white' : '#C4547A', transition:'all 0.15s',
             }}
           >
             {!profile.show_socials ? '🔒 Actif' : 'Activer'}
           </button>
         </div>
 
-        {/* Visibilité par réseau (disponible seulement si mode caché désactivé) */}
         {profile.show_socials && (
           <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:11, fontWeight:800, letterSpacing:0.5, color:MUT, textTransform:'uppercase', marginBottom:10 }}>
-              Visibilité par réseau
-            </div>
+            <div style={{ fontSize:11, fontWeight:800, letterSpacing:0.5, color:MUT, textTransform:'uppercase', marginBottom:10 }}>Visibilité par réseau</div>
             <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
               {SOCIALS.map(s => {
                 const val = (profile as unknown as Record<string,string>)[s.key]
@@ -643,8 +613,7 @@ export default function ProfilePage({ user }: Props) {
                           padding:'6px 14px', borderRadius:20, border:'none', cursor:'pointer',
                           fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:700,
                           background: isVisible ? '#D6F5E6' : '#F0F0F0',
-                          color: isVisible ? '#1A6645' : '#9B7A8A',
-                          transition:'all 0.15s',
+                          color: isVisible ? '#1A6645' : '#9B7A8A', transition:'all 0.15s',
                         }}
                       >
                         <EyeIcon open={isVisible} />
@@ -658,7 +627,6 @@ export default function ProfilePage({ user }: Props) {
           </div>
         )}
 
-        {/* Ma ville */}
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderTop:'1px solid rgba(196,84,122,0.08)', marginBottom:4 }}>
           <div>
             <div style={{ fontSize:13, fontWeight:700 }}>Afficher ma ville</div>
@@ -670,15 +638,13 @@ export default function ProfilePage({ user }: Props) {
               padding:'6px 16px', borderRadius:20, border:'none', cursor:'pointer',
               fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:700,
               background: profile.show_location ? '#D6F5E6' : '#F0F0F0',
-              color: profile.show_location ? '#1A6645' : '#9B7A8A',
-              transition:'all 0.15s',
+              color: profile.show_location ? '#1A6645' : '#9B7A8A', transition:'all 0.15s',
             }}
           >
             {profile.show_location ? '✓ Activé' : '○ Désactivé'}
           </button>
         </div>
 
-        {/* Qui peut m'écrire */}
         <div style={{ paddingTop:12, borderTop:'1px solid rgba(196,84,122,0.08)' }}>
           <div style={{ fontSize:13, fontWeight:700, marginBottom:10 }}>Qui peut m&apos;envoyer des messages ?</div>
           <div style={{ display:'flex', gap:8 }}>
@@ -704,6 +670,16 @@ export default function ProfilePage({ user }: Props) {
               </button>
             ))}
           </div>
+        </div>
+
+        {/* ── Notifications email ── */}
+        <div style={{ marginTop:20, paddingTop:16, borderTop:'1px solid rgba(196,84,122,0.08)' }}>
+          <NotificationSettings
+            userId={user.id}
+            email={user.email || ''}
+            notifMatch={notifMatch}
+            notifMessage={notifMessage}
+          />
         </div>
       </div>
 
