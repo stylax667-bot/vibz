@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
+import ShareModal, { type ShareContext } from '../shared/ShareModal'
+import DonationBanner from '../shared/DonationBanner'
+import InviteWidget from '../shared/InviteWidget'
 
 interface Props { user: User; onMessage: () => void }
 
@@ -30,6 +33,9 @@ export default function DiscoverPage({ user, onMessage }: Props) {
   const [matchName, setMatchName] = useState<string|null>(null)
   const [notif, setNotif] = useState<{ msg: string; color: string }|null>(null)
   const [currentUserName, setCurrentUserName] = useState('')
+  const [shareCtx, setShareCtx] = useState<ShareContext | null>(null)
+  const [showDonation, setShowDonation] = useState(false)
+  const [matchProfile, setMatchProfile] = useState<Profile | null>(null)
 
   const showNotif = (msg: string, color = '#D4537E') => {
     setNotif({ msg, color })
@@ -66,10 +72,15 @@ export default function DiscoverPage({ user, onMessage }: Props) {
       .eq('from_user', targetId).eq('to_user', user.id).maybeSingle()
     if (data) {
       setMatchName(name)
-      setTimeout(() => setMatchName(null), 3000)
+      const matched = profiles.find(p => p.id === targetId) || null
+      setMatchProfile(matched)
+      setTimeout(() => setMatchName(null), 4000)
+      // Notification email
       supabase.functions.invoke('send-notification', {
         body: { type: 'match', userId: targetId, fromName: currentUserName || user.email?.split('@')[0] || 'Quelqu\'un' }
       })
+      // Afficher le don après 5s (moment émotionnel)
+      setTimeout(() => setShowDonation(true), 5000)
     }
   }
 
@@ -128,11 +139,19 @@ export default function DiscoverPage({ user, onMessage }: Props) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 270px', minHeight: 'calc(100vh - 60px)', background: BG }}>
+      {/* Popup match avec bouton de partage */}
       {matchName && (
-        <div style={{ position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)', background: '#D4537E', color: 'white', padding: '14px 28px', borderRadius: 16, fontWeight: 700, fontSize: 16, zIndex: 999, boxShadow: '0 8px 32px rgba(212,83,126,0.4)' }}>
-          🎉 Match avec {matchName} !
+        <div style={{ position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg,#D4537E,#A78BDB)', color: 'white', padding: '16px 24px', borderRadius: 20, fontWeight: 700, fontSize: 15, zIndex: 999, boxShadow: '0 8px 40px rgba(212,83,126,0.5)', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <span>🎉 Match avec {matchName} !</span>
+          <button
+            onClick={() => setShareCtx({ type: 'match', name: matchName, instrument: matchProfile?.instruments?.[0] || '', city: matchProfile?.city || '' })}
+            style={{ padding: '6px 14px', borderRadius: 20, border: '1.5px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'Nunito, sans-serif', whiteSpace: 'nowrap' }}
+          >🚀 Partager</button>
         </div>
       )}
+
+      {/* Don discret après match */}
+      {showDonation && <DonationBanner variant="match" onDismiss={() => setShowDonation(false)} />}
       {notif && (
         <div style={{ position: 'fixed', top: 80, left: '50%', transform: 'translateX(-50%)', background: notif.color, color: 'white', padding: '12px 24px', borderRadius: 14, fontWeight: 700, fontSize: 14, zIndex: 999, boxShadow: `0 6px 24px ${notif.color}66` }}>
           {notif.msg}
@@ -211,6 +230,11 @@ export default function DiscoverPage({ user, onMessage }: Props) {
                         onClick={onMessage}
                         style={{ flex: 1, padding: '7px', borderRadius: 8, border: `0.5px solid ${BDR}`, background: tk.greenLight, color: '#1D9E75', cursor: 'pointer', fontSize: 15, fontFamily: 'Syne,sans-serif', fontWeight: 700 }}
                       >💬</button>
+                      <button
+                        onClick={() => setShareCtx({ type: 'collab', name: p.display_name || '', instrument: p.instruments?.[0] || '', city: p.city || '', genre: p.music_genres?.[0] || '' })}
+                        title="Partager ce profil"
+                        style={{ padding: '7px 8px', borderRadius: 8, border: `0.5px solid ${BDR}`, background: SURF, color: MUT, cursor: 'pointer', fontSize: 13, fontFamily: 'Syne,sans-serif', fontWeight: 700 }}
+                      >🚀</button>
                     </div>
                   </div>
                 </div>
@@ -219,6 +243,9 @@ export default function DiscoverPage({ user, onMessage }: Props) {
           </div>
         )}
       </div>
+
+      {/* ShareModal */}
+      {shareCtx && <ShareModal context={shareCtx} onClose={() => setShareCtx(null)} />}
 
       {/* Sidebar */}
       <aside style={{ borderLeft: `0.5px solid ${BDR}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16, background: SURF }}>
@@ -236,6 +263,11 @@ export default function DiscoverPage({ user, onMessage }: Props) {
             </div>
           </div>
         ))}
+        {/* Widget invitation */}
+        <div style={{ marginBottom: 8 }}>
+          <InviteWidget userId={user.id} compact />
+        </div>
+
         <div style={{ height: 1, background: BDR, margin: '4px 0' }} />
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>Salons actifs 🔥</div>
         {[{ icon: '🎸', name: 'Rock & Rencontre', count: 47 }, { icon: '🎹', name: 'Jazz Lounge', count: 23 }, { icon: '💑', name: 'Coup de foudre', count: 88 }, { icon: '🥁', name: 'Beatmakers', count: 14 }].map(s => (

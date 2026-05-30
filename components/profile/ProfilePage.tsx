@@ -5,6 +5,9 @@ import { useTheme } from '../../lib/theme'
 import { detectPlatform, getEmbedUrl, MUSIC_PLATFORMS, type MusicLink } from '../../lib/musicPlatforms'
 import AvatarUpload from '../shared/AvatarUpload'
 import NotificationSettings from '../shared/NotificationSettings'
+import ShareModal, { type ShareContext } from '../shared/ShareModal'
+import DonationBanner from '../shared/DonationBanner'
+import InviteWidget from '../shared/InviteWidget'
 
 interface Props { user: User }
 
@@ -113,6 +116,7 @@ export default function ProfilePage({ user }: Props) {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [notifMatch, setNotifMatch] = useState(true)
   const [notifMessage, setNotifMessage] = useState(true)
+  const [shareCtx, setShareCtx] = useState<ShareContext | null>(null)
   const [profile, setProfile] = useState({
     display_name: user.email?.split('@')[0]||'',
     bio:'', city:'', country:'FR',
@@ -230,10 +234,21 @@ export default function ProfilePage({ user }: Props) {
         <div style={{ flex:1 }}>
           <div style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>
           <div style={{ fontSize:14, color:MUT, margin:'4px 0 12px' }}>{profile.city||'Ajoute ta ville'} · {user.email}</div>
-          <div style={{ display:'flex', gap:10 }}>
+          <div style={{ display:'flex', gap:10, marginBottom:10 }}>
             {['Likes','Contacts','Matches'].map(l => (
               <div key={l} style={{ textAlign:'center' }}><div style={{ fontSize:18, fontWeight:700 }}>0</div><div style={{ fontSize:11, color:MUT }}>{l}</div></div>
             ))}
+          </div>
+          {/* Boutons de partage profil */}
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <button
+              onClick={() => setShareCtx({ type:'profile', name: profile.display_name, instruments: profile.instruments, city: profile.city, userId: user.id })}
+              style={{ padding:'6px 14px', borderRadius:20, border:`1px solid ${BDR}`, background: SURF, color: TXT, fontSize:11, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center', gap:5 }}
+            >🪪 Partager mon profil</button>
+            <button
+              onClick={() => setShareCtx({ type:'collab', name: profile.display_name, instrument: profile.instruments[0]||'', city: profile.city, genre: profile.music_genres[0]||'' })}
+              style={{ padding:'6px 14px', borderRadius:20, border:`1px solid ${BDR}`, background: SURF, color: TXT, fontSize:11, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center', gap:5 }}
+            >🎵 Chercher une collab</button>
           </div>
         </div>
       </div>
@@ -682,6 +697,14 @@ export default function ProfilePage({ user }: Props) {
           />
         </div>
       </div>
+
+      {/* Inviter des amis */}
+      <InviteWidget userId={user.id} />
+
+      {/* Don Ko-fi */}
+      <DonationBanner variant="profile" />
+
+      {shareCtx && <ShareModal context={shareCtx} onClose={() => setShareCtx(null)} />}
 
       <button onClick={save} style={{
         padding:'14px 28px', color:'white', border:'none', borderRadius:32,

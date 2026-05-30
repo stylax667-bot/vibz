@@ -6,12 +6,15 @@ import DiscoverPage from '../discover/DiscoverPage'
 import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
 import ProfilePage from '../profile/ProfilePage'
+import ShareModal from '../shared/ShareModal'
+import DonationBanner from '../shared/DonationBanner'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
 interface Props { user: User }
 
 export default function AppLayout({ user }: Props) {
   const [tab, setTab] = useState<Tab>('discover')
+  const [showShare, setShowShare] = useState(false)
   const { theme: t, toggle } = useTheme()
 
   const tabs = [
@@ -70,7 +73,21 @@ export default function AppLayout({ user }: Props) {
         </div>
 
         {/* Actions droite */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+          {/* Bouton partager l'app */}
+          <button
+            onClick={() => setShowShare(true)}
+            title="Partager Vibz avec tes amis"
+            style={{
+              padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+              border: `1px solid ${t.pink}44`,
+              background: t.pinkLight, fontSize: 11, fontFamily: f,
+              fontWeight: 800, color: t.pinkDark,
+              display: 'flex', alignItems: 'center', gap: 5,
+              transition: 'all 0.15s',
+            }}
+          >🚀 Partager</button>
 
           {/* IA Guard badge */}
           <div style={{
@@ -92,12 +109,10 @@ export default function AppLayout({ user }: Props) {
                 ? `linear-gradient(135deg,#3A4A70,#2A3A60)`
                 : `linear-gradient(135deg,#FFF0C0,#FFD060)`,
               position: 'relative', transition: 'background 0.3s', flexShrink: 0,
-              boxShadow: `0 2px 8px ${t.shadow}`,
-              padding: 0,
+              boxShadow: `0 2px 8px ${t.shadow}`, padding: 0,
             }}
             aria-label="Basculer mode sombre"
           >
-            {/* Curseur */}
             <div style={{
               position: 'absolute', top: 3,
               left: t.isDark ? 18 : 3,
@@ -105,8 +120,7 @@ export default function AppLayout({ user }: Props) {
               background: t.isDark ? '#9BA8C8' : '#FFFFFF',
               boxShadow: '0 1px 4px rgba(0,0,0,0.25)',
               transition: 'left 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.25s',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 10,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10,
             }}>
               {t.isDark ? '🌙' : '☀️'}
             </div>
@@ -146,7 +160,7 @@ export default function AppLayout({ user }: Props) {
         {tab === 'profile'   && <ProfilePage user={user} />}
       </div>
 
-      {/* ── Footer légal ── */}
+      {/* ── Footer ── */}
       <footer style={{
         borderTop: `1px solid ${t.border}`,
         background: t.navBg,
@@ -159,7 +173,7 @@ export default function AppLayout({ user }: Props) {
           🦋 Vibz — {new Date().getFullYear()}
         </span>
         {[
-          { label: 'Conditions d\'utilisation',   href: '/conditions'      },
+          { label: 'Conditions d\'utilisation',    href: '/conditions'      },
           { label: 'Politique de confidentialité', href: '/confidentialite' },
           { label: 'Contact',                      href: 'mailto:contact@vibz.app' },
         ].map(l => (
@@ -171,11 +185,20 @@ export default function AppLayout({ user }: Props) {
             onMouseLeave={e => (e.currentTarget.style.color = t.textMuted)}
           >{l.label}</a>
         ))}
+
+        {/* Don Ko-fi — discret dans le footer */}
+        <DonationBanner variant="footer" />
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: t.textMuted, fontWeight: 700 }}>
           <span style={{ display: 'inline-block', width: 6, height: 6, background: t.green, borderRadius: '50%' }}/>
           RGPD · VibzGuard actif
         </div>
       </footer>
+
+      {/* Modal partage app */}
+      {showShare && (
+        <ShareModal context={{ type: 'app' }} onClose={() => setShowShare(false)} />
+      )}
     </div>
   )
 }
