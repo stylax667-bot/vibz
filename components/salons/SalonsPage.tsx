@@ -3,7 +3,7 @@ import type { User } from '@supabase/supabase-js'
 import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
 import { useTheme } from '../../lib/theme'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
-import VinylMixCreator from '../shared/VinylMixCreator'
+import VinylMixCreator, { type MixSalon } from '../shared/VinylMixCreator'
 
 interface Props { user: User | null; initialSalonId?: string | null }
 
@@ -286,23 +286,28 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
   const [matchDismissed,   setMatchDismissed]   = useState(false)
   const [showSignupPrompt, setShowSignupPrompt] = useState(false)
   const [showInscription,  setShowInscription]  = useState(false)
-  const [showVinylMix,     setShowVinylMix]     = useState(false)
-  const [customSalons,     setCustomSalons]     = useState<typeof SALONS>([])
+  const [showVinylMix,  setShowVinylMix]  = useState(false)
+  const [mixSalons,     setMixSalons]     = useState<MixSalon[]>([])
 
-  const handleCreateMixSalon = (name: string, styles: string[]) => {
+  const handleCreateMixSalon = (name: string, selections: string[], key: string) => {
     const colors = ['#E07A9A','#6BB8E8','#52C07A','#A78BDB']
-    const newSalon = {
+    const newMix: MixSalon = {
       id: `mix_${Date.now()}`,
-      icon: '🎛️',
       name,
-      count: 1,
-      cat: 'Mix',
-      branch: '🎛️ Salons Mix',
-      color: colors[customSalons.length % 4],
-      hasMod: false,
+      key,
+      selections,
+      color: colors[mixSalons.length % 4],
+      memberCount: 1,
+      hasMod: true,
     }
-    setCustomSalons(p => [...p, newSalon])
-    selectSalon(newSalon)
+    setMixSalons(p => [...p, newMix])
+    // Ouvrir le salon créé
+    selectSalon({ id: newMix.id, icon:'🎛️', name: newMix.name, count:1, cat:'Mix', branch:'🎛️ Salons Mix', color: newMix.color, hasMod: true })
+  }
+
+  const handleJoinMixSalon = (mix: MixSalon) => {
+    setMixSalons(p => p.map(s => s.id === mix.id ? { ...s, memberCount: s.memberCount + 1 } : s))
+    selectSalon({ id: mix.id, icon:'🎛️', name: mix.name, count: mix.memberCount + 1, cat:'Mix', branch:'🎛️ Salons Mix', color: mix.color, hasMod: true })
   }
 
   useEffect(() => {
@@ -537,12 +542,12 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
 
         <div style={{ flex:1, overflowY:'auto', padding:'6px 6px' }}>
           {/* Salons Mix créés par l'utilisateur */}
-          {customSalons.length > 0 && (
+          {mixSalons.length > 0 && (
             <div style={{ marginBottom:6 }}>
               <div style={{ padding:'5px 8px', fontSize:10, fontWeight:800, color:'#A78BDB', letterSpacing:0.3, borderLeft:'3px solid #A78BDB', background:'rgba(167,139,219,0.08)', borderRadius:'0 8px 8px 0', marginBottom:3 }}>
                 🎛️ Mes salons Mix
               </div>
-              {customSalons.map(s => {
+              {mixSalons.map(s => {
                 const active = salon.id === s.id
                 return (
                   <div key={s.id} style={{ display:'flex', alignItems:'flex-start', paddingLeft:6, marginBottom:2 }}>
@@ -920,7 +925,9 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
       {showVinylMix && (
         <VinylMixCreator
           onClose={() => setShowVinylMix(false)}
+          existingSalons={mixSalons}
           onCreateSalon={handleCreateMixSalon}
+          onJoinSalon={handleJoinMixSalon}
         />
       )}
 
