@@ -39,7 +39,7 @@ function assignOrbits(items: typeof GALAXY_ITEMS) {
   const ringCap = [Math.ceil(items.length / 3), Math.ceil(items.length / 3), items.length]
   return items.map((item, i) => {
     const ring = i % 3
-    const radius = ring === 0 ? 155 : ring === 1 ? 220 : 285
+    const radius = ring === 0 ? 100 : ring === 1 ? 148 : 192
     // Angle fixe calculé une seule fois selon la position dans le catalogue global
     const globalIdx = GALAXY_ITEMS.findIndex(g => g.id === item.id)
     const countInRing = Math.ceil(GALAXY_ITEMS.length / 3)
@@ -121,8 +121,8 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
 
   const selectedItems = selected.map(id => GALAXY_ITEMS.find(i => i.id === id)).filter(Boolean) as typeof GALAXY_ITEMS
 
-  // Taille du canvas
-  const SIZE = 660
+  // Taille du canvas compacte
+  const SIZE = 440
   const CX = SIZE / 2
   const CY = SIZE / 2
 
@@ -131,24 +131,18 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, width: '100%', position: 'relative' }}>
 
-      {/* ── Barre de recherche ── */}
-      <div style={{ width: '100%', maxWidth: 520, marginBottom: 16, position: 'relative', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 18px', borderRadius: 28, background: 'rgba(255,255,255,0.06)', border: '1.5px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(8px)' }}>
-          <span style={{ fontSize: 16, opacity: 0.5 }}>🔍</span>
+      {/* ── Barre de recherche compacte ── */}
+      <div style={{ width: '100%', maxWidth: 400, marginBottom: 8, zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 14px', borderRadius: 20, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <span style={{ fontSize: 13, opacity: 0.5 }}>🔍</span>
           <input
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un style, instrument, intention... (ex: Jazz, Guitare, Collab)"
-            style={{ flex: 1, border: 'none', background: 'transparent', color: '#E2E8F8', fontSize: 13, fontFamily: 'Nunito, sans-serif', outline: 'none' }}
+            placeholder="Jazz, Soul, Techno..."
+            style={{ flex: 1, border: 'none', background: 'transparent', color: '#E2E8F8', fontSize: 12, fontFamily: 'Nunito, sans-serif', outline: 'none' }}
           />
-          {search && (
-            <span onClick={() => setSearch('')} style={{ cursor: 'pointer', opacity: 0.4, fontSize: 14, color: '#E2E8F8' }}>✕</span>
-          )}
-          {search && (
-            <span style={{ fontSize: 10, color: '#5A6A8A', fontWeight: 700, whiteSpace: 'nowrap' }}>
-              {filtered.length} résultat{filtered.length > 1 ? 's' : ''}
-            </span>
-          )}
+          {search && <span onClick={() => setSearch('')} style={{ cursor: 'pointer', opacity: 0.4, fontSize: 12, color: '#E2E8F8' }}>✕</span>}
+          {search && <span style={{ fontSize: 9, color: '#5A6A8A', fontWeight: 700 }}>{filtered.length}</span>}
         </div>
       </div>
 
@@ -238,8 +232,8 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
           onDrop={handleDrop}
           style={{
             position: 'absolute',
-            top: CY - 90, left: CX - 90,
-            width: 180, height: 180,
+            top: CY - 60, left: CX - 60,
+            width: 120, height: 120,
             borderRadius: '50%',
             zIndex: 30,
             cursor: 'crosshair',
@@ -314,7 +308,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
         {selected.length === 0 && !dragOver && (
           <div style={{
             position: 'absolute',
-            top: CY + 100, left: '50%',
+            top: CY + 66, left: '50%',
             transform: 'translateX(-50%)',
             fontSize: 11, color: '#5A6A8A', fontWeight: 700,
             fontFamily: 'Nunito, sans-serif',
@@ -329,9 +323,9 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
       {/* ── Sélection active + création salon ── */}
       {selected.length > 0 && (
         <div style={{
-          width: '100%', maxWidth: 600,
-          marginTop: -40,
-          padding: '16px 20px',
+          width: '100%', maxWidth: 420,
+          marginTop: -20,
+          padding: '12px 16px',
           background: 'rgba(26,30,46,0.95)',
           backdropFilter: 'blur(12px)',
           borderRadius: 20,

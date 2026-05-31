@@ -142,7 +142,7 @@ export default function DiscoverPage({ user, onMessage }: Props) {
   }
 
   return (
-    <div style={{ minHeight: 'calc(100vh - 60px)', background: BG }}>
+    <div style={{ height: 'calc(100vh - 60px)', background: BG, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Notifications ── */}
       {matchName && (
@@ -163,51 +163,47 @@ export default function DiscoverPage({ user, onMessage }: Props) {
       {shareCtx && <ShareModal context={shareCtx} onClose={() => setShareCtx(null)} />}
 
       {/* ══════════════════════════════════════════════
-           SECTION 1 — VINYL GALAXY (création salon)
+           LAYOUT 3 COLONNES — tient sur une page
       ══════════════════════════════════════════════ */}
-      <div style={{
-        padding: '32px 24px 16px',
-        background: tk.isDark
-          ? 'radial-gradient(ellipse at 50% 30%, rgba(167,139,219,0.08) 0%, transparent 70%)'
-          : 'radial-gradient(ellipse at 50% 30%, rgba(224,122,154,0.05) 0%, transparent 70%)',
-        borderBottom: `1px solid ${BDR}`,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-      }}>
-        <div style={{ marginBottom: 12, textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: TXT, marginBottom: 2 }}>
-            🎛️ Créer un salon musical
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '460px 1fr 240px', overflow: 'hidden' }}>
+
+        {/* ── Colonne 1 : Vinyl Galaxy ── */}
+        <div style={{
+          borderRight: `1px solid ${BDR}`,
+          overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '16px 8px 16px',
+          background: tk.isDark
+            ? 'radial-gradient(ellipse at 50% 40%, rgba(167,139,219,0.07) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse at 50% 40%, rgba(224,122,154,0.05) 0%, transparent 70%)',
+        }}>
+          <div style={{ marginBottom: 8, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: TXT }}>🎛️ Créer un salon</div>
+            <div style={{ fontSize: 10, color: MUT, marginTop: 2 }}>Clique ou glisse un style sur le vinyle</div>
           </div>
-          <div style={{ fontSize: 11, color: MUT }}>
-            Clique ou glisse un style sur le vinyle · Les profils se filtrent en temps réel
-          </div>
+          <VinylGalaxy onCreateSalon={handleCreateSalon} onFilterChange={setGalaxyFilters} />
         </div>
-        <VinylGalaxy onCreateSalon={handleCreateSalon} onFilterChange={setGalaxyFilters} />
-      </div>
 
-      {/* ══════════════════════════════════════════════
-           SECTION 2 — GRILLE PROFILS + SIDEBAR
-      ══════════════════════════════════════════════ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 270px' }}>
+        {/* ── Colonne 2 : Profils ── */}
+        <div style={{ overflowY: 'auto', padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
-        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* En-tête grille + recherche profils */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', border: `0.5px solid ${BDR}`, borderRadius: 12, background: tk.inputBg }}>
-              <span style={{ fontSize: 15, color: MUT }}>🔍</span>
+          {/* Recherche profils */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', border: `0.5px solid ${BDR}`, borderRadius: 10, background: tk.inputBg }}>
+              <span style={{ fontSize: 13, color: MUT }}>🔍</span>
               <input
-                style={{ border: 'none', background: 'transparent', fontSize: 13, fontFamily: 'Nunito,sans-serif', outline: 'none', flex: 1, color: TXT }}
-                placeholder="Rechercher par nom, ville, instrument..."
+                style={{ border: 'none', background: 'transparent', fontSize: 12, fontFamily: 'Nunito,sans-serif', outline: 'none', flex: 1, color: TXT }}
+                placeholder="Nom, ville..."
                 value={searchProfiles}
                 onChange={e => setSearchProfiles(e.target.value)}
               />
             </div>
             {galaxyFilters.length > 0 && (
-              <div style={{ padding: '8px 14px', borderRadius: 12, background: 'rgba(167,139,219,0.12)', border: '1.5px solid rgba(167,139,219,0.3)', fontSize: 11, fontWeight: 800, color: '#A78BDB', whiteSpace: 'nowrap' }}>
-                🎛️ {galaxyFilters.length} filtre{galaxyFilters.length > 1 ? 's' : ''} actif{galaxyFilters.length > 1 ? 's' : ''}
+              <div style={{ padding: '6px 10px', borderRadius: 10, background: 'rgba(167,139,219,0.12)', border: '1px solid rgba(167,139,219,0.3)', fontSize: 10, fontWeight: 800, color: '#A78BDB', whiteSpace: 'nowrap' }}>
+                🎛️ {galaxyFilters.length}
               </div>
             )}
-            <div style={{ fontSize: 11, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 10, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
               {filteredProfiles.length} profil{filteredProfiles.length > 1 ? 's' : ''}
             </div>
           </div>
@@ -272,8 +268,8 @@ export default function DiscoverPage({ user, onMessage }: Props) {
           )}
         </div>
 
-        {/* ── Sidebar ── */}
-        <aside style={{ borderLeft: `0.5px solid ${BDR}`, padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 14, background: SURF }}>
+        {/* ── Colonne 3 : Sidebar ── */}
+        <aside style={{ borderLeft: `0.5px solid ${BDR}`, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 12, background: SURF, overflowY: 'auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>En ligne</div>
           {onlineProfiles.length === 0
             ? <div style={{ fontSize: 13, color: MUT }}>Personne en ligne</div>
