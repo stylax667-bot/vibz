@@ -218,13 +218,13 @@ export default function VinylMixCreator({ onClose, existingSalons, onCreateSalon
                 {/* Centre */}
                 <div style={{
                   position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)',
-                  width:40, height:40, borderRadius:'50%',
-                  background: selected.length > 0 ? `radial-gradient(circle at 40% 40%, ${firstColor}, #0d1117)` : '#1C2233',
-                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:18,
-                  boxShadow: selected.length > 0 ? `0 0 20px ${firstColor}88` : 'none',
-                  transition:'all 0.4s',
+                  width:44, height:44, borderRadius:'50%',
+                  background:'radial-gradient(circle at 38% 35%, #ff4040, #990000)',
+                  boxShadow:'0 2px 10px rgba(160,0,0,0.7), inset 0 1px 3px rgba(255,100,100,0.35)',
+                  display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:1,
                 }}>
-                  {selected.length > 0 ? '🎵' : '💿'}
+                  <div style={{ width:9, height:9, borderRadius:'50%', background:'#0a0a0a', boxShadow:'inset 0 1px 2px rgba(0,0,0,0.9)' }} />
+                  <span style={{ fontSize:6, fontWeight:900, color:'rgba(255,255,255,0.8)', fontFamily:'Nunito, sans-serif', letterSpacing:0.8, textTransform:'uppercase', lineHeight:1 }}>Vibz</span>
                 </div>
               </div>
 
