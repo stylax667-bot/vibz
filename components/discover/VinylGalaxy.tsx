@@ -341,11 +341,6 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
         </div>
 
         {/* Texte aide */}
-        {selected.length === 0 && !dragOver && (
-          <div style={{ position: 'absolute', top: CY + 66, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#4A5A7A', fontWeight: 700, fontFamily: font, textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-            Clique ou glisse sur le vinyle
-          </div>
-        )}
       </div>
 
       {/* ── Sélection + créer salon ── */}
