@@ -1,69 +1,35 @@
 import { useState, useEffect, useRef, useMemo, useCallback, useId } from 'react'
 
-// ── Catalogue complet : styles + instruments + intentions ─────────────────────
+// ── Styles musicaux uniquement ────────────────────────────────────────────────
 export const GALAXY_ITEMS = [
-  // Styles musicaux
-  { id:'rock',        label:'Rock',               emoji:'🎸', color:'#E8395A', cat:'Style'      },
-  { id:'metal',       label:'Métal',              emoji:'🤘', color:'#CC2200', cat:'Style'      },
-  { id:'punk',        label:'Punk · Hardcore',    emoji:'⚡', color:'#FF5722', cat:'Style'      },
-  { id:'grunge',      label:'Grunge',             emoji:'🌧️', color:'#795548', cat:'Style'      },
-  { id:'indie',       label:'Indie Rock',         emoji:'🌿', color:'#9C27B0', cat:'Style'      },
-  { id:'blues',       label:'Blues',              emoji:'🎵', color:'#1565C0', cat:'Style'      },
-  { id:'soul',        label:'Soul · Gospel',      emoji:'🎤', color:'#FF8F00', cat:'Style'      },
-  { id:'rnb',         label:'R&B · Funk',         emoji:'🕺', color:'#7B1FA2', cat:'Style'      },
-  { id:'disco',       label:'Disco · Groove',     emoji:'🪩', color:'#E91E63', cat:'Style'      },
-  { id:'house',       label:'House · Deep House', emoji:'🏠', color:'#FF4081', cat:'Style'      },
-  { id:'techno',      label:'Techno',             emoji:'🔊', color:'#546E7A', cat:'Style'      },
-  { id:'trance',      label:'Trance · Psytrance', emoji:'🌌', color:'#7C4DFF', cat:'Style'      },
-  { id:'dnb',         label:'Drum & Bass',        emoji:'🥁', color:'#FF6D00', cat:'Style'      },
-  { id:'dubstep',     label:'Dubstep · Bass',     emoji:'🔈', color:'#64DD17', cat:'Style'      },
-  { id:'ambient',     label:'Ambient · Drone',    emoji:'🌊', color:'#80CBC4', cat:'Style'      },
-  { id:'synthwave',   label:'Synthwave',          emoji:'🌆', color:'#CE93D8', cat:'Style'      },
-  { id:'lofi',        label:'Lo-fi · Chillhop',   emoji:'☁️', color:'#A5D6A7', cat:'Style'      },
-  { id:'trap',        label:'Trap · Cloud Rap',   emoji:'🎤', color:'#607D8B', cat:'Style'      },
-  { id:'pop',         label:'Pop · Dance Pop',    emoji:'🌸', color:'#F06292', cat:'Style'      },
-  { id:'kpop',        label:'K-Pop · J-Pop',      emoji:'💫', color:'#FF80AB', cat:'Style'      },
-  { id:'classique',   label:'Classique · Opéra',  emoji:'🎻', color:'#A1887F', cat:'Style'      },
-  { id:'folk',        label:'Folk · Acoustique',  emoji:'🪕', color:'#8BC34A', cat:'Style'      },
-  { id:'country',     label:'Country',            emoji:'🤠', color:'#FFA726', cat:'Style'      },
-  { id:'reggae',      label:'Reggae · Ska',       emoji:'🌴', color:'#4CAF50', cat:'Style'      },
-  { id:'latin',       label:'Latin · Bossa Nova', emoji:'💃', color:'#F44336', cat:'Style'      },
-  { id:'world',       label:'World · Afrobeat',   emoji:'🌍', color:'#E65100', cat:'Style'      },
-  { id:'jazz',        label:'Jazz',               emoji:'🎷', color:'#6BB8E8', cat:'Style'      },
-  { id:'hiphop',      label:'Hip-Hop',            emoji:'🎤', color:'#A78BDB', cat:'Style'      },
-  // Instruments
-  { id:'guit_e',      label:'Guitare électrique', emoji:'🎸', color:'#52C07A', cat:'Instrument' },
-  { id:'guit_a',      label:'Guitare acoustique', emoji:'🎸', color:'#6DBF6D', cat:'Instrument' },
-  { id:'basse',       label:'Guitare basse',      emoji:'🎸', color:'#3DAD7A', cat:'Instrument' },
-  { id:'violon',      label:'Violon · Alto',      emoji:'🎻', color:'#8BC34A', cat:'Instrument' },
-  { id:'violonc',     label:'Violoncelle',        emoji:'🎻', color:'#558B2F', cat:'Instrument' },
-  { id:'uke',         label:'Ukulélé · Banjo',    emoji:'🪕', color:'#9CCC65', cat:'Instrument' },
-  { id:'piano',       label:'Piano acoustique',   emoji:'🎹', color:'#29B6F6', cat:'Instrument' },
-  { id:'piano_d',     label:'Piano numérique',    emoji:'🎹', color:'#0288D1', cat:'Instrument' },
-  { id:'synth',       label:'Synthétiseur',       emoji:'🎛️', color:'#7C4DFF', cat:'Instrument' },
-  { id:'orgue',       label:'Orgue · Hammond',    emoji:'🎹', color:'#5E35B1', cat:'Instrument' },
-  { id:'acccordeon',  label:'Accordéon',          emoji:'🪗', color:'#AB47BC', cat:'Instrument' },
-  { id:'beatmaking',  label:'Beatmaking · MPC',   emoji:'🎧', color:'#8E24AA', cat:'Instrument' },
-  { id:'batt',        label:'Batterie acoustique',emoji:'🥁', color:'#EF5350', cat:'Instrument' },
-  { id:'batt_e',      label:'Batterie électro',   emoji:'🥁', color:'#E53935', cat:'Instrument' },
-  { id:'cajon',       label:'Cajon · Djembé',     emoji:'🪘', color:'#FF7043', cat:'Instrument' },
-  { id:'sax',         label:'Saxophone',          emoji:'🎷', color:'#FF8F00', cat:'Instrument' },
-  { id:'trompette',   label:'Trompette',          emoji:'🎺', color:'#FFA000', cat:'Instrument' },
-  { id:'clarinette',  label:'Clarinette',         emoji:'🎵', color:'#6D4C41', cat:'Instrument' },
-  { id:'flute',       label:'Flûte traversière',  emoji:'🎵', color:'#80CBC4', cat:'Instrument' },
-  { id:'chant_class', label:'Chant classique',    emoji:'🎤', color:'#EC407A', cat:'Instrument' },
-  { id:'chant_pop',   label:'Chant pop · Rock',   emoji:'🎤', color:'#E91E63', cat:'Instrument' },
-  { id:'rap',         label:'Rap · Slam',         emoji:'🎤', color:'#AD1457', cat:'Instrument' },
-  { id:'beatbox',     label:'Beatbox',            emoji:'🎤', color:'#880E4F', cat:'Instrument' },
-  { id:'choeurs',     label:'Chœurs · Harmonies', emoji:'🎶', color:'#F06292', cat:'Instrument' },
-  { id:'dj',          label:'DJ · Platines',      emoji:'🎧', color:'#546E7A', cat:'Instrument' },
-  { id:'prod',        label:'Producteur · DAW',   emoji:'💻', color:'#37474F', cat:'Instrument' },
-  // Intentions / rencontres
-  { id:'rencontre',   label:'Rencontre amoureuse',emoji:'💑', color:'#E07A9A', cat:'Intention'  },
-  { id:'collab',      label:'Collab musicale',    emoji:'🤝', color:'#52C07A', cat:'Intention'  },
-  { id:'amis',        label:'Amis · Réseau',      emoji:'👥', color:'#6BB8E8', cat:'Intention'  },
-  { id:'concert',     label:'Concert · Live',     emoji:'🎪', color:'#FF8F00', cat:'Intention'  },
-  { id:'studio',      label:'Session studio',     emoji:'🎙️', color:'#9C27B0', cat:'Intention'  },
+  { id:'rock',      label:'Rock',               emoji:'🎸', color:'#E8395A', cat:'Style' },
+  { id:'metal',     label:'Métal',              emoji:'🤘', color:'#CC2200', cat:'Style' },
+  { id:'punk',      label:'Punk · Hardcore',    emoji:'⚡', color:'#FF5722', cat:'Style' },
+  { id:'grunge',    label:'Grunge',             emoji:'🌧️', color:'#795548', cat:'Style' },
+  { id:'indie',     label:'Indie Rock',         emoji:'🌿', color:'#9C27B0', cat:'Style' },
+  { id:'blues',     label:'Blues',              emoji:'🎵', color:'#1565C0', cat:'Style' },
+  { id:'soul',      label:'Soul · Gospel',      emoji:'🎤', color:'#FF8F00', cat:'Style' },
+  { id:'rnb',       label:'R&B · Funk',         emoji:'🕺', color:'#7B1FA2', cat:'Style' },
+  { id:'disco',     label:'Disco · Groove',     emoji:'🪩', color:'#E91E63', cat:'Style' },
+  { id:'house',     label:'House · Deep House', emoji:'🏠', color:'#FF4081', cat:'Style' },
+  { id:'techno',    label:'Techno',             emoji:'🔊', color:'#546E7A', cat:'Style' },
+  { id:'trance',    label:'Trance · Psytrance', emoji:'🌌', color:'#7C4DFF', cat:'Style' },
+  { id:'dnb',       label:'Drum & Bass',        emoji:'🥁', color:'#FF6D00', cat:'Style' },
+  { id:'dubstep',   label:'Dubstep · Bass',     emoji:'🔈', color:'#64DD17', cat:'Style' },
+  { id:'ambient',   label:'Ambient · Drone',    emoji:'🌊', color:'#80CBC4', cat:'Style' },
+  { id:'synthwave', label:'Synthwave',          emoji:'🌆', color:'#CE93D8', cat:'Style' },
+  { id:'lofi',      label:'Lo-fi · Chillhop',   emoji:'☁️', color:'#A5D6A7', cat:'Style' },
+  { id:'trap',      label:'Trap · Cloud Rap',   emoji:'🎤', color:'#607D8B', cat:'Style' },
+  { id:'pop',       label:'Pop · Dance Pop',    emoji:'🌸', color:'#F06292', cat:'Style' },
+  { id:'kpop',      label:'K-Pop · J-Pop',      emoji:'💫', color:'#FF80AB', cat:'Style' },
+  { id:'classique', label:'Classique · Opéra',  emoji:'🎻', color:'#A1887F', cat:'Style' },
+  { id:'folk',      label:'Folk · Acoustique',  emoji:'🪕', color:'#8BC34A', cat:'Style' },
+  { id:'country',   label:'Country',            emoji:'🤠', color:'#FFA726', cat:'Style' },
+  { id:'reggae',    label:'Reggae · Ska',       emoji:'🌴', color:'#4CAF50', cat:'Style' },
+  { id:'latin',     label:'Latin · Bossa Nova', emoji:'💃', color:'#F44336', cat:'Style' },
+  { id:'world',     label:'World · Afrobeat',   emoji:'🌍', color:'#E65100', cat:'Style' },
+  { id:'jazz',      label:'Jazz',               emoji:'🎷', color:'#6BB8E8', cat:'Style' },
+  { id:'hiphop',    label:'Hip-Hop',            emoji:'🎤', color:'#A78BDB', cat:'Style' },
 ]
 
 // Distribue les items sur 3 anneaux — positions FIXES
@@ -305,20 +271,29 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
               }} />
             ))}
 
-            {/* Étiquette centrale */}
+            {/* Étiquette centrale — rouge vinyle authentique */}
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: 52, height: 52, borderRadius: '50%',
-              background: selected.length > 0
-                ? `radial-gradient(circle at 40% 40%, #E07A9A, #7B1FA2)`
-                : '#1C2233',
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'radial-gradient(circle at 38% 35%, #ff3a3a, #b00000)',
+              boxShadow: '0 2px 12px rgba(180,0,0,0.7), inset 0 1px 3px rgba(255,120,120,0.4)',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              fontSize: selected.length > 0 ? 20 : 14,
-              boxShadow: selected.length > 0 ? '0 0 24px rgba(224,122,154,0.8)' : 'none',
-              transition: 'all 0.4s',
+              gap: 1,
             }}>
-              {selected.length > 0 ? '🎵' : '💿'}
+              {/* Trou central du vinyle */}
+              <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                background: '#111',
+                boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.8)',
+                flexShrink: 0,
+              }} />
+              {/* Texte Vibz minuscule sur l'étiquette */}
+              <span style={{
+                fontSize: 7, fontWeight: 900, color: 'rgba(255,255,255,0.85)',
+                fontFamily: 'Nunito, sans-serif', letterSpacing: 1,
+                textTransform: 'uppercase', lineHeight: 1,
+              }}>Vibz</span>
             </div>
           </div>
 
