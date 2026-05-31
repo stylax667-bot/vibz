@@ -165,26 +165,9 @@ export default function DiscoverPage({ user, onMessage }: Props) {
       {/* ══════════════════════════════════════════════
            LAYOUT 3 COLONNES — tient sur une page
       ══════════════════════════════════════════════ */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '400px 1fr 220px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 400px 220px', overflow: 'hidden' }}>
 
-        {/* ── Colonne 1 : Vinyl Galaxy ── */}
-        <div style={{
-          borderRight: `1px solid ${BDR}`,
-          overflowY: 'auto',
-          display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '10px 6px 10px',
-          background: tk.isDark
-            ? 'radial-gradient(ellipse at 50% 40%, rgba(167,139,219,0.07) 0%, transparent 70%)'
-            : 'radial-gradient(ellipse at 50% 40%, rgba(224,122,154,0.05) 0%, transparent 70%)',
-        }}>
-          <div style={{ marginBottom: 8, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: TXT }}>🎛️ Créer un salon</div>
-            <div style={{ fontSize: 10, color: MUT, marginTop: 2 }}>Clique ou glisse un style sur le vinyle</div>
-          </div>
-          <VinylGalaxy onCreateSalon={handleCreateSalon} onFilterChange={setGalaxyFilters} />
-        </div>
-
-        {/* ── Colonne 2 : Profils ── */}
+        {/* ── Colonne 1 : Profils ── */}
         <div style={{ overflowY: 'auto', padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
           {/* Recherche profils */}
@@ -268,8 +251,25 @@ export default function DiscoverPage({ user, onMessage }: Props) {
           )}
         </div>
 
+        {/* ── Colonne 2 : Vinyl Galaxy (centre) ── */}
+        <div style={{
+          borderLeft: `1px solid ${BDR}`, borderRight: `1px solid ${BDR}`,
+          overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '14px 8px',
+          background: tk.isDark
+            ? 'radial-gradient(ellipse at 50% 45%, rgba(167,139,219,0.07) 0%, transparent 70%)'
+            : 'radial-gradient(ellipse at 50% 45%, rgba(224,122,154,0.05) 0%, transparent 70%)',
+        }}>
+          <div style={{ marginBottom: 6, textAlign: 'center' }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: TXT }}>🎛️ Créer un salon</div>
+            <div style={{ fontSize: 10, color: MUT, marginTop: 1 }}>Clique ou glisse sur le vinyle</div>
+          </div>
+          <VinylGalaxy onCreateSalon={handleCreateSalon} onFilterChange={setGalaxyFilters} />
+        </div>
+
         {/* ── Colonne 3 : Sidebar ── */}
-        <aside style={{ borderLeft: `0.5px solid ${BDR}`, padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 12, background: SURF, overflowY: 'auto' }}>
+        <aside style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: 12, background: SURF, overflowY: 'auto' }}>
           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>En ligne</div>
           {onlineProfiles.length === 0
             ? <div style={{ fontSize: 13, color: MUT }}>Personne en ligne</div>
