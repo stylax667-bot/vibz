@@ -39,7 +39,7 @@ function assignOrbits(items: typeof GALAXY_ITEMS) {
   const ringCap = [Math.ceil(items.length / 3), Math.ceil(items.length / 3), items.length]
   return items.map((item, i) => {
     const ring = i % 3
-    const radius = ring === 0 ? 100 : ring === 1 ? 148 : 192
+    const radius = ring === 0 ? 80 : ring === 1 ? 120 : 160
     // Angle fixe calculé une seule fois selon la position dans le catalogue global
     const globalIdx = GALAXY_ITEMS.findIndex(g => g.id === item.id)
     const countInRing = Math.ceil(GALAXY_ITEMS.length / 3)
@@ -122,7 +122,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
   const selectedItems = selected.map(id => GALAXY_ITEMS.find(i => i.id === id)).filter(Boolean) as typeof GALAXY_ITEMS
 
   // Taille du canvas compacte
-  const SIZE = 440
+  const SIZE = 370
   const CX = SIZE / 2
   const CY = SIZE / 2
 
@@ -150,7 +150,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
       <div style={{ position: 'relative', width: SIZE, height: SIZE, flexShrink: 0 }}>
 
         {/* Halos de fond */}
-        {[320, 240, 165].map((r, i) => (
+        {[175, 130, 90].map((r, i) => (
           <div key={r} style={{
             position: 'absolute',
             top: CY - r, left: CX - r,
@@ -183,7 +183,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
                 top: y,
                 transform: `translate(-50%, -50%) scale(${scale})`,
                 display: 'flex', alignItems: 'center', gap: 5,
-                padding: '5px 11px',
+                padding: '3px 8px',
                 borderRadius: 20,
                 cursor: 'pointer',
                 userSelect: 'none',
@@ -211,7 +211,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
                 boxShadow: `0 0 6px ${item.color}, 0 0 12px ${item.color}88`,
               }} />
               <span style={{
-                fontSize: 11, fontWeight: isSelected ? 800 : 600,
+                fontSize: 10, fontWeight: isSelected ? 800 : 600,
                 color: isSelected ? item.color : '#9BA8C0',
                 fontFamily: 'Nunito, sans-serif',
                 transition: 'color 0.15s',
@@ -232,8 +232,8 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
           onDrop={handleDrop}
           style={{
             position: 'absolute',
-            top: CY - 60, left: CX - 60,
-            width: 120, height: 120,
+            top: CY - 46, left: CX - 46,
+            width: 92, height: 92,
             borderRadius: '50%',
             zIndex: 30,
             cursor: 'crosshair',
@@ -308,7 +308,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
         {selected.length === 0 && !dragOver && (
           <div style={{
             position: 'absolute',
-            top: CY + 66, left: '50%',
+            top: CY + 50, left: '50%',
             transform: 'translateX(-50%)',
             fontSize: 11, color: '#5A6A8A', fontWeight: 700,
             fontFamily: 'Nunito, sans-serif',

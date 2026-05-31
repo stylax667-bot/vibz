@@ -165,14 +165,14 @@ export default function DiscoverPage({ user, onMessage }: Props) {
       {/* ══════════════════════════════════════════════
            LAYOUT 3 COLONNES — tient sur une page
       ══════════════════════════════════════════════ */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '460px 1fr 240px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '400px 1fr 220px', overflow: 'hidden' }}>
 
         {/* ── Colonne 1 : Vinyl Galaxy ── */}
         <div style={{
           borderRight: `1px solid ${BDR}`,
           overflowY: 'auto',
           display: 'flex', flexDirection: 'column', alignItems: 'center',
-          padding: '16px 8px 16px',
+          padding: '10px 6px 10px',
           background: tk.isDark
             ? 'radial-gradient(ellipse at 50% 40%, rgba(167,139,219,0.07) 0%, transparent 70%)'
             : 'radial-gradient(ellipse at 50% 40%, rgba(224,122,154,0.05) 0%, transparent 70%)',
