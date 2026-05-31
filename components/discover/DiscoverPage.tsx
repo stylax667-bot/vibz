@@ -165,7 +165,7 @@ export default function DiscoverPage({ user, onMessage }: Props) {
       {/* ══════════════════════════════════════════════
            LAYOUT 3 COLONNES — tient sur une page
       ══════════════════════════════════════════════ */}
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 400px 220px', overflow: 'hidden' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 520px 200px', overflow: 'hidden' }}>
 
         {/* ── Colonne 1 : Profils ── */}
         <div style={{ overflowY: 'auto', padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>

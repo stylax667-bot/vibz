@@ -84,7 +84,7 @@ function assignOrbits(items: (typeof GALAXY_STYLES)) {
     } else {
       ring = 2; posInRing = i - r0 - r1; countInRing = n - r0 - r1
     }
-    const radius = ring === 0 ? 82 : ring === 1 ? 130 : 175
+    const radius = ring === 0 ? 100 : ring === 1 ? 158 : 210
     // Décalage en quinconce entre anneaux pour éviter l'alignement radial
     const offset = ring === 1 ? Math.PI / r1 : ring === 2 ? Math.PI / (n - r0 - r1) * 0.5 : 0
     const angle = offset + (posInRing / countInRing) * Math.PI * 2 - Math.PI / 2
@@ -177,7 +177,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
     .map(id => GALAXY_ITEMS.find(i => i.id === id))
     .filter(Boolean) as typeof GALAXY_ITEMS
 
-  const SIZE = 390
+  const SIZE = 460
   const CX = SIZE / 2
   const CY = SIZE / 2
   const font = 'Nunito, sans-serif'
@@ -224,7 +224,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
       <div style={{ position: 'relative', width: SIZE, height: SIZE, flexShrink: 0 }}>
 
         {/* Halos */}
-        {[180, 135, 88].map((r, i) => (
+        {[218, 165, 106].map((r, i) => (
           <div key={r} style={{
             position: 'absolute',
             top: CY - r, left: CX - r,
@@ -291,8 +291,8 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
           onDrop={handleDrop}
           style={{
             position: 'absolute',
-            top: CY - 48, left: CX - 48,
-            width: 96, height: 96,
+            top: CY - 60, left: CX - 60,
+            width: 120, height: 120,
             borderRadius: '50%', zIndex: 30, cursor: 'crosshair',
             boxShadow: dragOver
               ? '0 0 50px rgba(224,122,154,0.9)'
@@ -324,7 +324,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
             <div style={{
               position: 'absolute', top: '50%', left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: 34, height: 34, borderRadius: '50%',
+              width: 42, height: 42, borderRadius: '50%',
               background: 'radial-gradient(circle at 38% 35%, #ff4040, #990000)',
               boxShadow: '0 2px 10px rgba(160,0,0,0.7), inset 0 1px 3px rgba(255,100,100,0.35)',
               display: 'flex', flexDirection: 'column',
@@ -342,7 +342,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
 
         {/* Texte aide */}
         {selected.length === 0 && !dragOver && (
-          <div style={{ position: 'absolute', top: CY + 52, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#4A5A7A', fontWeight: 700, fontFamily: font, textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
+          <div style={{ position: 'absolute', top: CY + 66, left: '50%', transform: 'translateX(-50%)', fontSize: 10, color: '#4A5A7A', fontWeight: 700, fontFamily: font, textAlign: 'center', whiteSpace: 'nowrap', pointerEvents: 'none' }}>
             Clique ou glisse sur le vinyle
           </div>
         )}
