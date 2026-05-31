@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, useId } from 'react'
 
 // ── Catalogue complet : styles + instruments + intentions ─────────────────────
 export const GALAXY_ITEMS = [
@@ -66,14 +66,20 @@ export const GALAXY_ITEMS = [
   { id:'studio',      label:'Session studio',     emoji:'🎙️', color:'#9C27B0', cat:'Intention'  },
 ]
 
-// Distribue les items sur 3 anneaux orbitaux
+// Distribue les items sur 3 anneaux — positions FIXES
 function assignOrbits(items: typeof GALAXY_ITEMS) {
+  // Compte par anneau
+  const rings = [0, 0, 0]
+  const ringCap = [Math.ceil(items.length / 3), Math.ceil(items.length / 3), items.length]
   return items.map((item, i) => {
     const ring = i % 3
     const radius = ring === 0 ? 155 : ring === 1 ? 220 : 285
-    const speed = ring === 0 ? 0.18 : ring === 1 ? 0.12 : 0.08
-    const offset = (i / items.length) * Math.PI * 2
-    return { ...item, radius, speed, offset }
+    // Angle fixe calculé une seule fois selon la position dans le catalogue global
+    const globalIdx = GALAXY_ITEMS.findIndex(g => g.id === item.id)
+    const countInRing = Math.ceil(GALAXY_ITEMS.length / 3)
+    const posInRing = Math.floor(globalIdx / 3)
+    const angle = (posInRing / countInRing) * Math.PI * 2 - Math.PI / 2
+    return { ...item, radius, angle }
   })
 }
 
@@ -87,25 +93,27 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
   const [selected, setSelected] = useState<string[]>([])
   const [dragOver, setDragOver] = useState(false)
   const [salonName, setSalonName] = useState('')
-  const [angleTime, setAngleTime] = useState(0)
+  const [vinylAngle, setVinylAngle] = useState(0)   // seul le vinyle tourne
   const [hovered, setHovered] = useState<string | null>(null)
   const [showNameInput, setShowNameInput] = useState(false)
   const rafRef = useRef<number>(0)
   const lastRef = useRef<number>(0)
 
-  // Animation RAF
+  // Animation RAF — uniquement pour le disque vinyle
   useEffect(() => {
+    const speed = selected.length > 0 ? 40 : 8   // tourne plus vite si sélection
     const animate = (ts: number) => {
       if (lastRef.current) {
         const dt = (ts - lastRef.current) / 1000
-        setAngleTime(a => a + dt)
+        setVinylAngle(a => (a + speed * dt) % 360)
       }
       lastRef.current = ts
       rafRef.current = requestAnimationFrame(animate)
     }
+    lastRef.current = 0
     rafRef.current = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(rafRef.current)
-  }, [])
+  }, [selected.length])
 
   // Filtrage des items
   const filtered = useMemo(() => {
@@ -152,8 +160,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
   const CX = SIZE / 2
   const CY = SIZE / 2
 
-  // Vitesse rotation vinyle
-  const vinylAngle = selected.length > 0 ? angleTime * 30 : angleTime * 6
+  // (vinylAngle est géré dans le state via RAF)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, width: '100%', position: 'relative' }}>
@@ -194,11 +201,10 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange }: Props) {
           }} />
         ))}
 
-        {/* Bulles orbitales */}
+        {/* Bulles — positions FIXES autour du vinyle */}
         {orbitItems.map(item => {
-          const a = item.offset + angleTime * item.speed
-          const x = CX + item.radius * Math.cos(a)
-          const y = CY + item.radius * Math.sin(a)
+          const x = CX + item.radius * Math.cos(item.angle)
+          const y = CY + item.radius * Math.sin(item.angle)
           const isSelected = selected.includes(item.id)
           const isHovered = hovered === item.id
           const scale = isSelected ? 1.15 : isHovered ? 1.08 : 1
