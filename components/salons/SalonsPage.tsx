@@ -302,12 +302,12 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
     }
     setMixSalons(p => [...p, newMix])
     // Ouvrir le salon créé
-    selectSalon({ id: newMix.id, icon:'🎛️', name: newMix.name, count:1, cat:'Mix', branch:'🎛️ Salons Mix', color: newMix.color, hasMod: true })
+    selectSalon({ id: newMix.id, icon:'🎛️', name: newMix.name, count:1, cat:'Mix', color: newMix.color, hasMod: true })
   }
 
   const handleJoinMixSalon = (mix: MixSalon) => {
     setMixSalons(p => p.map(s => s.id === mix.id ? { ...s, memberCount: s.memberCount + 1 } : s))
-    selectSalon({ id: mix.id, icon:'🎛️', name: mix.name, count: mix.memberCount + 1, cat:'Mix', branch:'🎛️ Salons Mix', color: mix.color, hasMod: true })
+    selectSalon({ id: mix.id, icon:'🎛️', name: mix.name, count: mix.memberCount + 1, cat:'Mix', color: mix.color, hasMod: true })
   }
 
   useEffect(() => {
@@ -557,7 +557,7 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
                     </div>
                     <div
                       style={{ flex:1, padding:'7px 8px', borderRadius:10, border: active ? `1.5px solid ${s.color}` : '1.5px solid transparent', background: active ? `${s.color}13` : 'transparent', cursor:'pointer', transition:'all 0.1s' }}
-                      onClick={() => selectSalon(s)}
+                      onClick={() => selectSalon({ id: s.id, icon:'🎛️', name: s.name, count: s.memberCount, cat:'Mix', color: s.color, hasMod: s.hasMod })}
                     >
                       <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
                         <span style={{ fontSize:14 }}>🎛️</span>

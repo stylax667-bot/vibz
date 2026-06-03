@@ -5,7 +5,7 @@ import { useTheme } from '../../lib/theme'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
-import VinylGalaxy, { GALAXY_ITEMS } from './VinylGalaxy'
+import VinylGalaxy, { GALAXY_ITEMS, GALAXY_STYLES } from './VinylGalaxy'
 
 interface Props { user: User; onMessage: () => void }
 
@@ -111,21 +111,13 @@ export default function DiscoverPage({ user, onMessage }: Props) {
     }
     // Filtres galaxy sélectionnés
     if (galaxyFilters.length === 0) return true
-    const selectedItems = galaxyFilters.map(id => GALAXY_ITEMS.find(i => i.id === id)).filter(Boolean)
+    const styleIds = new Set(GALAXY_STYLES.map(s => s.id))
+    const selectedItems = galaxyFilters.map(id => GALAXY_ITEMS.find(i => i.id === id)).filter((x): x is NonNullable<typeof x> => !!x)
     return selectedItems.some(item => {
-      if (!item) return false
-      if (item.cat === 'Style') {
+      if (styleIds.has(item.id)) {
         return (p.music_genres || []).some(g => g.toLowerCase().includes(item.label.toLowerCase().split(' ')[0]))
       }
-      if (item.cat === 'Instrument') {
-        return (p.instruments || []).some(inst => inst.toLowerCase().includes(item.label.toLowerCase().split(' ')[0]))
-      }
-      if (item.cat === 'Intention') {
-        if (item.id === 'rencontre') return (p.looking_for || []).includes('rencontre')
-        if (item.id === 'collab') return (p.looking_for || []).includes('collab')
-        if (item.id === 'amis') return (p.looking_for || []).includes('amis')
-      }
-      return true
+      return (p.instruments || []).some(inst => inst.toLowerCase().includes(item.label.toLowerCase().split(' ')[0]))
     })
   })
 

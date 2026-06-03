@@ -152,15 +152,17 @@ export default function MessengerPage({ user }: Props) {
     <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
       <div style={{
         width:size, height:size, borderRadius:'50%', fontSize:size*0.5,
-        background:'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
-        border:'2px solid #EEF2FA',
+        background: tk.isDark
+          ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})`
+          : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
+        border: `2px solid ${BDR}`,
         display:'flex', alignItems:'center', justifyContent:'center',
       }}>{avatar}</div>
       <div style={{
         position:'absolute', bottom:0, right:0,
         width:10, height:10, borderRadius:'50%',
         background: statusColor(status),
-        border:'2px solid white',
+        border: `2px solid ${SURF}`,
         boxShadow:'0 1px 3px rgba(0,0,0,0.15)',
       }}/>
     </div>
