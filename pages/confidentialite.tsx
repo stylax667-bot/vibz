@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import { useState, useEffect } from 'react'
+import { useTheme } from '../lib/theme'
 
 const pink  = '#E07A9A'
 const green = '#52C07A'
@@ -24,6 +25,7 @@ const SECTIONS = [
 ]
 
 export default function Confidentialite() {
+  const { theme: tk } = useTheme()
   const [active, setActive]     = useState('intro')
   const [scrolled, setScrolled] = useState(false)
 
@@ -39,22 +41,22 @@ export default function Confidentialite() {
   }
 
   /* ── Styles utilitaires ────────────────────────────────────────────────── */
-  const prose: React.CSSProperties = { fontFamily: font, fontSize: 14, lineHeight: 1.9, color: '#1A1E2E' }
+  const prose: React.CSSProperties = { fontFamily: font, fontSize: 14, lineHeight: 1.9, color: tk.text }
 
   const h2: React.CSSProperties = {
-    fontSize: 19, fontWeight: 800, color: '#1A1E2E',
+    fontSize: 19, fontWeight: 800, color: tk.text,
     marginBottom: 12, marginTop: 0,
     display: 'flex', alignItems: 'center', gap: 10,
-    paddingBottom: 10, borderBottom: '1.5px solid #EEF2FA',
+    paddingBottom: 10, borderBottom: `1.5px solid ${tk.border}`,
   }
 
   const h3: React.CSSProperties = {
-    fontSize: 14, fontWeight: 800, color: '#1A1E2E',
+    fontSize: 14, fontWeight: 800, color: tk.text,
     marginBottom: 8, marginTop: 20,
   }
 
   const card: React.CSSProperties = {
-    background: 'white', border: '1.5px solid #EEF2FA',
+    background: tk.surface, border: `1.5px solid ${tk.border}`,
     borderRadius: 20, padding: '28px 32px', marginBottom: 24,
     scrollMarginTop: 90,
   }
@@ -85,9 +87,9 @@ export default function Confidentialite() {
   )
 
   const dataRow = (name: string, why: string, base: string, retention: string) => (
-    <tr style={{ borderBottom: '1px solid #F0F2F8' }}>
-      <td style={{ padding: '9px 12px', fontWeight: 700, fontSize: 12 }}>{name}</td>
-      <td style={{ padding: '9px 12px', fontSize: 12, color: '#4A5470' }}>{why}</td>
+    <tr style={{ borderBottom: `1px solid ${tk.border}` }}>
+      <td style={{ padding: '9px 12px', fontWeight: 700, fontSize: 12, color: tk.text }}>{name}</td>
+      <td style={{ padding: '9px 12px', fontSize: 12, color: tk.textSub }}>{why}</td>
       <td style={{ padding: '9px 12px' }}>
         <span style={{ fontSize: 11, fontWeight: 800, padding: '2px 8px', borderRadius: 10, background: `${blue}18`, color: '#2A6090' }}>{base}</span>
       </td>
@@ -110,16 +112,16 @@ export default function Confidentialite() {
         <meta name="description" content="Politique de confidentialité renforcée de Vibz. RGPD, protection des données, VibzGuard, droits des utilisateurs." />
       </Head>
 
-      <div style={{ minHeight: '100vh', background: '#F8FBFF', fontFamily: font }}>
+      <div style={{ minHeight: '100vh', background: tk.bg2, fontFamily: font }}>
 
         {/* ── Header ── */}
         <div style={{
-          background: 'white',
-          borderBottom: '1.5px solid #EEF2FA',
+          background: tk.navBg,
+          borderBottom: `1.5px solid ${tk.border}`,
           padding: '15px 32px',
           display: 'flex', alignItems: 'center', gap: 16,
           position: 'sticky', top: 0, zIndex: 100,
-          boxShadow: scrolled ? '0 4px 20px rgba(107,184,232,0.10)' : 'none',
+          boxShadow: scrolled ? `0 4px 20px ${tk.shadow}` : 'none',
           transition: 'box-shadow 0.2s',
         }}>
           <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>

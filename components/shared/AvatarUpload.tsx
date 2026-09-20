@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useTheme } from '../../lib/theme'
 
 interface Props {
   userId: string
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function AvatarUpload({ userId, currentUrl, displayName, onUpload }: Props) {
+  const { theme: tk } = useTheme()
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -55,8 +57,8 @@ export default function AvatarUpload({ userId, currentUrl, displayName, onUpload
         onClick={() => !uploading && inputRef.current?.click()}
         style={{
           width: 80, height: 80, borderRadius: '50%', cursor: uploading ? 'wait' : 'pointer',
-          background: currentUrl ? 'transparent' : '#FDE8F2',
-          border: '2px solid #C4547A',
+          background: currentUrl ? 'transparent' : tk.pinkLight,
+          border: `2px solid ${tk.pink}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           overflow: 'hidden', position: 'relative', flexShrink: 0,
         }}
@@ -64,7 +66,7 @@ export default function AvatarUpload({ userId, currentUrl, displayName, onUpload
         {currentUrl ? (
           <img src={currentUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <span style={{ fontSize: 26, fontWeight: 800, color: '#C4547A' }}>{initials}</span>
+          <span style={{ fontSize: 26, fontWeight: 800, color: tk.pink }}>{initials}</span>
         )}
         <div style={{
           position: 'absolute', bottom: 0, left: 0, right: 0,

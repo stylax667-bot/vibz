@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import { useState } from 'react'
+import { useTheme } from '../lib/theme'
 
 const pink  = '#E07A9A'
 const green = '#52C07A'
@@ -22,6 +23,7 @@ const SECTIONS = [
 ]
 
 export default function Conditions() {
+  const { theme: tk } = useTheme()
   const [active, setActive] = useState('preambule')
 
   const scrollTo = (id: string) => {
@@ -33,13 +35,13 @@ export default function Conditions() {
     fontFamily: font,
     fontSize: 14,
     lineHeight: 1.85,
-    color: '#1A1E2E',
+    color: tk.text,
   }
 
   const h2Style: React.CSSProperties = {
     fontSize: 18,
     fontWeight: 800,
-    color: '#1A1E2E',
+    color: tk.text,
     marginBottom: 10,
     marginTop: 0,
     display: 'flex',
@@ -50,7 +52,7 @@ export default function Conditions() {
   const h3Style: React.CSSProperties = {
     fontSize: 14,
     fontWeight: 800,
-    color: '#1A1E2E',
+    color: tk.text,
     marginBottom: 6,
     marginTop: 18,
   }
@@ -68,7 +70,7 @@ export default function Conditions() {
   })
 
   const art = (id: string, icon: string, title: string, children: React.ReactNode) => (
-    <article id={id} style={{ background: 'white', border: '1.5px solid #EEF2FA', borderRadius: 20, padding: '28px 32px', marginBottom: 24, scrollMarginTop: 80 }}>
+    <article id={id} style={{ background: tk.surface, border: `1.5px solid ${tk.border}`, borderRadius: 20, padding: '28px 32px', marginBottom: 24, scrollMarginTop: 80 }}>
       <h2 style={h2Style}><span style={{ fontSize: 22 }}>{icon}</span>{title}</h2>
       <div style={s}>{children}</div>
     </article>
@@ -91,12 +93,12 @@ export default function Conditions() {
         <meta name="description" content="Conditions Générales d'Utilisation de la plateforme Vibz. Charte comportementale, IA Guard, protection des données et des mineurs." />
       </Head>
 
-      <div style={{ minHeight: '100vh', background: '#F8FBFF', fontFamily: font }}>
+      <div style={{ minHeight: '100vh', background: tk.bg2, fontFamily: font }}>
 
         {/* ── Header ── */}
         <div style={{
-          background: 'white',
-          borderBottom: '1.5px solid #EEF2FA',
+          background: tk.navBg,
+          borderBottom: `1.5px solid ${tk.border}`,
           padding: '16px 32px',
           display: 'flex',
           alignItems: 'center',
@@ -104,17 +106,17 @@ export default function Conditions() {
           position: 'sticky',
           top: 0,
           zIndex: 100,
-          boxShadow: '0 2px 12px rgba(107,184,232,0.08)',
+          boxShadow: `0 2px 12px ${tk.shadow}`,
         }}>
           <a href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 28 }}>🦋</span>
-            <span style={{ fontSize: 18, fontWeight: 800, color: '#1A1E2E' }}>
+            <span style={{ fontSize: 18, fontWeight: 800, color: tk.text }}>
               Vib<span style={{ color: pink }}>z</span>
             </span>
           </a>
-          <div style={{ width: 1, height: 24, background: '#EEF2FA' }} />
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#9BA8C0' }}>Conditions Générales d&apos;Utilisation</div>
-          <div style={{ marginLeft: 'auto', fontSize: 11, color: '#9BA8C0', fontWeight: 600 }}>
+          <div style={{ width: 1, height: 24, background: tk.border }} />
+          <div style={{ fontSize: 13, fontWeight: 700, color: tk.textMuted }}>Conditions Générales d&apos;Utilisation</div>
+          <div style={{ marginLeft: 'auto', fontSize: 11, color: tk.textMuted, fontWeight: 600 }}>
             Version 1.0 — Mai 2026
           </div>
         </div>
@@ -122,8 +124,8 @@ export default function Conditions() {
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: 32, alignItems: 'start' }}>
 
           {/* ── Sommaire sticky ── */}
-          <nav style={{ position: 'sticky', top: 80, background: 'white', border: '1.5px solid #EEF2FA', borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#9BA8C0', letterSpacing: 1, marginBottom: 10, textTransform: 'uppercase' }}>Sommaire</div>
+          <nav style={{ position: 'sticky', top: 80, background: tk.surface, border: `1.5px solid ${tk.border}`, borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: tk.textMuted, letterSpacing: 1, marginBottom: 10, textTransform: 'uppercase' }}>Sommaire</div>
             {SECTIONS.map(sec => (
               <button
                 key={sec.id}
@@ -136,7 +138,7 @@ export default function Conditions() {
                   borderRadius: 10,
                   border: 'none',
                   background: active === sec.id ? `${pink}12` : 'transparent',
-                  color: active === sec.id ? pink : '#6B7A9A',
+                  color: active === sec.id ? pink : tk.textSub,
                   fontFamily: font,
                   fontSize: 12,
                   fontWeight: active === sec.id ? 800 : 600,
@@ -170,14 +172,14 @@ export default function Conditions() {
               textAlign: 'center',
             }}>
               <div style={{ fontSize: 36, marginBottom: 8 }}>🦋</div>
-              <div style={{ fontSize: 22, fontWeight: 800, color: '#1A1E2E', marginBottom: 6 }}>
+              <div style={{ fontSize: 22, fontWeight: 800, color: tk.text, marginBottom: 6 }}>
                 Conditions Générales d&apos;Utilisation — Vibz
               </div>
               <div style={{ fontSize: 13, color: '#9BA8C0', lineHeight: 1.7, maxWidth: 560, margin: '0 auto' }}>
                 Ces conditions définissent les règles de vie de la communauté Vibz.
-                Elles sont <strong style={{ color: '#1A1E2E' }}>contractuelles</strong> et s&apos;appliquent à chaque membre,
+                Elles sont <strong style={{ color: tk.text }}>contractuelles</strong> et s&apos;appliquent à chaque membre,
                 visiteur et tout contenu publié sur la plateforme.
-                L&apos;IA Guard veille à leur application <strong style={{ color: '#1A1E2E' }}>24h/24, 7j/7, sans exception.</strong>
+                L&apos;IA Guard veille à leur application <strong style={{ color: tk.text }}>24h/24, 7j/7, sans exception.</strong>
               </div>
             </div>
 
@@ -384,9 +386,9 @@ export default function Conditions() {
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
-                      <tr style={{ background: '#F8FBFF' }}>
+                      <tr style={{ background: tk.bg2 }}>
                         {['Infraction', 'Sanction automatique (IA)', 'Sanction humaine possible'].map(h => (
-                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 800, color: '#9BA8C0', fontSize: 11, letterSpacing: 0.5, borderBottom: '1.5px solid #EEF2FA' }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 800, color: tk.textMuted, fontSize: 11, letterSpacing: 0.5, borderBottom: `1.5px solid ${tk.border}` }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -402,10 +404,10 @@ export default function Conditions() {
                         ['Usurpation d\'identité', 'Suspension préventive', 'Exclusion définitive'],
                         ['Multi-compte après exclusion', 'Détection + blocage', 'Exclusion définitive de tous les comptes'],
                       ].map(([inf, ia, hum], i) => (
-                        <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#F8FBFF' }}>
-                          <td style={{ padding: '10px 14px', borderBottom: '1px solid #F0F2F8', fontWeight: 600 }}>{inf}</td>
-                          <td style={{ padding: '10px 14px', borderBottom: '1px solid #F0F2F8', color: '#C07040' }}>{ia}</td>
-                          <td style={{ padding: '10px 14px', borderBottom: '1px solid #F0F2F8', color: '#7A1F40', fontWeight: ia === '—' ? 400 : 700 }}>{hum}</td>
+                        <tr key={i} style={{ background: i % 2 === 0 ? tk.surface : tk.bg2 }}>
+                          <td style={{ padding: '10px 14px', borderBottom: `1px solid ${tk.border}`, fontWeight: 600, color: tk.text }}>{inf}</td>
+                          <td style={{ padding: '10px 14px', borderBottom: `1px solid ${tk.border}`, color: '#C07040' }}>{ia}</td>
+                          <td style={{ padding: '10px 14px', borderBottom: `1px solid ${tk.border}`, color: tk.isDark ? '#F4AABF' : '#7A1F40', fontWeight: ia === '—' ? 400 : 700 }}>{hum}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -501,9 +503,9 @@ export default function Conditions() {
                     { label: '📞 0800 05 95 95', desc: 'Net Écoute — cyberharcèlement' },
                     { label: '🌐 cybermalveillance.gouv.fr', desc: 'Plateforme officielle' },
                   ].map(r => (
-                    <div key={r.label} style={{ padding: '12px 16px', background: '#F8FBFF', borderRadius: 12, border: '1.5px solid #EEF2FA' }}>
-                      <div style={{ fontWeight: 800, fontSize: 13, color: '#1A1E2E', marginBottom: 3 }}>{r.label}</div>
-                      <div style={{ fontSize: 12, color: '#9BA8C0' }}>{r.desc}</div>
+                    <div key={r.label} style={{ padding: '12px 16px', background: tk.surface2, borderRadius: 12, border: `1.5px solid ${tk.border}` }}>
+                      <div style={{ fontWeight: 800, fontSize: 13, color: tk.text, marginBottom: 3 }}>{r.label}</div>
+                      <div style={{ fontSize: 12, color: tk.textMuted }}>{r.desc}</div>
                     </div>
                   ))}
                 </div>
@@ -542,7 +544,7 @@ export default function Conditions() {
               textAlign: 'center',
             }}>
               <div style={{ fontSize: 28, marginBottom: 8 }}>🦋</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: '#1A1E2E', marginBottom: 8 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: tk.text, marginBottom: 8 }}>
                 En utilisant Vibz, vous acceptez ces conditions.
               </div>
               <div style={{ fontSize: 13, color: '#9BA8C0', lineHeight: 1.7, marginBottom: 20 }}>

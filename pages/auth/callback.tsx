@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
+import { useTheme } from '../../lib/theme'
 
 export default function AuthCallback() {
+  const { theme: tk } = useTheme()
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
 
@@ -29,15 +31,15 @@ export default function AuthCallback() {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: font, background: 'linear-gradient(150deg,#FFD6E8 0%,#FAFFFE 48%,#BDEABD 100%)',
+        fontFamily: font, background: tk.bg2,
         padding: 20,
       }}>
         <div style={{ textAlign: 'center', maxWidth: 360 }}>
           <div style={{ fontSize: 40, marginBottom: 16 }}>⚠️</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#D4537E', marginBottom: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: tk.pink, marginBottom: 8 }}>
             Échec de la connexion
           </div>
-          <div style={{ fontSize: 13, color: '#9B7A8A', marginBottom: 24, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 13, color: tk.textMuted, marginBottom: 24, lineHeight: 1.6 }}>
             {error}
           </div>
           <button
@@ -62,8 +64,8 @@ export default function AuthCallback() {
     }}>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 40, marginBottom: 16 }}>🔐</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: '#D4537E' }}>Connexion en cours…</div>
-        <div style={{ fontSize: 13, color: '#9B7A8A', marginTop: 8 }}>Vérification de votre compte</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: tk.pink }}>Connexion en cours…</div>
+        <div style={{ fontSize: 13, color: tk.textMuted, marginTop: 8 }}>Vérification de votre compte</div>
       </div>
     </div>
   )
