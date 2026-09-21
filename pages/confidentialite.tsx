@@ -238,8 +238,8 @@ export default function Confidentialite() {
                   {[
                     { label: 'Entité', value: 'Vibz (structure en cours d\'immatriculation)' },
                     { label: 'Siège social', value: 'France' },
-                    { label: 'DPO (Délégué Protection Données)', value: 'dpo@vibz.app' },
-                    { label: 'Contact juridique', value: 'legal@vibz.app' },
+                    { label: 'DPO (Délégué Protection Données)', value: 'michael_chesne@outlook.fr' },
+                    { label: 'Contact juridique', value: 'michael_chesne@outlook.fr' },
                     { label: 'Hébergeur données', value: 'Supabase Inc. (serveurs UE — Frankfurt)' },
                     { label: 'Droit applicable', value: 'Droit français — RGPD' },
                   ].map(r => (
@@ -412,7 +412,7 @@ export default function Confidentialite() {
                 <p>
                   Conformément à l&apos;article 22 du RGPD, toute décision automatisée impactant significativement
                   un membre (suspension, blocage de compte) peut faire l&apos;objet d&apos;une demande d&apos;explication et
-                  d&apos;une revue humaine via <strong>appeal@vibz.app</strong>.
+                  d&apos;une revue humaine via <strong>michael_chesne@outlook.fr</strong>.
                 </p>
 
                 <h3 style={h3}>6.4 Conservation des données de modération</h3>
@@ -593,7 +593,7 @@ export default function Confidentialite() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                   {[
                     { icon: '⚙️', label: 'Via les paramètres', desc: 'Profil → Confidentialité → Mes données' },
-                    { icon: '📧', label: 'Par email', desc: 'privacy@vibz.app — réponse sous 30j' },
+                    { icon: '📧', label: 'Par email', desc: 'michael_chesne@outlook.fr — réponse sous 30j' },
                     { icon: '🏛️', label: 'Réclamation CNIL', desc: 'cnil.fr si réponse insatisfaisante' },
                   ].map(c => (
                     <div key={c.label} style={{ padding: '14px', background: '#F8FBFF', borderRadius: 12, border: '1.5px solid #EEF2FA', textAlign: 'center' }}>
@@ -656,7 +656,7 @@ export default function Confidentialite() {
 
                 {ul(
                   'Si Vibz constate qu\'un compte appartient à un mineur, le compte est immédiatement suspendu et toutes les données associées supprimées dans les 48h.',
-                  'Le parent ou tuteur légal d\'un mineur ayant utilisé Vibz peut contacter privacy@vibz.app pour demander la suppression immédiate de toutes les données.',
+                  'Le parent ou tuteur légal d\'un mineur ayant utilisé Vibz peut contacter michael_chesne@outlook.fr pour demander la suppression immédiate de toutes les données.',
                   <>Vibz ne collecte aucune donnée relevant des catégories spéciales au sens de l&apos;art. 9 RGPD (santé, religion, opinions politiques, orientation sexuelle, données biométriques) — sauf consentement explicite et déclaratif du membre pour son orientation sexuelle dans le cadre des préférences de rencontre.</>,
                 )}
               </>
@@ -694,10 +694,10 @@ export default function Confidentialite() {
               <>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
                   {[
-                    { icon: '🔒', label: 'Données & vie privée', email: 'privacy@vibz.app', delai: '30 jours max' },
-                    { icon: '🛡️', label: 'DPO (Délégué Protection Données)', email: 'dpo@vibz.app', delai: '30 jours max' },
-                    { icon: '⚖️', label: 'Juridique & RGPD', email: 'legal@vibz.app', delai: '15 jours ouvrés' },
-                    { icon: '🚨', label: 'Recours modération', email: 'appeal@vibz.app', delai: '72h pour suspensions' },
+                    { icon: '🔒', label: 'Données & vie privée', email: 'michael_chesne@outlook.fr', delai: '30 jours max' },
+                    { icon: '🛡️', label: 'DPO (Délégué Protection Données)', email: 'michael_chesne@outlook.fr', delai: '30 jours max' },
+                    { icon: '⚖️', label: 'Juridique & RGPD', email: 'michael_chesne@outlook.fr', delai: '15 jours ouvrés' },
+                    { icon: '🚨', label: 'Recours modération', email: 'michael_chesne@outlook.fr', delai: '72h pour suspensions' },
                   ].map(c => (
                     <div key={c.label} style={{ padding: '16px', background: '#F8FBFF', borderRadius: 14, border: '1.5px solid #EEF2FA' }}>
                       <div style={{ fontSize: 22, marginBottom: 6 }}>{c.icon}</div>
@@ -723,7 +723,7 @@ export default function Confidentialite() {
                 <div style={{ marginTop: 18, padding: '14px 18px', background: `${green}10`, borderRadius: 12, border: `1.5px solid ${green}33`, fontSize: 12, color: '#2A7A4A', fontWeight: 700, lineHeight: 1.75 }}>
                   📅 <strong>Version :</strong> 1.0 — Mai 2026<br />
                   🔄 <strong>Prochaine révision prévue :</strong> Novembre 2026<br />
-                  📋 <strong>Historique des versions :</strong> disponible sur demande à legal@vibz.app
+                  📋 <strong>Historique des versions :</strong> disponible sur demande à michael_chesne@outlook.fr
                 </div>
               </>
             )}

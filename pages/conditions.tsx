@@ -333,7 +333,7 @@ export default function Conditions() {
                   <><strong>Droit à la portabilité</strong> : vous pouvez exporter vos données dans un format standard.</>,
                   <><strong>Droit d&apos;opposition</strong> : vous pouvez vous opposer à tout traitement de vos données.</>,
                 ])}
-                <p>Pour exercer vos droits : <strong>privacy@vibz.app</strong> — voir aussi notre{' '}
+                <p>Pour exercer vos droits : <strong>michael_chesne@outlook.fr</strong> — voir aussi notre{' '}
                   <a href="/confidentialite" style={{ color: blue, fontWeight: 800 }}>Politique de Confidentialité complète →</a>
                 </p>
 
@@ -416,7 +416,7 @@ export default function Conditions() {
 
                 <h3 style={h3Style}>7.2 Recours</h3>
                 {ul([
-                  'Toute suspension peut faire l\'objet d\'une contestation dans les 72 heures via appeal@vibz.app.',
+                  'Toute suspension peut faire l\'objet d\'une contestation dans les 72 heures via michael_chesne@outlook.fr.',
                   'Les exclusions définitives pour harcèlement avéré, contenu pédopornographique ou menaces physiques ne peuvent pas faire l\'objet d\'un recours.',
                   'Vibz n\'est pas tenu de restituer les données d\'un compte exclu pour faute grave.',
                 ])}
@@ -484,7 +484,7 @@ export default function Conditions() {
                 <h3 style={h3Style}>11.1 Comment signaler un comportement</h3>
                 {ul([
                   'Bouton "Signaler" disponible sur chaque message, profil et conversation.',
-                  'Email de modération : moderation@vibz.app (réponse sous 48h ouvrées).',
+                  'Email de modération : michael_chesne@outlook.fr (réponse sous 48h ouvrées).',
                   'En cas d\'urgence (menace physique immédiate) : contactez directement le 17 (Police) ou le 3114 (numéro national de prévention du suicide).',
                 ])}
 
@@ -528,9 +528,9 @@ export default function Conditions() {
 
                 <div style={box(`${green}12`, `${green}44`, '#2A7A4A')}>
                   📅 <strong>Version actuelle :</strong> 1.0 — Mai 2026<br />
-                  📧 <strong>Contact juridique :</strong> legal@vibz.app<br />
+                  📧 <strong>Contact juridique :</strong> michael_chesne@outlook.fr<br />
                   🏛️ <strong>Droit applicable :</strong> Droit français — Juridiction compétente : Tribunaux français<br />
-                  🌍 <strong>RGPD :</strong> Délégué à la Protection des Données — dpo@vibz.app
+                  🌍 <strong>RGPD :</strong> Délégué à la Protection des Données — michael_chesne@outlook.fr
                 </div>
               </>
             )}

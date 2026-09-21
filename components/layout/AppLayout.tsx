@@ -257,7 +257,8 @@ export default function AppLayout({ user }: Props) {
           { label: '🛡️ Sécurité & Règles',          href: '/securite'        },
           { label: 'Conditions d\'utilisation',      href: '/conditions'      },
           { label: 'Politique de confidentialité',   href: '/confidentialite' },
-          { label: 'Contact',                        href: 'mailto:contact@vibz.app' },
+          { label: 'Mentions légales',              href: '/mentions-legales' },
+          { label: 'Contact',                        href: 'mailto:michael_chesne@outlook.fr' },
         ].map(l => (
           <a key={l.href} href={l.href}
             target={l.href.startsWith('mailto') ? '_blank' : undefined}

@@ -259,7 +259,7 @@ export default function LandingPage() {
             Vibz se réserve le droit de modifier ces conditions. En cas de changement important, vous serez notifié par email et devrez accepter les nouvelles conditions pour continuer à utiliser le service.
           </Section>
           <div style={{ marginTop:16, padding:'12px 16px', background:'#FFF5F8', borderRadius:14, fontSize:12, color:'#9B7A8A', fontWeight:600 }}>
-            En vous inscrivant, vous certifiez avoir plus de 16 ans et acceptez l&apos;intégralité de cette charte. Pour toute question : contact@vibz.app
+            En vous inscrivant, vous certifiez avoir au moins 18 ans et acceptez l&apos;intégralité de cette charte. Pour toute question : michael_chesne@outlook.fr
           </div>
         </div>
 
@@ -872,6 +872,13 @@ export default function LandingPage() {
           </div>
         </div>
       </div>
+
+      {/* Pied de page */}
+      <footer style={{ textAlign:"center", padding:"24px 16px 32px", fontSize:12, fontFamily:font, color:"#9BA8C0", display:"flex", gap:16, justifyContent:"center", flexWrap:"wrap" }}>
+        <a href="/mentions-legales" style={{ color:"#9BA8C0", fontWeight:700, textDecoration:"underline" }}>Mentions légales</a>
+        <a href="/conditions" style={{ color:"#9BA8C0", fontWeight:700, textDecoration:"underline" }}>CGU</a>
+        <a href="/confidentialite" style={{ color:"#9BA8C0", fontWeight:700, textDecoration:"underline" }}>Confidentialité</a>
+      </footer>
     </div>
   )
 }
