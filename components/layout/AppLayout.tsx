@@ -6,6 +6,7 @@ import DiscoverPage from '../discover/DiscoverPage'
 import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
 import ProfilePage from '../profile/ProfilePage'
+import { SITE_URL } from '../../lib/site'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
 interface Props { user: User }
@@ -17,7 +18,7 @@ export default function AppLayout({ user }: Props) {
   const [showDon, setShowDon]       = useState(false)
 
   const handleShare = async () => {
-    const url  = 'https://vibz-zeta.vercel.app'
+    const url  = SITE_URL
     const data = { title:'Vibz — Rencontres & Musiciens', text:'La plateforme qui connecte les âmes sœurs et les musiciens 🦋', url }
     if (typeof navigator !== 'undefined' && navigator.share) {
       try { await navigator.share(data) } catch (_) { /* annulé */ }

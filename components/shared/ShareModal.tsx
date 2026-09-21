@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { SITE_URL, SITE_HOST } from '../../lib/site'
 
 export type ShareContext =
   | { type: 'profile'; name: string; instruments: string[]; city: string; userId: string }
@@ -11,7 +12,7 @@ interface Props {
   onClose: () => void
 }
 
-const BASE_URL = 'https://vibz-zeta.vercel.app'
+const BASE_URL = SITE_URL
 const font = 'Nunito, sans-serif'
 
 // Génère le texte et l'URL selon le contexte
@@ -27,7 +28,7 @@ function buildShare(ctx: ShareContext): { text: string; url: string; card: React
             <div style={{ fontSize:18, fontWeight:800, color:'#E2E8F8', marginBottom:4 }}>{ctx.name}</div>
             {ctx.instruments.length > 0 && <div style={{ fontSize:13, color:'#E07A9A', fontWeight:700, marginBottom:4 }}>{ctx.instruments.map(i => `🎵 ${i}`).join(' · ')}</div>}
             {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0' }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>vibz-zeta.vercel.app</div>
+            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST}</div>
           </div>
         ),
       }
@@ -41,7 +42,7 @@ function buildShare(ctx: ShareContext): { text: string; url: string; card: React
             <div style={{ fontSize:15, fontWeight:800, color:'#E2E8F8', marginBottom:6 }}>Nouveau match sur Vibz !</div>
             <div style={{ fontSize:13, color:'#E07A9A', fontWeight:700 }}>Avec {ctx.name} {ctx.instrument ? `· ${ctx.instrument}` : ''}</div>
             {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0', marginTop:4 }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, padding:'8px 16px', borderRadius:20, background:'rgba(224,122,154,0.15)', display:'inline-block', fontSize:11, color:'#E07A9A', fontWeight:800 }}>🦋 vibz-zeta.vercel.app</div>
+            <div style={{ marginTop:16, padding:'8px 16px', borderRadius:20, background:'rgba(224,122,154,0.15)', display:'inline-block', fontSize:11, color:'#E07A9A', fontWeight:800 }}>🦋 {SITE_HOST}</div>
           </div>
         ),
       }
@@ -56,7 +57,7 @@ function buildShare(ctx: ShareContext): { text: string; url: string; card: React
             <div style={{ fontSize:13, color:'#52C07A', fontWeight:700 }}>{ctx.name} cherche un·e {ctx.instrument}</div>
             {ctx.genre && <div style={{ fontSize:12, color:'#9BA8C0', marginTop:4 }}>🎼 {ctx.genre}</div>}
             {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0' }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>vibz-zeta.vercel.app</div>
+            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST}</div>
           </div>
         ),
       }
@@ -71,7 +72,7 @@ function buildShare(ctx: ShareContext): { text: string; url: string; card: React
             <div style={{ fontSize:20, fontWeight:800, color:'#E2E8F8', marginBottom:6 }}>Vibz</div>
             <div style={{ fontSize:13, color:'#6BB8E8', fontWeight:700, marginBottom:4 }}>Rencontre · Musique · Collab</div>
             <div style={{ fontSize:11, color:'#9BA8C0' }}>L'appli où les musiciens se rencontrent</div>
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>vibz-zeta.vercel.app · Gratuit 🎁</div>
+            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST} · Gratuit 🎁</div>
           </div>
         ),
       }

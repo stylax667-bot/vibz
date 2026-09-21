@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import ShareModal from './ShareModal'
+import { SITE_URL } from '../../lib/site'
 
 interface Props {
   userId: string
   compact?: boolean
 }
 
-const BASE_URL = 'https://vibz-zeta.vercel.app'
+const BASE_URL = SITE_URL
 const font = 'Nunito, sans-serif'
 
 export default function InviteWidget({ userId, compact = false }: Props) {
