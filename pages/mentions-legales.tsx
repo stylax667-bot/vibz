@@ -27,7 +27,7 @@ export default function MentionsLegales() {
           <article style={card}>
             <h2 style={h2}>Éditeur du site</h2>
             <p style={{ margin: 0 }}>
-              Le site <strong>Vibz</strong> (https://www.vibz.fr) est édité par :<br />
+              Le site <strong>Vibz</strong> (https://www.vibzmusic.fr) est édité par :<br />
               <strong>Yves-Marie CHENOT</strong>, entrepreneur individuel (EI), micro-entrepreneur<br />
               Nom commercial : Vibz<br />
               Adresse : Mairie de Pont-Saint-Martin, 44860 Pont-Saint-Martin<br />

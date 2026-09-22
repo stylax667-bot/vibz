@@ -91,7 +91,7 @@ Vercel te donne une URL du type : `https://vibz-xxxx.vercel.app`
 
 ## ÉTAPE 6 — Ton domaine personnalisé (optionnel, ~10€/an)
 
-1. Achète un domaine sur **OVH** ou **Namecheap** (ex: vibz.fr ~10€/an)
+1. Achète un domaine sur **OVH** ou **Namecheap** (ex: vibzmusic.fr ~10€/an)
 2. Dans Vercel → ton projet → **Settings** → **Domains**
 3. Ajoute ton domaine et suis les instructions DNS
 
