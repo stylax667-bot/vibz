@@ -175,7 +175,9 @@ export default function MessengerPage({ user }: Props) {
       <div style={{ borderRight:`1.5px solid ${BDR}`, background:SURF, display:'flex', flexDirection:'column' }}>
 
         {/* Mon profil */}
-        <div style={{ padding:'14px 16px', borderBottom:`1.5px solid ${BDR}`, background:'linear-gradient(135deg,#FFF5F8,#F0F7FD)' }}>
+        <div style={{ padding:'14px 16px', borderBottom:`1.5px solid ${BDR}`, background: tk.isDark
+          ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})`
+          : 'linear-gradient(135deg,#FFF5F8,#F0F7FD)' }}>
           <div style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }} onClick={() => { setEditPseudo(myPseudo); setEditStatusMsg(myStatusMsg); setShowProfile(true) }}>
             <AvatarBubble avatar={myAvatar} status={myStatus} size={44} />
             <div style={{ flex:1, minWidth:0 }}>
@@ -193,8 +195,8 @@ export default function MessengerPage({ user }: Props) {
               <button key={s.id} onClick={() => setMyStatus(s.id)} style={{
                 padding:'3px 8px', borderRadius:20, fontSize:10, fontWeight:700,
                 border: myStatus===s.id ? `1.5px solid ${s.dot}` : `1.5px solid ${BDR}`,
-                background: myStatus===s.id ? `${s.dot}22` : 'white',
-                color: myStatus===s.id ? s.dot : '#9BA8C0',
+                background: myStatus===s.id ? `${s.dot}22` : SURF,
+                color: myStatus===s.id ? s.dot : MUT,
                 cursor:'pointer', fontFamily:font,
               }}>
                 <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:s.dot, marginRight:4, verticalAlign:'middle' }}/>
