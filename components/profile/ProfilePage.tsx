@@ -87,6 +87,9 @@ export default function ProfilePage({ user }: Props) {
   const TXT  = tk.text
   const MUT  = tk.textMuted
   const INP  = tk.inputBg
+  const SURF2 = tk.surface2
+  const purpleLight = tk.isDark ? 'rgba(167,139,219,0.18)' : '#EDE8F8'
+  const purpleDark  = tk.isDark ? '#D7C6F5' : '#5B3FAD'
 
   const [musicLinks, setMusicLinks]   = useState<MusicLink[]>([])
   const [musicInput, setMusicInput]   = useState('')
@@ -276,12 +279,12 @@ export default function ProfilePage({ user }: Props) {
             <button
               onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/profil/${user.id}`); setSaved(true); setTimeout(()=>setSaved(false),2000) }}
               title="Copier le lien de mon profil"
-              style={{ padding:'5px 12px', borderRadius:20, border:'1px solid rgba(107,184,232,0.3)', background:'#F0F7FD', color:'#2A6090', fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}
+              style={{ padding:'5px 12px', borderRadius:20, border:`1px solid ${tk.blue}4D`, background:tk.blueLight, color:tk.blueDark, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}
             >🔗 Copier mon profil</button>
           </div>
         </div>
 
-        <div style={{ padding:'10px 14px', background:'#F0FBF4', borderRadius:12, border:'1px solid #D6F5E6', fontSize:12, color:'#2A7A4A', fontWeight:600, marginBottom:16, display:'flex', gap:8 }}>
+        <div style={{ padding:'10px 14px', background:tk.greenLight, borderRadius:12, border:`1px solid ${tk.green}33`, fontSize:12, color:tk.greenDark, fontWeight:600, marginBottom:16, display:'flex', gap:8 }}>
           <span>🛡️</span>
           <span>VibzGuard protège ton identité. Tu choisis ce que tu partages et avec qui. L&apos;œil 👁️ contrôle la visibilité sur ton profil public. Ne partage pas tes coordonnées en chat public.</span>
         </div>
@@ -293,7 +296,7 @@ export default function ProfilePage({ user }: Props) {
               <div style={{ fontSize:11, fontWeight:800, color:MUT, letterSpacing:0.5, marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
                 <span>{group.group}</span>
                 {filledInGroup.length > 0 && (
-                  <span style={{ padding:'1px 8px', borderRadius:10, background:'#F0FBF4', color:'#2A7A4A', fontSize:10, fontWeight:800 }}>
+                  <span style={{ padding:'1px 8px', borderRadius:10, background:tk.greenLight, color:tk.greenDark, fontSize:10, fontWeight:800 }}>
                     {filledInGroup.length} renseigné{filledInGroup.length>1?'s':''}
                   </span>
                 )}
@@ -316,7 +319,7 @@ export default function ProfilePage({ user }: Props) {
                     />
                     {val && val.startsWith('http') && (
                       <a href={val} target="_blank" rel="noopener noreferrer" title={`Ouvrir ${s.name}`}
-                        style={{ width:32, height:32, borderRadius:9, border:'1px solid rgba(107,184,232,0.2)', background:'#F0F7FD', color:'#2A6090', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, textDecoration:'none' }}>
+                        style={{ width:32, height:32, borderRadius:9, border:`1px solid ${tk.blue}33`, background:tk.blueLight, color:tk.blueDark, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0, textDecoration:'none' }}>
                         ↗
                       </a>
                     )}
@@ -326,8 +329,8 @@ export default function ProfilePage({ user }: Props) {
                         title={isVisible ? 'Visible sur ton profil — cliquer pour masquer' : 'Masqué — cliquer pour afficher'}
                         style={{
                           width:32, height:32, borderRadius:9, border:'1px solid rgba(196,84,122,0.15)',
-                          background: isVisible ? '#D6F5E6' : '#F5F5F5',
-                          color: isVisible ? '#1A6645' : '#9B7A8A',
+                          background: isVisible ? tk.greenLight : SURF2,
+                          color: isVisible ? tk.greenDark : MUT,
                           cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
                           flexShrink:0, transition:'all 0.15s',
                         }}
@@ -396,7 +399,7 @@ export default function ProfilePage({ user }: Props) {
           </div>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             {musicProfile.influences.map(inf => (
-              <span key={inf} style={{ padding:'5px 12px', borderRadius:20, background:'#EDE8F8', color:'#5B3FAD', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+              <span key={inf} style={{ padding:'5px 12px', borderRadius:20, background:purpleLight, color:purpleDark, fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
                 {inf}<span onClick={() => removeTag('influences',inf)} style={{ cursor:'pointer', opacity:0.6, fontSize:14, lineHeight:1 }}>×</span>
               </span>
             ))}
@@ -416,7 +419,7 @@ export default function ProfilePage({ user }: Props) {
           </div>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
             {musicProfile.favorite_artists.map(a => (
-              <span key={a} style={{ padding:'5px 12px', borderRadius:20, background:'#FDE8F2', color:'#7A1F40', fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
+              <span key={a} style={{ padding:'5px 12px', borderRadius:20, background:tk.pinkLight, color:tk.pinkDark, fontSize:12, fontWeight:700, display:'flex', alignItems:'center', gap:6 }}>
                 {a}<span onClick={() => removeTag('favorite_artists',a)} style={{ cursor:'pointer', opacity:0.6, fontSize:14, lineHeight:1 }}>×</span>
               </span>
             ))}
@@ -578,8 +581,8 @@ export default function ProfilePage({ user }: Props) {
           marginBottom:16, transition:'background 0.2s',
         }}>
           <div>
-            <div style={{ fontSize:13, fontWeight:800, color: !profile.show_socials ? 'white' : '#2D1A25' }}>Mode caché</div>
-            <div style={{ fontSize:11, color: !profile.show_socials ? 'rgba(255,255,255,0.6)' : '#9B7A8A', marginTop:2 }}>
+            <div style={{ fontSize:13, fontWeight:800, color: !profile.show_socials ? 'white' : TXT }}>Mode caché</div>
+            <div style={{ fontSize:11, color: !profile.show_socials ? 'rgba(255,255,255,0.6)' : MUT, marginTop:2 }}>
               {!profile.show_socials ? 'Vos coordonnées sont cachées de tous les profils' : 'Vos coordonnées sont visibles selon vos réglages'}
             </div>
           </div>
@@ -607,7 +610,7 @@ export default function ProfilePage({ user }: Props) {
                   <div key={s.visKey} style={{
                     display:'flex', justifyContent:'space-between', alignItems:'center',
                     padding:'10px 14px', borderRadius:12,
-                    background: val ? (isVisible ? '#F6FEF9' : INP) : '#FAFAFA',
+                    background: val ? (isVisible ? tk.greenLight : INP) : SURF2,
                     border: `1px solid ${val ? (isVisible ? 'rgba(59,173,122,0.2)' : 'rgba(196,84,122,0.15)') : 'rgba(0,0,0,0.05)'}`,
                     opacity: val ? 1 : 0.45,
                   }}>
@@ -627,8 +630,8 @@ export default function ProfilePage({ user }: Props) {
                           display:'flex', alignItems:'center', gap:6,
                           padding:'6px 14px', borderRadius:20, border:'none', cursor:'pointer',
                           fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:700,
-                          background: isVisible ? '#D6F5E6' : '#F0F0F0',
-                          color: isVisible ? '#1A6645' : '#9B7A8A', transition:'all 0.15s',
+                          background: isVisible ? tk.greenLight : SURF2,
+                          color: isVisible ? tk.greenDark : MUT, transition:'all 0.15s',
                         }}
                       >
                         <EyeIcon open={isVisible} />
@@ -652,8 +655,8 @@ export default function ProfilePage({ user }: Props) {
             style={{
               padding:'6px 16px', borderRadius:20, border:'none', cursor:'pointer',
               fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:700,
-              background: profile.show_location ? '#D6F5E6' : '#F0F0F0',
-              color: profile.show_location ? '#1A6645' : '#9B7A8A', transition:'all 0.15s',
+              background: profile.show_location ? tk.greenLight : SURF2,
+              color: profile.show_location ? tk.greenDark : MUT, transition:'all 0.15s',
             }}
           >
             {profile.show_location ? '✓ Activé' : '○ Désactivé'}
@@ -674,9 +677,9 @@ export default function ProfilePage({ user }: Props) {
                 style={{
                   flex:1, padding:'10px 8px', borderRadius:14, cursor:'pointer',
                   fontFamily:'Nunito,sans-serif', fontSize:12, fontWeight:700,
-                  border: profile.allow_messages_from === opt.id ? '2px solid #C4547A' : '1px solid rgba(0,0,0,0.08)',
-                  background: profile.allow_messages_from === opt.id ? '#FDE8F2' : 'white',
-                  color: profile.allow_messages_from === opt.id ? '#7A1F40' : '#9B7A8A',
+                  border: profile.allow_messages_from === opt.id ? '2px solid #C4547A' : `1px solid ${BDR}`,
+                  background: profile.allow_messages_from === opt.id ? tk.pinkLight : SURF,
+                  color: profile.allow_messages_from === opt.id ? tk.pinkDark : MUT,
                   transition:'all 0.15s', textAlign:'center',
                 }}
               >

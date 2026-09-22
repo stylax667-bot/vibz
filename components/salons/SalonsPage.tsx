@@ -506,7 +506,7 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
             <button
               disabled={visitorInput.trim().length < 2}
               onClick={() => { setVisitorPseudo(visitorInput.trim()); setIsVisitor(true); setVisitorReady(true) }}
-              style={{ width:'100%', padding:'12px', borderRadius:14, border:'none', cursor: visitorInput.trim().length<2?'not-allowed':'pointer', background: visitorInput.trim().length<2?'#F0F2F8':`linear-gradient(135deg,${blue},${green})`, color: visitorInput.trim().length<2?'#B0B8CC':'white', fontWeight:800, fontSize:14, fontFamily:font }}
+              style={{ width:'100%', padding:'12px', borderRadius:14, border:'none', cursor: visitorInput.trim().length<2?'not-allowed':'pointer', background: visitorInput.trim().length<2?tk.surface2:`linear-gradient(135deg,${blue},${green})`, color: visitorInput.trim().length<2?MUT:'white', fontWeight:800, fontSize:14, fontFamily:font }}
             >Entrer dans les salons →</button>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10, margin:'16px 0', color:MUT, fontSize:12, fontWeight:700 }}>
@@ -532,8 +532,8 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
               <button key={cat} onClick={() => setCatFilter(cat)} style={{
                 padding:'3px 8px', borderRadius:20, fontSize:10, fontWeight:700,
                 border: catFilter===cat ? `1.5px solid ${pink}` : `1.5px solid ${BDR}`,
-                background: catFilter===cat ? `${pink}18` : '#F8FBFF',
-                color: catFilter===cat ? pink : '#9BA8C0',
+                background: catFilter===cat ? `${pink}18` : tk.surface2,
+                color: catFilter===cat ? pink : MUT,
                 cursor:'pointer', fontFamily:font,
               }}>{cat}</button>
             ))}
@@ -898,7 +898,7 @@ export default function SalonsPage({ user, initialSalonId }: Props) {
         {/* Zone saisie */}
         <div style={{ padding:'12px 16px', borderTop:`1.5px solid ${BDR}`, background:SURF, display:'flex', flexDirection:'column', gap:8 }}>
           {warning && (
-            <div style={{ padding:'10px 14px', background:'#FBF3EA', color:'#7A4A20', borderRadius:10, fontSize:13, fontWeight:600, borderLeft:'3px solid #E8A06A' }}>
+            <div style={{ padding:'10px 14px', background:tk.modBg, color:tk.modText, borderRadius:10, fontSize:13, fontWeight:600, borderLeft:`3px solid ${tk.modBorder}` }}>
               🛡️ VibzGuard : {warning}
             </div>
           )}

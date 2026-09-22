@@ -70,6 +70,7 @@ export default function MessengerPage({ user }: Props) {
   const TXT  = tk.text
   const MUT  = tk.textMuted
   const INP  = tk.inputBg
+  const SURF2 = tk.surface2
 
   // ── Mon profil ─────────────────────────────────────────────────────────────
   const [myAvatar,    setMyAvatar]    = useState('🎸')
@@ -221,7 +222,9 @@ export default function MessengerPage({ user }: Props) {
                 style={{
                   display:'flex', alignItems:'center', gap:10,
                   padding:'10px 16px', cursor:'pointer',
-                  background: isActive ? 'linear-gradient(90deg,#FFF0F5,#F0F7FD)' : 'transparent',
+                  background: isActive
+                    ? (tk.isDark ? `linear-gradient(90deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(90deg,#FFF0F5,#F0F7FD)')
+                    : 'transparent',
                   borderLeft: isActive ? `3px solid ${pink}` : '3px solid transparent',
                   transition:'all 0.1s',
                   opacity: c.status==='offline' ? 0.6 : 1,
@@ -233,7 +236,7 @@ export default function MessengerPage({ user }: Props) {
                   <div style={{ display:'flex', alignItems:'center', gap:5 }}>
                     <span style={{
                       fontSize:13, fontWeight:700,
-                      color: c.status==='offline' ? '#9BA8C0' : '#1A1E2E',
+                      color: c.status==='offline' ? MUT : TXT,
                       fontStyle: c.status==='offline' ? 'italic' : 'normal',
                     }}>{c.name}</span>
                     {isOpen && <span style={{ fontSize:9, background:blue+'22', color:blue, padding:'1px 5px', borderRadius:8, fontWeight:700 }}>ouvert</span>}
@@ -264,8 +267,8 @@ export default function MessengerPage({ user }: Props) {
                   <div key={wid} style={{
                     display:'flex', alignItems:'center', gap:4,
                     padding:'4px 8px', borderRadius:12,
-                    background: selected.id===wid ? `${pink}22` : '#F8FBFF',
-                    border: `1.5px solid ${selected.id===wid ? pink : '#EEF2FA'}`,
+                    background: selected.id===wid ? `${pink}22` : SURF2,
+                    border: `1.5px solid ${selected.id===wid ? pink : BDR}`,
                     cursor:'pointer', fontSize:12,
                   }}>
                     <span onClick={() => setSelected(c)}>{c.avatar} {c.name.split(' ')[0]}</span>
@@ -290,7 +293,7 @@ export default function MessengerPage({ user }: Props) {
           <AvatarBubble avatar={selected.avatar} status={selected.status} size={40} />
           <div style={{ flex:1 }}>
             <div style={{ fontSize:15, fontWeight:800, color:TXT }}>{selected.name}</div>
-            <div style={{ fontSize:12, color: selected.status==='offline' ? '#9BA8C0' : statusColor(selected.status), fontWeight:600 }}>
+            <div style={{ fontSize:12, color: selected.status==='offline' ? MUT : statusColor(selected.status), fontWeight:600 }}>
               <span style={{ display:'inline-block', width:7, height:7, borderRadius:'50%', background:statusColor(selected.status), marginRight:5, verticalAlign:'middle' }}/>
               {statusLabel(selected.status)}
               {selected.statusMsg && selected.status!=='offline' && ` · ${selected.statusMsg}`}
@@ -323,7 +326,7 @@ export default function MessengerPage({ user }: Props) {
         )}
 
         {/* Barre emojis */}
-        <div style={{ padding:'8px 16px 6px', display:'flex', gap:5, flexWrap:'wrap', borderBottom:'1px solid #EEF2FA', background:SURF }}>
+        <div style={{ padding:'8px 16px 6px', display:'flex', gap:5, flexWrap:'wrap', borderBottom:`1px solid ${BDR}`, background:SURF }}>
           {EMOJIS.map(e => (
             <span key={e} style={{ fontSize:18, cursor:'pointer', display:'inline-block', transition:'transform 0.1s' }}
               onClick={() => sendMsg(e)}
@@ -435,8 +438,8 @@ export default function MessengerPage({ user }: Props) {
               {AVATAR_OPTIONS.map(a => (
                 <button key={a.id} onClick={() => setMyAvatar(a.icon)} title={a.label} style={{
                   width:44, height:44, borderRadius:12, fontSize:22,
-                  border: myAvatar===a.icon ? `2px solid ${pink}` : '2px solid #EEF2FA',
-                  background: myAvatar===a.icon ? `${pink}11` : '#F8FBFF',
+                  border: myAvatar===a.icon ? `2px solid ${pink}` : `2px solid ${BDR}`,
+                  background: myAvatar===a.icon ? `${pink}11` : SURF2,
                   cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
                   boxShadow: myAvatar===a.icon ? `0 2px 8px ${pink}33` : 'none',
                 }}>
