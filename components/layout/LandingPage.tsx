@@ -139,7 +139,7 @@ export default function LandingPage() {
       borderBottom: '1px solid #F0EEF6',
       boxShadow: '0 2px 16px rgba(110,150,220,0.08)',
     },
-    logo: { display:'flex', alignItems:'center', gap:isMobile ? 8 : 10, fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-1, flexShrink:0 },
+    logo: { display:'flex', alignItems:'center', gap:isMobile ? 8 : 10, fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-1, flexShrink:0, color:'#1A1E2E' },
     logoBox: {
       width:isMobile ? 34 : 38, height:isMobile ? 34 : 38, borderRadius:12,
       background: 'linear-gradient(135deg, #FADADD 0%, #C8E6F5 50%, #C8EFD4 100%)',
@@ -831,7 +831,7 @@ export default function LandingPage() {
             { icon:'🆓', label:'100% gratuit',    sub:'Pour toujours',          action: () => setFeatureModal('gratuit'),      accent: blue,  bg:'#F2F8FD' },
           ] as const).map(f => (
             <div key={f.label} className="feature-card" onClick={f.action}
-              style={{ background: f.bg, borderTop:`3px solid ${f.accent}`, boxShadow:`0 4px 16px ${f.accent}18` }}>
+              style={{ background: f.bg, border:'1.5px solid #EEF2FA', borderTop:`3px solid ${f.accent}`, boxShadow:`0 4px 16px ${f.accent}18` }}>
               <div style={{ fontSize:28, marginBottom:8 }} className="animate-float">{f.icon}</div>
               <div style={{ fontSize:13, fontWeight:800, color:'#1A1E2E' }}>{f.label}</div>
               <div style={{ fontSize:11, color:'#9BA8C0', marginTop:2 }}>{f.sub}</div>
