@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useIsMobile } from '../../lib/useIsMobile'
 
 // ── CAPTCHA helpers ──────────────────────────────────────────────────────────
 type CaptchaChallenge = { a: number; b: number; op: '+' | '-'; answer: number }
@@ -15,7 +16,15 @@ function generateCaptcha(): CaptchaChallenge {
 }
 
 export default function LandingPage() {
+  const isMobile = useIsMobile()
   const [mode, setMode] = useState<'landing' | 'login' | 'signup'>('landing')
+
+  // Nombre réel de membres inscrits (plus de chiffres inventés)
+  const [memberCount, setMemberCount] = useState<number | null>(null)
+  useEffect(() => {
+    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_banned', false)
+      .then(({ count }) => { if (typeof count === 'number') setMemberCount(count) })
+  }, [])
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
   const [username, setUsername] = useState('')
@@ -125,21 +134,21 @@ export default function LandingPage() {
     },
     nav: {
       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      padding: '14px 40px',
+      padding: isMobile ? '10px 14px' : '14px 40px', gap: 8,
       background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(14px)',
       borderBottom: '1px solid #F0EEF6',
       boxShadow: '0 2px 16px rgba(110,150,220,0.08)',
     },
-    logo: { display:'flex', alignItems:'center', gap:10, fontSize:24, fontWeight:800, letterSpacing:-1 },
+    logo: { display:'flex', alignItems:'center', gap:isMobile ? 8 : 10, fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-1, flexShrink:0 },
     logoBox: {
-      width:38, height:38, borderRadius:12,
+      width:isMobile ? 34 : 38, height:isMobile ? 34 : 38, borderRadius:12,
       background: 'linear-gradient(135deg, #FADADD 0%, #C8E6F5 50%, #C8EFD4 100%)',
       border: '1.5px solid rgba(224,122,154,0.25)',
       display:'flex', alignItems:'center', justifyContent:'center', fontSize:20,
     },
-    hero: { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 20px', textAlign:'center' },
+    hero: { flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:isMobile ? '28px 16px 40px' : '60px 20px', textAlign:'center' },
     formCard: {
-      background:'#FFFFFF', borderRadius:24, padding:32, width:'100%', maxWidth:420,
+      background:'#FFFFFF', borderRadius:24, padding:isMobile ? '24px 18px' : 32, width:'100%', maxWidth:420,
       border:'1px solid #EEF0F8',
       boxShadow:'0 8px 40px rgba(107,184,232,0.12), 0 2px 8px rgba(224,122,154,0.08)',
     },
@@ -206,16 +215,16 @@ export default function LandingPage() {
     <div style={{
       position:'fixed', inset:0, zIndex:1000,
       background:'rgba(45,26,37,0.6)', backdropFilter:'blur(4px)',
-      display:'flex', alignItems:'center', justifyContent:'center', padding:20,
+      display:'flex', alignItems:isMobile ? 'flex-end' : 'center', justifyContent:'center', padding:isMobile ? 0 : 20,
     }} onClick={() => setShowCharter(false)}>
       <div onClick={e => e.stopPropagation()} style={{
-        background:'white', borderRadius:28, maxWidth:600, width:'100%',
-        maxHeight:'85vh', display:'flex', flexDirection:'column',
+        background:'white', borderRadius:isMobile ? '24px 24px 0 0' : 28, maxWidth:600, width:'100%',
+        maxHeight:isMobile ? '92dvh' : '85vh', display:'flex', flexDirection:'column',
         border:'1px solid rgba(196,84,122,0.15)',
         boxShadow:'0 32px 80px rgba(196,84,122,0.2)',
       }}>
         {/* Header modal */}
-        <div style={{ padding:'24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '18px 18px 12px' : '24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:'#2D1A25' }}>Charte Vibz</div>
@@ -233,7 +242,7 @@ export default function LandingPage() {
         </div>
 
         {/* Corps scrollable */}
-        <div style={{ overflowY:'auto', padding:'20px 28px', fontSize:13, lineHeight:1.7, color:'#2D1A25', flex:1 }}>
+        <div style={{ overflowY:'auto', padding:isMobile ? '16px 18px' : '20px 28px', fontSize:13, lineHeight:1.7, color:'#2D1A25', flex:1 }}>
           <Section title="🤝 1. Respect mutuel">
             Vibz est un espace bienveillant. Tout membre s&apos;engage à traiter les autres avec respect, sans discrimination de genre, d&apos;origine, d&apos;orientation ou de pratique musicale. Le harcèlement, les insultes et les comportements intimidants sont strictement interdits et entraînent une exclusion immédiate.
           </Section>
@@ -264,7 +273,7 @@ export default function LandingPage() {
         </div>
 
         {/* Footer modal */}
-        <div style={{ padding:'16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '12px 18px calc(12px + env(safe-area-inset-bottom))' : '16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <button onClick={() => { setAcceptedTerms(true); setShowCharter(false) }} style={{
             ...s.btnPrimary, marginBottom:0,
           }}>
@@ -279,18 +288,18 @@ export default function LandingPage() {
   const modalOverlay: React.CSSProperties = {
     position:'fixed', inset:0, zIndex:1000,
     background:'rgba(45,26,37,0.65)', backdropFilter:'blur(4px)',
-    display:'flex', alignItems:'center', justifyContent:'center', padding:20,
+    display:'flex', alignItems:isMobile ? 'flex-end' : 'center', justifyContent:'center', padding:isMobile ? 0 : 20,
   }
   const modalCard: React.CSSProperties = {
-    background:'white', borderRadius:28, maxWidth:620, width:'100%',
-    maxHeight:'88vh', display:'flex', flexDirection:'column',
+    background:'white', borderRadius:isMobile ? '24px 24px 0 0' : 28, maxWidth:620, width:'100%',
+    maxHeight:isMobile ? '92dvh' : '88vh', display:'flex', flexDirection:'column',
     border:'1px solid rgba(196,84,122,0.15)',
     boxShadow:'0 32px 80px rgba(196,84,122,0.2)',
     animation:'slideUp 0.35s ease',
   }
   const modalClose = (onClick: () => void) => (
     <button onClick={onClick} style={{
-      width:32, height:32, borderRadius:10, border:'1px solid rgba(196,84,122,0.15)',
+      width:36, height:36, borderRadius:10, border:'1px solid rgba(196,84,122,0.15)', flexShrink:0,
       background:'#FFF5F8', color:'#9B7A8A', cursor:'pointer', fontSize:18,
       display:'flex', alignItems:'center', justifyContent:'center', fontFamily:font,
     }}>×</button>
@@ -299,7 +308,7 @@ export default function LandingPage() {
   const SecurityModal = () => (
     <div style={modalOverlay} onClick={() => setFeatureModal(null)}>
       <div onClick={e => e.stopPropagation()} style={modalCard}>
-        <div style={{ padding:'24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '18px 18px 12px' : '24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:'#2D1A25' }}>🛡️ Sécurité & Confidentialité</div>
@@ -308,7 +317,7 @@ export default function LandingPage() {
             {modalClose(() => setFeatureModal(null))}
           </div>
         </div>
-        <div style={{ overflowY:'auto', padding:'20px 28px', flex:1, fontSize:13, lineHeight:1.75, color:'#2D1A25' }}>
+        <div style={{ overflowY:'auto', padding:isMobile ? '16px 18px' : '20px 28px', flex:1, fontSize:13, lineHeight:1.75, color:'#2D1A25' }}>
           <Section title="🔐 Non-divulgation des données personnelles">
             Vibz applique une politique stricte : votre adresse email n&apos;est <strong>jamais affichée</strong> publiquement. Votre ville, vos réseaux sociaux et vos coordonnées ne sont visibles que si vous les activez explicitement dans vos paramètres de confidentialité. Aucune donnée n&apos;est transmise à un tiers sans votre consentement explicite.
           </Section>
@@ -329,7 +338,7 @@ export default function LandingPage() {
             </ul>
           </Section>
         </div>
-        <div style={{ padding:'16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '12px 18px calc(12px + env(safe-area-inset-bottom))' : '16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <button onClick={() => { setFeatureModal(null); setMode('signup') }} style={s.btnPrimary}>
             Rejoindre Vibz en sécurité →
           </button>
@@ -354,7 +363,7 @@ export default function LandingPage() {
   const InternationalModal = () => (
     <div style={modalOverlay} onClick={() => setFeatureModal(null)}>
       <div onClick={e => e.stopPropagation()} style={{ ...modalCard, maxWidth:680 }}>
-        <div style={{ padding:'24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '18px 18px 12px' : '24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:'#2D1A25' }}>🌍 Vibz International</div>
@@ -365,7 +374,7 @@ export default function LandingPage() {
         </div>
 
         {/* Carte du monde */}
-        <div style={{ margin:'20px 28px 0', position:'relative', height:200, borderRadius:18, overflow:'hidden', background:'linear-gradient(135deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%)', flexShrink:0 }}>
+        <div style={{ margin:isMobile ? '14px 18px 0' : '20px 28px 0', position:'relative', height:isMobile ? 160 : 200, borderRadius:18, overflow:'hidden', background:'linear-gradient(135deg, #0EA5E9 0%, #0284C7 50%, #0369A1 100%)', flexShrink:0 }}>
           {/* Continents (blobs CSS) */}
           <div style={{ position:'absolute', left:'2%', top:'18%', width:'22%', height:'55%', background:'rgba(134,239,172,0.6)', borderRadius:'35% 65% 55% 45% / 40% 35% 65% 60%' }}/>
           <div style={{ position:'absolute', left:'6%', top:'55%', width:'12%', height:'35%', background:'rgba(134,239,172,0.6)', borderRadius:'45% 55% 40% 60% / 50% 40% 60% 50%' }}/>
@@ -387,11 +396,11 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <div style={{ overflowY:'auto', padding:'16px 28px 20px', flex:1, fontSize:13, lineHeight:1.7, color:'#2D1A25' }}>
+        <div style={{ overflowY:'auto', padding:isMobile ? '14px 18px 16px' : '16px 28px 20px', flex:1, fontSize:13, lineHeight:1.7, color:'#2D1A25' }}>
           <Section title="🤖 Traduction IA instantanée">
             Dans le salon <strong>International</strong>, chaque message est automatiquement détecté et traduit dans votre langue. Un musicien japonais peut parler à un artiste brésilien sans barrière — la conversation se déroule naturellement pour les deux.
           </Section>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+          <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : '1fr 1fr', gap:10, marginBottom:12 }}>
             {[
               { flag:'🇯🇵', from:'こんにちは！ギターを弾きます', to:'Bonjour ! Je joue de la guitare 🎸' },
               { flag:'🇧🇷', from:'Vamos fazer uma jam !', to:'On fait un jam session ! 🎵' },
@@ -408,7 +417,7 @@ export default function LandingPage() {
             Français, Anglais, Espagnol, Portugais, Japonais, Allemand, Arabe, Hindi, Coréen, Russe — et plus à venir selon les besoins de la communauté.
           </Section>
         </div>
-        <div style={{ padding:'16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '12px 18px calc(12px + env(safe-area-inset-bottom))' : '16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <button onClick={() => { setFeatureModal(null); setMode('signup') }} style={s.btnPrimary}>
             Rejoindre le salon International →
           </button>
@@ -420,7 +429,7 @@ export default function LandingPage() {
   const GratuitModal = () => (
     <div style={modalOverlay} onClick={() => { setFeatureModal(null); setShowReportDemo(false) }}>
       <div onClick={e => e.stopPropagation()} style={modalCard}>
-        <div style={{ padding:'24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '18px 18px 12px' : '24px 28px 16px', borderBottom:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:'#2D1A25' }}>🆓 Gratuit pour toujours</div>
@@ -429,7 +438,7 @@ export default function LandingPage() {
             {modalClose(() => { setFeatureModal(null); setShowReportDemo(false) })}
           </div>
         </div>
-        <div style={{ overflowY:'auto', padding:'20px 28px', flex:1, fontSize:13, lineHeight:1.75, color:'#2D1A25' }}>
+        <div style={{ overflowY:'auto', padding:isMobile ? '16px 18px' : '20px 28px', flex:1, fontSize:13, lineHeight:1.75, color:'#2D1A25' }}>
           <Section title="💸 Modèle économique transparent">
             Vibz ne vend <strong>aucun forfait</strong>, aucun abonnement premium, aucun accès payant. Toutes les fonctionnalités sont accessibles à 100% gratuitement. Si Vibz vous apporte de la valeur, vous pouvez contribuer librement via un don — mais ce n&apos;est jamais obligatoire.
           </Section>
@@ -463,16 +472,16 @@ export default function LandingPage() {
                 <div>
                   <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>Signalement reçu</div>
                   <div style={{ fontSize:12, color:'#9B7A8A', lineHeight:1.6 }}>
-                    <strong>Tom K.</strong> a été signalé pour comportement inapproprié par notre IA Guard.<br/>
+                    <strong>pseudo_exemple</strong> a été signalé pour comportement inapproprié par notre IA Guard.<br/>
                     Que souhaitez-vous faire ?
                   </div>
                 </div>
               </div>
               <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
-                <button style={{ ...s.btnPrimary, flex:1, padding:'11px', fontSize:13, background:'linear-gradient(135deg,#E07A7A,#C4547A)' }}>
-                  🚫 Bloquer définitivement Tom K.
+                <button style={{ ...s.btnPrimary, flex:'1 1 180px', padding:'11px', fontSize:13, background:'linear-gradient(135deg,#E07A7A,#C4547A)' }}>
+                  🚫 Bloquer définitivement pseudo_exemple
                 </button>
-                <button style={{ ...s.btnPrimary, flex:1, padding:'11px', fontSize:13, background:'linear-gradient(135deg,#3BAD7A,#1D9E75)' }}>
+                <button style={{ ...s.btnPrimary, flex:'1 1 180px', padding:'11px', fontSize:13, background:'linear-gradient(135deg,#3BAD7A,#1D9E75)' }}>
                   ✅ Continuer la discussion
                 </button>
               </div>
@@ -496,7 +505,7 @@ export default function LandingPage() {
             </ul>
           </Section>
         </div>
-        <div style={{ padding:'16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
+        <div style={{ padding:isMobile ? '12px 18px calc(12px + env(safe-area-inset-bottom))' : '16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <button onClick={() => { setFeatureModal(null); setShowReportDemo(false); setMode('signup') }} style={s.btnPrimary}>
             Rejoindre Vibz gratuitement →
           </button>
@@ -513,7 +522,7 @@ export default function LandingPage() {
         <nav style={s.nav}>
           <div style={{ ...s.logo, cursor:'pointer' }} onClick={() => { setMode('landing'); setMessage('') }}>
             <div style={s.logoBox}>🦋</div>
-            Vib<span style={{ color:pink }}>z</span>
+            <span>Vib<span style={{ color:pink }}>z</span></span>
           </div>
           <button onClick={() => { setMode('landing'); setMessage('') }} style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:13, color:'#9B7A8A', fontFamily:font, fontWeight:700 }}>
             ← Retour
@@ -613,8 +622,8 @@ export default function LandingPage() {
                 onKeyDown={e => e.key === 'Enter' && (mode === 'login' ? handleLogin() : canSignup && handleSignup())}
               />
               <button onClick={() => setShowPass(v => !v)} style={{
-                position:'absolute', right:12, top:'50%', transform:'translateY(-50%)',
-                background:'none', border:'none', cursor:'pointer', color:'#9B7A8A', fontSize:16, padding:0,
+                position:'absolute', right:4, top:'50%', transform:'translateY(-50%)',
+                background:'none', border:'none', cursor:'pointer', color:'#9B7A8A', fontSize:16, padding:8,
               }}>{showPass ? '🙈' : '👁️'}</button>
             </div>
 
@@ -741,8 +750,6 @@ export default function LandingPage() {
     { top:'80%', right:'8%', size:16, delay:'0.2s',  color:'#A8E8C0' },
   ]
 
-  const FRIENDS = ['🎸','🎹','🎤','🥁','🎷','🎻','🪕','🎺']
-
   return (
     <div style={s.page}>
       {featureModal === 'security' && <SecurityModal />}
@@ -774,21 +781,21 @@ export default function LandingPage() {
       <nav style={{ ...s.nav, position:'relative', zIndex:10 }}>
         <div style={{ ...s.logo, cursor:'pointer' }} onClick={() => setMode('landing')}>
           <div style={s.logoBox}>🦋</div>
-          Vib<span style={{ color:pink }}>z</span>
+          <span>Vib<span style={{ color:pink }}>z</span></span>
         </div>
 
-        {/* Barre de statut */}
-        <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#2A7A5A', background:'rgba(200,239,212,0.5)', padding:'5px 14px', borderRadius:20, border:'1px solid rgba(82,192,122,0.25)' }}>
+        {/* Barre de statut — nombre réel de membres */}
+        {memberCount !== null && memberCount > 0 && <div className="vz-hide-sm" style={{ display:'flex', alignItems:'center', gap:6, fontSize:11, fontWeight:700, color:'#2A7A5A', background:'rgba(200,239,212,0.5)', padding:'5px 14px', borderRadius:20, border:'1px solid rgba(82,192,122,0.25)' }}>
           <div style={{ width:7, height:7, borderRadius:'50%', background:green }} className="pulse-dot"/>
-          247 membres en ligne
-        </div>
+          {memberCount} membre{memberCount > 1 ? 's' : ''} inscrit{memberCount > 1 ? 's' : ''}
+        </div>}
 
-        <div style={{ display:'flex', gap:10 }}>
-          <button onClick={() => setMode('login')} style={{ ...s.btnPrimary, width:'auto', padding:'9px 20px', fontSize:13, background:'white', color:'#2D1A25', border:'1px solid rgba(212,83,126,0.2)', boxShadow:'none' }}>
-            Se connecter
+        <div style={{ display:'flex', gap:isMobile ? 6 : 10, flexShrink:0 }}>
+          <button onClick={() => setMode('login')} style={{ ...s.btnPrimary, width:'auto', padding:isMobile ? '8px 12px' : '9px 20px', fontSize:13, background:'white', color:'#2D1A25', border:'1px solid rgba(212,83,126,0.2)', boxShadow:'none', whiteSpace:'nowrap' }}>
+            {isMobile ? 'Connexion' : 'Se connecter'}
           </button>
-          <button onClick={() => setMode('signup')} style={{ ...s.btnPrimary, width:'auto', padding:'9px 20px', fontSize:13 }}>
-            S&apos;inscrire — gratuit
+          <button onClick={() => setMode('signup')} style={{ ...s.btnPrimary, width:'auto', padding:isMobile ? '8px 12px' : '9px 20px', fontSize:13, whiteSpace:'nowrap' }}>
+            {isMobile ? <>S&apos;inscrire</> : <>S&apos;inscrire — gratuit</>}
           </button>
         </div>
       </nav>
@@ -797,22 +804,24 @@ export default function LandingPage() {
       <div style={{ ...s.hero, position:'relative', zIndex:1 }}>
 
         {/* Papillon animé + icône */}
-        <div className="animate-float" style={{ fontSize:72, marginBottom:8, filter:'drop-shadow(0 8px 24px rgba(212,83,126,0.2))' }}>🦋</div>
-        <div style={{ fontSize:11, fontWeight:800, letterSpacing:3, textTransform:'uppercase', color:green, marginBottom:20, opacity:0.8 }}>
+        <div className="animate-float" style={{ fontSize:isMobile ? 56 : 72, marginBottom:8, filter:'drop-shadow(0 8px 24px rgba(212,83,126,0.2))' }}>🦋</div>
+        <div style={{ fontSize:11, fontWeight:800, letterSpacing:isMobile ? 1.5 : 3, textTransform:'uppercase', color:green, marginBottom:isMobile ? 14 : 20, opacity:0.8 }}>
           Dans l&apos;esprit des années 2000 — réinventé
         </div>
 
-        <h1 style={{ fontSize:56, fontWeight:800, letterSpacing:-2, lineHeight:1.1, marginBottom:20, color:'#1A1E2E' }}>
+        <h1 style={{ fontSize:'clamp(34px, 9vw, 56px)', fontWeight:800, letterSpacing:isMobile ? -1 : -2, lineHeight:1.1, margin:isMobile ? '0 0 14px' : '0 0 20px', color:'#1A1E2E' }}>
           La rencontre qui<br />
           <span style={{ background:`linear-gradient(90deg, ${pink}, ${blue})`, WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>vibre</span> vraiment
         </h1>
 
-        <p style={{ fontSize:18, color:'#7A88AA', maxWidth:520, lineHeight:1.6, marginBottom:40 }}>
+        <p style={{ fontSize:isMobile ? 15 : 18, color:'#7A88AA', maxWidth:520, lineHeight:1.6, margin:isMobile ? '0 0 28px' : '0 0 40px' }}>
           Amoureuse ou musicale — Vibz connecte des gens qui se ressemblent, sans frontières géographiques, avec la nostalgie du tchat des années 2000 et l&apos;énergie des salons à thèmes.
         </p>
 
         {/* Cartes features — rose / vert / bleu en rotation */}
-        <div style={{ display:'flex', gap:14, flexWrap:'wrap', justifyContent:'center', marginBottom:48 }}>
+        <div style={isMobile
+          ? { display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:10, width:'100%', maxWidth:420, marginBottom:32 }
+          : { display:'flex', gap:14, flexWrap:'wrap', justifyContent:'center', marginBottom:48 }}>
           {([
             { icon:'💬', label:'Messagerie rétro', sub:'Wizz & émoticônes',      action: () => setMode('login'),                accent: pink,  bg:'#FFF5F8' },
             { icon:'🎸', label:'Salons à thèmes',  sub:'Collabs & instruments',  action: () => setMode('signup'),               accent: green, bg:'#F4FBF6' },
@@ -830,47 +839,19 @@ export default function LandingPage() {
           ))}
         </div>
 
-        <button onClick={() => setMode('signup')} style={{ ...s.btnPrimary, width:'auto', padding:'16px 48px', fontSize:18, borderRadius:32 }}>
+        <button onClick={() => setMode('signup')} style={{ ...s.btnPrimary, width:isMobile ? '100%' : 'auto', maxWidth:420, padding:isMobile ? '15px 20px' : '16px 48px', fontSize:isMobile ? 16 : 18, borderRadius:32 }}>
           Rejoindre Vibz gratuitement →
         </button>
         <p style={{ marginTop:14, fontSize:12, color:'#9BA8C0' }}>
           Aucune carte bancaire · Gratuit pour toujours · Sécurisé par IA
         </p>
 
-        {/* Rangée d'avatars */}
-        <div style={{ marginTop:48, display:'flex', flexDirection:'column', alignItems:'center', gap:12 }}>
-          <div style={{ fontSize:11, fontWeight:800, letterSpacing:2, textTransform:'uppercase', color:'#9BA8C0' }}>
-            Connectés maintenant
+        {/* Communauté — uniquement des chiffres réels */}
+        {memberCount !== null && memberCount > 0 && (
+          <div style={{ marginTop:isMobile ? 28 : 40, display:'flex', alignItems:'center', gap:8, padding:'8px 16px', borderRadius:20, background:'rgba(200,239,212,0.5)', border:'1px solid rgba(82,192,122,0.25)', fontSize:12, fontWeight:800, color:'#2A7A5A' }}>
+            🎵 {memberCount} musicien{memberCount > 1 ? 's' : ''} déjà inscrit{memberCount > 1 ? 's' : ''}
           </div>
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            {FRIENDS.map((icon, i) => {
-              const colors = [
-                { bg:'rgba(224,122,154,0.12)', border:'rgba(224,122,154,0.3)' },
-                { bg:'rgba(107,184,232,0.12)', border:'rgba(107,184,232,0.3)' },
-                { bg:'rgba(82,192,122,0.12)',  border:'rgba(82,192,122,0.3)'  },
-              ]
-              const c = colors[i % 3]
-              return (
-                <div key={i} style={{
-                  width:40, height:40, borderRadius:'50%',
-                  background: c.bg, border:`2px solid ${c.border}`,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:20, position:'relative', cursor:'default',
-                }}>
-                  {icon}
-                  <div style={{
-                    position:'absolute', bottom:0, right:0,
-                    width:10, height:10, borderRadius:'50%',
-                    background: green, border:'2px solid white',
-                  }}/>
-                </div>
-              )
-            })}
-            <div style={{ fontSize:12, color:'#9BA8C0', marginLeft:8, fontWeight:800 }}>
-              + 239 musiciens
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Pied de page */}

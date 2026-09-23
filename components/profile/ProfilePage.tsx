@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
+import { useIsMobile } from '../../lib/useIsMobile'
 import { detectPlatform, getEmbedUrl, MUSIC_PLATFORMS, type MusicLink } from '../../lib/musicPlatforms'
 import AvatarUpload from '../shared/AvatarUpload'
 import NotificationSettings from '../shared/NotificationSettings'
@@ -81,6 +82,7 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function ProfilePage({ user }: Props) {
   const { theme: tk } = useTheme()
+  const isMobile = useIsMobile()
   const BG   = tk.bg2
   const SURF = tk.surface
   const BDR  = tk.border
@@ -120,6 +122,8 @@ export default function ProfilePage({ user }: Props) {
   const [notifMatch, setNotifMatch] = useState(true)
   const [notifMessage, setNotifMessage] = useState(true)
   const [shareCtx, setShareCtx] = useState<ShareContext | null>(null)
+  // Compteurs réels (likes donnés, conversations, matchs)
+  const [stats, setStats] = useState<{ likes: number; convs: number; matches: number } | null>(null)
   const [profile, setProfile] = useState({
     display_name: user.email?.split('@')[0]||'',
     bio:'', city:'', country:'FR',
@@ -166,6 +170,11 @@ export default function ProfilePage({ user }: Props) {
         favorite_artists: data.favorite_artists || [],
       })
     })
+    Promise.all([
+      supabase.from('likes').select('id', { count: 'exact', head: true }).eq('from_user', user.id),
+      supabase.from('conversations').select('id', { count: 'exact', head: true }).or(`user1.eq.${user.id},user2.eq.${user.id}`),
+      supabase.from('matches').select('id', { count: 'exact', head: true }).or(`user1.eq.${user.id},user2.eq.${user.id}`),
+    ]).then(([l, c, m]) => setStats({ likes: l.count || 0, convs: c.count || 0, matches: m.count || 0 }))
   }, [user.id])
 
   const toggle = (field:'instruments'|'music_genres'|'looking_for', val:string) => {
@@ -214,7 +223,7 @@ export default function ProfilePage({ user }: Props) {
   })
 
   const inp: React.CSSProperties = { width:'100%', padding:'10px 14px', border:`1px solid ${BDR}`, borderRadius:10, fontSize:13, fontFamily:'Nunito,sans-serif', outline:'none', background:INP, color:TXT, marginBottom:10 }
-  const card: React.CSSProperties = { background:SURF, border:`1px solid ${BDR}`, borderRadius:24, padding:20 }
+  const card: React.CSSProperties = { background:SURF, border:`1px solid ${BDR}`, borderRadius:isMobile ? 18 : 24, padding:isMobile ? 16 : 20, minWidth:0 }
   const lbl: React.CSSProperties = { fontSize:11, fontWeight:800, letterSpacing:1, textTransform:'uppercase', color:MUT, marginBottom:14, display:'block' }
 
   const filledSocials = SOCIALS.filter(s => (profile as unknown as Record<string,string>)[s.key])
@@ -223,10 +232,10 @@ export default function ProfilePage({ user }: Props) {
     : 0
 
   return (
-    <div style={{ padding:28, maxWidth:800, display:'flex', flexDirection:'column', gap:20 }}>
+    <div style={{ padding:isMobile ? '16px 12px 28px' : 28, maxWidth:800, width:'100%', margin:'0 auto', display:'flex', flexDirection:'column', gap:isMobile ? 14 : 20 }}>
 
       {/* ── En-tête profil ── */}
-      <div style={{ display:'flex', gap:20, alignItems:'flex-start' }}>
+      <div style={{ display:'flex', gap:isMobile ? 14 : 20, alignItems:'flex-start', flexWrap:'wrap' }}>
         {/* Avatar avec upload */}
         <AvatarUpload
           userId={user.id}
@@ -234,12 +243,16 @@ export default function ProfilePage({ user }: Props) {
           displayName={profile.display_name}
           onUpload={url => setAvatarUrl(url)}
         />
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>
-          <div style={{ fontSize:14, color:MUT, margin:'4px 0 12px' }}>{profile.city||'Ajoute ta ville'} · {user.email}</div>
-          <div style={{ display:'flex', gap:10, marginBottom:10 }}>
-            {['Likes','Contacts','Matches'].map(l => (
-              <div key={l} style={{ textAlign:'center' }}><div style={{ fontSize:18, fontWeight:700 }}>0</div><div style={{ fontSize:11, color:MUT }}>{l}</div></div>
+        <div style={{ flex:'1 1 220px', minWidth:0 }}>
+          <div style={{ fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>
+          <div style={{ fontSize:14, color:MUT, margin:'4px 0 12px', overflowWrap:'anywhere' }}>{profile.city||'Ajoute ta ville'} · {user.email}</div>
+          <div style={{ display:'flex', gap:16, marginBottom:10 }}>
+            {[
+              { l:'Likes donnés',  v:stats?.likes },
+              { l:'Conversations', v:stats?.convs },
+              { l:'Matchs',        v:stats?.matches },
+            ].map(s => (
+              <div key={s.l} style={{ textAlign:'center' }}><div style={{ fontSize:18, fontWeight:700 }}>{s.v ?? '–'}</div><div style={{ fontSize:11, color:MUT }}>{s.l}</div></div>
             ))}
           </div>
           {/* Boutons de partage profil */}
@@ -259,7 +272,7 @@ export default function ProfilePage({ user }: Props) {
       {/* ── Informations de base ── */}
       <div style={card}>
         <span style={lbl}>Informations de base</span>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+        <div className="vz-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
           <div>
             <input style={inp} placeholder="Pseudo / Nom affiché" value={profile.display_name} onChange={e => setProfile(p => ({ ...p, display_name:e.target.value }))} />
             <input style={inp} placeholder="Ville" value={profile.city} onChange={e => setProfile(p => ({ ...p, city:e.target.value }))} />
@@ -270,9 +283,9 @@ export default function ProfilePage({ user }: Props) {
 
       {/* ── Réseaux & plateformes ── */}
       <div style={card}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6, flexWrap:'wrap', gap:8 }}>
           <span style={lbl}>Mes liens & réseaux</span>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
             <span style={{ fontSize:11, color:MUT, fontWeight:700 }}>
               {profile.show_socials ? `${visibleCount} visible${visibleCount>1?'s':''} sur ${filledSocials.length}` : 'Mode caché actif'}
             </span>
@@ -347,7 +360,7 @@ export default function ProfilePage({ user }: Props) {
       </div>
 
       {/* ── Instruments & Genres ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+      <div className="vz-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:isMobile ? 14 : 16 }}>
         <div style={card}>
           <span style={lbl}>Mes instruments</span>
           <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
@@ -376,7 +389,7 @@ export default function ProfilePage({ user }: Props) {
 
         <div style={{ marginBottom:16 }}>
           <div style={{ fontSize:12, fontWeight:700, color:MUT, marginBottom:8 }}>Niveau</div>
-          <div style={{ display:'flex', gap:8 }}>
+          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
             {LEVELS.map(l => (
               <button key={l} onClick={() => setMusicProfile(p => ({ ...p, level: p.level === l ? '' : l }))}
                 style={tagBtnStyle(musicProfile.level === l, '#3BAD7A', '#D6F5E6', '#1A6645')}>
@@ -462,9 +475,9 @@ export default function ProfilePage({ user }: Props) {
             value={musicTitle}
             onChange={e => setMusicTitle(e.target.value)}
           />
-          <div style={{ display:'flex', gap:8 }}>
+          <div className="vz-wrap" style={{ display:'flex', gap:8 }}>
             <input
-              style={{ ...inp, marginBottom:0, flex:1, fontFamily:'monospace', fontSize:12 }}
+              style={{ ...inp, marginBottom:0, flex:'1 1 220px', minWidth:0, fontFamily:'monospace', fontSize:12 }}
               placeholder="https://open.spotify.com/... · deezer.com/... · soundcloud.com/... · youtu.be/..."
               value={musicInput}
               onChange={e => { setMusicInput(e.target.value); setMusicError('') }}
@@ -515,7 +528,7 @@ export default function ProfilePage({ user }: Props) {
                   border:`1.5px solid ${plat ? plat.color+'44' : BDR}`,
                   background: plat ? plat.bg : BG,
                 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px' }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 16px', flexWrap:'wrap' }}>
                     <span style={{ fontSize:20, flexShrink:0 }}>{plat?.icon ?? '🎵'}</span>
                     <div style={{ flex:1, minWidth:0 }}>
                       <div style={{ fontWeight:800, fontSize:13, color:TXT, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
@@ -575,7 +588,7 @@ export default function ProfilePage({ user }: Props) {
         <span style={lbl}>Confidentialité</span>
 
         <div style={{
-          display:'flex', justifyContent:'space-between', alignItems:'center',
+          display:'flex', justifyContent:'space-between', alignItems:'center', gap:12,
           padding:'14px 16px', borderRadius:16,
           background: !profile.show_socials ? '#2D1A25' : INP,
           marginBottom:16, transition:'background 0.2s',
@@ -645,7 +658,7 @@ export default function ProfilePage({ user }: Props) {
           </div>
         )}
 
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 0', borderTop:'1px solid rgba(196,84,122,0.08)', marginBottom:4 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, padding:'12px 0', borderTop:'1px solid rgba(196,84,122,0.08)', marginBottom:4 }}>
           <div>
             <div style={{ fontSize:13, fontWeight:700 }}>Afficher ma ville</div>
             <div style={{ fontSize:11, color:MUT, marginTop:2 }}>Les autres voient votre localisation</div>

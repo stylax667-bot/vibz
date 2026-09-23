@@ -224,3 +224,63 @@ body {
 input, textarea {
   font-family: 'Nunito', sans-serif;
 }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* clip (et non hidden) pour ne pas casser les éléments position:sticky */
+body {
+  overflow-x: clip;
+}
+
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+img, video, iframe {
+  max-width: 100%;
+}
+
+/* ── Responsive (≤ 768px) ────────────────────────────────────────────────────
+   Les composants utilisent des styles inline : ces classes les surchargent
+   sur petit écran (d'où les !important). */
+@media (max-width: 768px) {
+  /* iOS zoome sur les champs < 16px : on force 16px sur mobile */
+  input, textarea, select { font-size: 16px !important; }
+
+  .vz-stack   { grid-template-columns: 1fr !important; }
+  .vz-hide-sm { display: none !important; }
+  .vz-wrap    { flex-wrap: wrap !important; }
+  .vz-col     { flex-direction: column !important; align-items: stretch !important; }
+  .vz-pad-sm  { padding-left: 16px !important; padding-right: 16px !important; }
+  .vz-static  { position: static !important; }
+  .vz-scroll-x {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .vz-scroll-x::-webkit-scrollbar { display: none; }
+
+  /* Éléments flottants : au-dessus de la barre d'onglets mobile */
+  .vz-above-tabbar {
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    right: 12px !important;
+    left: 12px !important;
+    max-width: none !important;
+  }
+
+  /* Pages légales : cartes et bannières moins espacées */
+  main { min-width: 0; }
+  article, main > div { padding-left: 18px !important; padding-right: 18px !important; }
+  table { display: block; max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  .feature-card { min-width: 0; padding: 14px 10px; }
+  .feature-card:hover { transform: none; }
+}
+
+/* Espace pour la barre de navigation basse de l'app sur mobile */
+.vz-safe-bottom { padding-bottom: env(safe-area-inset-bottom); }

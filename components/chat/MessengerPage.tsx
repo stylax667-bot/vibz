@@ -1,465 +1,501 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
 
-interface Props { user: User }
+interface Props {
+  user: User
+  initialContact?: Profile | null   // ouvrir directement une conversation (depuis Découvrir)
+  onContactOpened?: () => void
+}
 
-// ── Avatars instruments disponibles ─────────────────────────────────────────
-const AVATAR_OPTIONS = [
-  { id:'guitar',    icon:'🎸', label:'Guitare' },
-  { id:'piano',     icon:'🎹', label:'Piano' },
-  { id:'mic',       icon:'🎤', label:'Chant' },
-  { id:'drums',     icon:'🥁', label:'Batterie' },
-  { id:'sax',       icon:'🎷', label:'Saxophone' },
-  { id:'violin',    icon:'🎻', label:'Violon' },
-  { id:'trumpet',   icon:'🎺', label:'Trompette' },
-  { id:'banjo',     icon:'🪕', label:'Banjo' },
-  { id:'flute',     icon:'🎵', label:'Flûte' },
-  { id:'harp',      icon:'🎶', label:'Harpe' },
-  { id:'bass',      icon:'🎙️', label:'Basse' },
-  { id:'dj',        icon:'🎧', label:'DJ' },
-  { id:'accordion', icon:'🪗', label:'Accordéon' },
-  { id:'note',      icon:'🎼', label:'Compositeur' },
-  { id:'butterfly', icon:'🦋', label:'Vibz' },
-]
+type ContactProfile = Profile & { allow_messages_from?: 'all' | 'matches' | 'none' }
 
-const STATUS_OPTIONS = [
-  { id:'online',  label:'En ligne',       color:'#52C07A', dot:'#52C07A' },
-  { id:'away',    label:'Occupé(e)',       color:'#F5A623', dot:'#F5A623' },
-  { id:'busy',    label:'Ne pas déranger', color:'#E07A9A', dot:'#E07A9A' },
-  { id:'offline', label:'Apparaître hors ligne', color:'#9BA8C0', dot:'#9BA8C0' },
-]
+type Contact = {
+  profile: ContactProfile
+  conversationId: string | null
+  lastAt: string | null
+  unread: number
+  isMatch: boolean
+}
+
+type ChatMsg = {
+  id: string
+  conversation_id: string
+  sender_id: string
+  content: string
+  message_type: string
+  created_at: string
+}
 
 const EMOJIS = ['😊','❤️','🎸','🎵','😂','🔥','✨','🥰','👋','🎹','🎤','🎧','😎','🎶','💕','🤩','😍','🙌','👌','💯','🎺','🥁','🎷','🎻','🪕']
 
-const CONTACTS = [
-  { id:'1', name:'Léa R.',  avatar:'🎸', status:'online',  statusMsg:'Guitariste depuis 8 ans 🎸', preview:'Haha oui je joue depuis 8 ans !', unread:2 },
-  { id:'2', name:'Tom K.',  avatar:'🥁', status:'online',  statusMsg:'À la recherche d\'un jam 🥁', preview:'On peut jam samedi ?', unread:0 },
-  { id:'3', name:'Sara M.', avatar:'🎹', status:'offline', statusMsg:'', preview:'Merci pour le follow !', unread:0 },
-  { id:'4', name:'Nico B.', avatar:'🎧', status:'away',    statusMsg:'En studio 🎵', preview:'À plus pour le jam 🥁', unread:1 },
-  { id:'5', name:'Julie P.',avatar:'🎤', status:'busy',    statusMsg:'Ne pas déranger svp', preview:'On se fait une collab ?', unread:0 },
-]
+const REPORT_REASONS = [
+  { id: 'harcelement',         label: 'Harcèlement' },
+  { id: 'spam',                label: 'Spam' },
+  { id: 'contenu_inapproprie', label: 'Contenu inapproprié' },
+  { id: 'usurpation',          label: 'Usurpation d\'identité' },
+  { id: 'autre',               label: 'Autre' },
+] as const
 
-const INIT_MESSAGES: Record<string, {id:string;from:string;content:string;time:string}[]> = {
-  '1': [
-    {id:'1',from:'them',content:'Salut ! J\'ai vu que tu jouais de la basse aussi ? 🎸',time:'14:22'},
-    {id:'2',from:'me',content:'Oui ! Depuis 5 ans 😊 Et toi la guitare depuis longtemps ?',time:'14:23'},
-    {id:'3',from:'them',content:'Haha oui je joue depuis 8 ans ! On devrait jammer un jour 🎵',time:'14:24'},
-  ],
-  '2': [{id:'1',from:'them',content:'On peut jam samedi ? 🥁',time:'15:10'}],
-  '3': [{id:'1',from:'them',content:'Merci pour le follow ! 🎹',time:'12:00'}],
-  '4': [{id:'1',from:'them',content:'À plus pour le jam 🥁',time:'10:30'}],
-  '5': [{id:'1',from:'them',content:'On se fait une collab ? 🎤',time:'09:15'}],
+const timeOf = (iso: string) => {
+  const d = new Date(iso)
+  const today = new Date().toDateString() === d.toDateString()
+  return today
+    ? `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
+    : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
-const statusColor = (s: string) => STATUS_OPTIONS.find(o=>o.id===s)?.dot || '#9BA8C0'
-const statusLabel = (s: string) => STATUS_OPTIONS.find(o=>o.id===s)?.label || 'Hors ligne'
-
-export default function MessengerPage({ user }: Props) {
+export default function MessengerPage({ user, initialContact, onContactOpened }: Props) {
   const { theme: tk } = useTheme()
+  const isMobile = useIsMobile()
   const font = 'Nunito, sans-serif'
   const pink  = '#E07A9A'
   const blue  = '#6BB8E8'
   const green = '#52C07A'
+  const BG = tk.bg2; const SURF = tk.surface; const BDR = tk.border; const TXT = tk.text; const MUT = tk.textMuted
 
-  // Alias thème
-  const BG   = tk.bg2
-  const SURF = tk.surface
-  const BDR  = tk.border
-  const TXT  = tk.text
-  const MUT  = tk.textMuted
-  const INP  = tk.inputBg
-  const SURF2 = tk.surface2
-
-  // ── Mon profil ─────────────────────────────────────────────────────────────
-  const [myAvatar,    setMyAvatar]    = useState('🎸')
-  const [myPseudo,    setMyPseudo]    = useState(user.email?.split('@')[0] || 'MonPseudo')
-  const [myStatus,    setMyStatus]    = useState('online')
-  const [myStatusMsg, setMyStatusMsg] = useState('Musicien sur Vibz 🎵')
-  const [showProfile, setShowProfile] = useState(false)
-  const [editPseudo,  setEditPseudo]  = useState(myPseudo)
-  const [editStatusMsg, setEditStatusMsg] = useState(myStatusMsg)
-
-  // ── Conversations ──────────────────────────────────────────────────────────
-  const [selected,   setSelected]   = useState(CONTACTS[0])
-  const [allMessages, setAllMessages] = useState(INIT_MESSAGES)
-  const messages = allMessages[selected.id] || []
-  const [input,      setInput]      = useState('')
-  const [blockedIds, setBlockedIds] = useState<Set<string>>(new Set())
+  const [me, setMe]                   = useState<Profile | null>(null)
+  const [contacts, setContacts]       = useState<Contact[]>([])
+  // Membre ouvert depuis Découvrir, sans conversation existante (conservé même si la liste se recharge)
+  const [pending, setPending]         = useState<ContactProfile | null>(null)
+  const [blocked, setBlocked]         = useState<Profile[]>([])
+  const [blockedMe, setBlockedMe]     = useState<Set<string>>(new Set())
+  const [loading, setLoading]         = useState(true)
+  const [selectedId, setSelectedId]   = useState<string | null>(null)
+  const [messages, setMessages]       = useState<ChatMsg[]>([])
+  const [input, setInput]             = useState('')
+  const [warning, setWarning]         = useState('')
+  const [notice, setNotice]           = useState('')
+  const [showEmojis, setShowEmojis]   = useState(false)
+  const [wizzShake, setWizzShake]     = useState(false)
+  const [reportOpen, setReportOpen]   = useState(false)
+  const [reportReason, setReportReason] = useState<typeof REPORT_REASONS[number]['id']>('harcelement')
+  const [confirmBlock, setConfirmBlock] = useState(false)
+  const [showBlocked, setShowBlocked] = useState(false)
   const endRef = useRef<HTMLDivElement>(null)
+  const selectedIdRef = useRef<string | null>(null)
+  selectedIdRef.current = selectedId
 
-  // ── Wizz ───────────────────────────────────────────────────────────────────
-  const [wizzing,       setWizzing]       = useState(false)
-  const [wizzReceived,  setWizzReceived]  = useState(false)
-  const [wizzShake,     setWizzShake]     = useState(false)
+  const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 3500) }
 
-  // ── Fenêtre de conversation ouverte ───────────────────────────────────────
-  const [openWindows, setOpenWindows] = useState<string[]>(['1'])
+  // ── Chargement : conversations + matchs + blocages (données réelles) ──
+  const loadAll = useCallback(async () => {
+    const [{ data: meRow }, { data: convs }, { data: matches }, { data: blocks }, { data: bm }, { data: unreadRows }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', user.id).maybeSingle(),
+      supabase.from('conversations').select('id, user1, user2, last_message_at').or(`user1.eq.${user.id},user2.eq.${user.id}`),
+      supabase.from('matches').select('user1, user2').or(`user1.eq.${user.id},user2.eq.${user.id}`),
+      supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id),
+      supabase.rpc('blocked_me'),
+      supabase.from('messages').select('conversation_id').eq('is_read', false).neq('sender_id', user.id),
+    ])
+    if (meRow) setMe(meRow as Profile)
 
-  // ── Signalement ────────────────────────────────────────────────────────────
-  const [reportOpen, setReportOpen] = useState(false)
+    const other = (r: { user1: string; user2: string }) => (r.user1 === user.id ? r.user2 : r.user1)
+    const convByUser = new Map<string, { id: string; last: string | null }>()
+    ;(convs || []).forEach(c => convByUser.set(other(c), { id: c.id, last: c.last_message_at }))
+    const matchIds = new Set((matches || []).map(other))
+    const blockedIds = new Set((blocks || []).map(b => b.blocked_id as string))
+    setBlockedMe(new Set((bm as string[] | null) || []))
 
-  useEffect(() => { endRef.current?.scrollIntoView({behavior:'smooth'}) }, [messages, selected])
+    const unread = new Map<string, number>()
+    ;(unreadRows || []).forEach(r => unread.set(r.conversation_id, (unread.get(r.conversation_id) || 0) + 1))
 
-  const now = () => {
-    const d = new Date()
-    return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}`
+    const ids = Array.from(new Set([...Array.from(convByUser.keys()), ...Array.from(matchIds), ...Array.from(blockedIds)]))
+    const { data: profs } = ids.length
+      ? await supabase.from('profiles').select('*').in('id', ids)
+      : { data: [] as Profile[] }
+    const byId = new Map((profs || []).map(p => [p.id, p as ContactProfile]))
+
+    setBlocked(Array.from(blockedIds).map(id => byId.get(id)).filter(Boolean) as Profile[])
+    setContacts(
+      ids.filter(id => !blockedIds.has(id) && byId.has(id)).map(id => {
+        const conv = convByUser.get(id)
+        return {
+          profile: byId.get(id)!,
+          conversationId: conv?.id ?? null,
+          lastAt: conv?.last ?? null,
+          unread: conv ? unread.get(conv.id) || 0 : 0,
+          isMatch: matchIds.has(id),
+        }
+      }).sort((a, b) => (b.lastAt || '').localeCompare(a.lastAt || ''))
+    )
+    setLoading(false)
+  }, [user.id])
+
+  useEffect(() => { loadAll() }, [loadAll])
+
+  // Conversation demandée depuis Découvrir : on l'ajoute si besoin puis on l'ouvre
+  useEffect(() => {
+    if (!initialContact || loading) return
+    setPending(initialContact)
+    setSelectedId(initialContact.id)
+    onContactOpened?.()
+  }, [initialContact, loading, onContactOpened])
+
+  const allContacts = useMemo<Contact[]>(() => {
+    if (!pending || contacts.some(c => c.profile.id === pending.id) || blocked.some(b => b.id === pending.id)) return contacts
+    return [{ profile: pending, conversationId: null, lastAt: null, unread: 0, isMatch: false }, ...contacts]
+  }, [contacts, pending, blocked])
+
+  // Sur ordinateur on ouvre la conversation la plus récente
+  useEffect(() => {
+    if (!isMobile && !selectedId && allContacts.length > 0 && !initialContact) setSelectedId(allContacts[0].profile.id)
+  }, [isMobile, selectedId, allContacts, initialContact])
+
+  const selected = allContacts.find(c => c.profile.id === selectedId) || null
+  const selectedBlocked = blocked.find(b => b.id === selectedId) || null
+  const selectedProfile: Profile | null = selected?.profile || selectedBlocked
+  const conversationId = selected?.conversationId ?? null
+  const conversationIdRef = useRef<string | null>(null)
+  conversationIdRef.current = conversationId
+
+  // ── Messages de la conversation ouverte ──
+  useEffect(() => {
+    setMessages([]); setReportOpen(false); setConfirmBlock(false); setWarning('')
+    if (!conversationId) return
+    let cancelled = false
+    supabase.from('messages').select('*').eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true }).limit(200)
+      .then(({ data }) => { if (!cancelled) setMessages((data as ChatMsg[]) || []) })
+    // Marquer comme lus
+    supabase.from('messages').update({ is_read: true })
+      .eq('conversation_id', conversationId).neq('sender_id', user.id).eq('is_read', false)
+      .then(() => setContacts(prev => prev.map(c => c.conversationId === conversationId ? { ...c, unread: 0 } : c)))
+    return () => { cancelled = true }
+  }, [conversationId, user.id])
+
+  // ── Temps réel : nouveaux messages (RLS : uniquement mes conversations) ──
+  useEffect(() => {
+    const ch = supabase.channel(`dm-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, payload => {
+        const m = payload.new as ChatMsg
+        setContacts(prev => {
+          const known = prev.find(c => c.conversationId === m.conversation_id)
+          if (!known) { loadAll(); return prev }
+          const isOpen = known.profile.id === selectedIdRef.current
+          return prev.map(c => c.conversationId === m.conversation_id
+            ? { ...c, lastAt: m.created_at, unread: isOpen || m.sender_id === user.id ? c.unread : c.unread + 1 }
+            : c).sort((a, b) => (b.lastAt || '').localeCompare(a.lastAt || ''))
+        })
+        setMessages(prev => {
+          if (m.conversation_id !== conversationIdRef.current || prev.some(x => x.id === m.id)) return prev
+          return [...prev, m]
+        })
+        if (m.conversation_id === conversationIdRef.current && m.sender_id !== user.id) {
+          supabase.from('messages').update({ is_read: true }).eq('id', m.id).then(() => {})
+          if (m.message_type === 'wizz') { setWizzShake(true); setTimeout(() => setWizzShake(false), 600) }
+        }
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [user.id, loadAll])
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  // ── Envoi ──
+  const canWrite = (() => {
+    if (!selected) return { ok: false, why: '' }
+    if (blockedMe.has(selected.profile.id)) return { ok: false, why: 'Ce membre ne reçoit plus tes messages.' }
+    const rule = selected.profile.allow_messages_from || 'all'
+    if (rule === 'none') return { ok: false, why: `${selected.profile.display_name} n'accepte pas de messages pour le moment.` }
+    if (rule === 'matches' && !selected.isMatch && !selected.conversationId) return { ok: false, why: `${selected.profile.display_name} n'accepte les messages que de ses matchs.` }
+    return { ok: true, why: '' }
+  })()
+
+  const ensureConversation = async (other: string): Promise<string | null> => {
+    const [u1, u2] = [user.id, other].sort()
+    const { data: existing } = await supabase.from('conversations').select('id').eq('user1', u1).eq('user2', u2).maybeSingle()
+    if (existing) return existing.id
+    const { data, error } = await supabase.from('conversations').insert({ user1: u1, user2: u2 }).select('id').single()
+    if (error || !data) return null
+    return data.id
   }
 
-  const addMsg = (contactId: string, from: string, content: string) => {
-    setAllMessages(prev => ({
-      ...prev,
-      [contactId]: [...(prev[contactId]||[]), {id:Date.now().toString(), from, content, time:now()}]
-    }))
-  }
-
-  const sendMsg = (content = input) => {
-    if (!content.trim()) return
-    addMsg(selected.id, 'me', content)
-    setInput('')
-    setTimeout(() => {
-      const replies = ['Trop cool ! 🎸','J\'adore ! 😊','On se fait ça 🎵','Super idée ! 🤩','Avec plaisir ! 💕','Haha yes 😂','T\'es au top 🙌']
-      addMsg(selected.id, 'them', replies[Math.floor(Math.random()*replies.length)])
-    }, 1200)
+  const sendMsg = async (content = input, type: 'text' | 'emoji' | 'wizz' = 'text') => {
+    const text = content.trim()
+    if (!text || !selected || !canWrite.ok) return
+    if (type === 'text') {
+      const result = moderateMessage(text)
+      if (result.isBlocked) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000); return }
+      if (result.isWarning) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000) }
+    }
+    const convId = selected.conversationId || await ensureConversation(selected.profile.id)
+    if (!convId) { flash('Impossible de démarrer la conversation.'); return }
+    if (type === 'text') setInput('')
+    const { data, error } = await supabase.from('messages')
+      .insert({ conversation_id: convId, sender_id: user.id, content: text, message_type: type })
+      .select('*').single()
+    if (error || !data) { if (type === 'text') setInput(text); flash('Message non envoyé.'); return }
+    const now = new Date().toISOString()
+    supabase.from('conversations').update({ last_message_at: now }).eq('id', convId).then(() => {})
+    setMessages(prev => prev.some(x => x.id === data.id) ? prev : [...prev, data as ChatMsg])
+    // Première conversation avec ce membre : on recharge la liste (la conversation existe maintenant)
+    if (!selected.conversationId) { await loadAll(); return }
+    setContacts(prev => prev.map(c => c.profile.id === selected.profile.id ? { ...c, lastAt: now } : c)
+      .sort((a, b) => (b.lastAt || '').localeCompare(a.lastAt || '')))
+    if (type !== 'text') setShowEmojis(false)
   }
 
   const sendWizz = () => {
-    setWizzing(true)
-    addMsg(selected.id, 'me', '⚡ Wizz !')
-    setTimeout(() => setWizzing(false), 600)
-    // Simuler réception wizz en retour
-    setTimeout(() => {
-      setWizzReceived(true)
-      setWizzShake(true)
-      addMsg(selected.id, 'them', '⚡ Wizz en retour !')
-      setTimeout(() => { setWizzReceived(false); setWizzShake(false) }, 3000)
-    }, 2000)
+    setWizzShake(true); setTimeout(() => setWizzShake(false), 600)
+    sendMsg('⚡ Wizz !', 'wizz')
   }
 
-  const openConversation = (c: typeof CONTACTS[0]) => {
-    setSelected(c)
-    if (!openWindows.includes(c.id)) setOpenWindows(p => [...p, c.id])
+  // ── Bloquer / débloquer ──
+  const block = async (p: Profile) => {
+    setConfirmBlock(false)
+    const { error } = await supabase.from('blocks').insert({ blocker_id: user.id, blocked_id: p.id })
+    if (error) { flash('Impossible de bloquer ce membre pour le moment.'); return }
+    flash(`🚫 ${p.display_name} est bloqué·e`)
+    await loadAll()
   }
 
-  const saveProfile = () => {
-    setMyPseudo(editPseudo)
-    setMyStatusMsg(editStatusMsg)
-    setShowProfile(false)
+  const unblock = async (p: Profile) => {
+    const { error } = await supabase.from('blocks').delete().eq('blocker_id', user.id).eq('blocked_id', p.id)
+    if (error) { flash('Impossible de débloquer pour le moment.'); return }
+    flash(`✅ ${p.display_name} est débloqué·e`)
+    await loadAll()
   }
 
-  // ── Composant : Avatar + Statut ────────────────────────────────────────────
-  const AvatarBubble = ({ avatar, status, size=36 }: { avatar:string; status:string; size?:number }) => (
-    <div style={{ position:'relative', width:size, height:size, flexShrink:0 }}>
-      <div style={{
-        width:size, height:size, borderRadius:'50%', fontSize:size*0.5,
-        background: tk.isDark
-          ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})`
-          : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
-        border: `2px solid ${BDR}`,
-        display:'flex', alignItems:'center', justifyContent:'center',
-      }}>{avatar}</div>
-      <div style={{
-        position:'absolute', bottom:0, right:0,
-        width:10, height:10, borderRadius:'50%',
-        background: statusColor(status),
-        border: `2px solid ${SURF}`,
-        boxShadow:'0 1px 3px rgba(0,0,0,0.15)',
-      }}/>
+  const sendReport = async () => {
+    if (!selectedProfile) return
+    const { error } = await supabase.from('reports').insert({
+      reporter_id: user.id, reported_user_id: selectedProfile.id, reason: reportReason,
+    })
+    setReportOpen(false)
+    flash(error ? 'Le signalement n\'a pas pu être envoyé.' : '🚩 Signalement envoyé à la modération. Merci.')
+  }
+
+  // ── Composants ──
+  const Avatar = ({ p, size = 36 }: { p: Profile | null; size?: number }) => (
+    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
+      {p?.avatar_url
+        ? <img src={p.avatar_url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${BDR}` }} />
+        : <div style={{
+            width: size, height: size, borderRadius: '50%', fontSize: size * 0.36, fontWeight: 800,
+            background: tk.isDark ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
+            color: tk.pinkDark, border: `2px solid ${BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>{(p?.display_name || p?.username || '?').slice(0, 2).toUpperCase()}</div>}
+      {p?.is_online && (
+        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: green, border: `2px solid ${SURF}` }} />
+      )}
+    </div>
+  )
+
+  const headerBtn = (color: string): React.CSSProperties => ({
+    padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 20, border: `1.5px solid ${color}55`,
+    background: `${color}14`, color, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: font, whiteSpace: 'nowrap',
+  })
+
+  // ── Liste des contacts ──
+  const list = (
+    <div style={{ borderRight: isMobile ? 'none' : `1.5px solid ${BDR}`, background: SURF, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+      <div style={{ padding: '14px 16px', borderBottom: `1.5px solid ${BDR}`, display: 'flex', alignItems: 'center', gap: 10, background: tk.isDark ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(135deg,#FFF5F8,#F0F7FD)' }}>
+        <Avatar p={me || ({ display_name: user.email || '' } as Profile)} size={42} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me?.display_name || user.email?.split('@')[0]}</div>
+          <div style={{ fontSize: 11, color: MUT }}>Mes conversations</div>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0', minHeight: 0 }}>
+        <div style={{ padding: '6px 16px 4px', fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: MUT }}>
+          Contacts ({allContacts.length})
+        </div>
+        {loading ? (
+          <div style={{ padding: 16, fontSize: 13, color: MUT }}>Chargement…</div>
+        ) : allContacts.length === 0 ? (
+          <div style={{ padding: '12px 16px', fontSize: 13, color: MUT, lineHeight: 1.6 }}>
+            Aucune conversation pour l&apos;instant.<br />Écris à un membre depuis <strong>Découvrir</strong> (bouton 💬) ou matche avec quelqu&apos;un ❤️
+          </div>
+        ) : allContacts.map(c => {
+          const active = selectedId === c.profile.id
+          return (
+            <button key={c.profile.id} onClick={() => setSelectedId(c.profile.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left', fontFamily: font,
+                padding: isMobile ? '12px 16px' : '10px 16px', cursor: 'pointer', border: 'none',
+                background: active ? (tk.isDark ? `linear-gradient(90deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(90deg,#FFF0F5,#F0F7FD)') : 'transparent',
+                borderLeft: active ? `3px solid ${pink}` : '3px solid transparent',
+              }}>
+              <Avatar p={c.profile} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.profile.display_name || c.profile.username}</span>
+                  {c.isMatch && <span title="Match" style={{ fontSize: 11 }}>💑</span>}
+                </div>
+                <div style={{ fontSize: 11, color: MUT }}>
+                  {c.lastAt ? `Dernier message · ${timeOf(c.lastAt)}` : 'Nouvelle conversation'}
+                </div>
+              </div>
+              {c.unread > 0 && (
+                <div style={{ background: pink, color: 'white', fontSize: 11, fontWeight: 800, borderRadius: 10, padding: '1px 7px', minWidth: 18, textAlign: 'center' }}>{c.unread}</div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── Membres bloqués ── */}
+      <div style={{ borderTop: `1.5px solid ${BDR}`, padding: '8px 12px', flexShrink: 0 }}>
+        <button onClick={() => setShowBlocked(v => !v)}
+          style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px 4px', fontFamily: font, fontSize: 12, fontWeight: 800, color: MUT }}>
+          <span>🚫 Bloqués ({blocked.length})</span>
+          <span style={{ fontSize: 10 }}>{showBlocked ? '▲' : '▼'}</span>
+        </button>
+        {showBlocked && (
+          blocked.length === 0
+            ? <div style={{ fontSize: 12, color: MUT, padding: '4px 4px 8px' }}>Tu n&apos;as bloqué personne.</div>
+            : <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingBottom: 6, maxHeight: 220, overflowY: 'auto' }}>
+                {blocked.map(p => (
+                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Avatar p={p} size={30} />
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.display_name || p.username}</span>
+                    <button onClick={() => unblock(p)} style={headerBtn(green)}>✅ Débloquer</button>
+                  </div>
+                ))}
+              </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // ── Conversation ──
+  const conversation = selectedProfile ? (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, minWidth: 0, animation: wizzShake ? 'wizz 0.5s ease' : 'none' }}>
+      <div style={{ padding: isMobile ? '10px 12px' : '12px 20px', borderBottom: `1.5px solid ${BDR}`, background: SURF, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        {isMobile && (
+          <button onClick={() => setSelectedId(null)} aria-label="Retour aux conversations"
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${BDR}`, background: 'transparent', color: TXT, fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>‹</button>
+        )}
+        <Avatar p={selectedProfile} size={isMobile ? 36 : 40} />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedProfile.display_name || selectedProfile.username}</div>
+          <div style={{ fontSize: 12, color: selectedProfile.is_online ? green : MUT, fontWeight: 600 }}>
+            {selectedBlocked ? 'Bloqué·e' : selectedProfile.is_online ? 'En ligne' : 'Hors ligne'}
+          </div>
+        </div>
+
+        {/* Actions — le bouton Bloquer / Débloquer est toujours visible */}
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          {!selectedBlocked && canWrite.ok && (
+            <button onClick={sendWizz} title="Envoyer un Wizz" style={headerBtn(blue)}>⚡{isMobile ? '' : ' Wizz'}</button>
+          )}
+          {!selectedBlocked && (
+            <button onClick={() => setReportOpen(v => !v)} title="Signaler" style={headerBtn(tk.isDark ? '#E8B06A' : '#B87A2A')}>🚩{isMobile ? '' : ' Signaler'}</button>
+          )}
+          {selectedBlocked
+            ? <button onClick={() => unblock(selectedBlocked)} style={headerBtn(green)}>✅ Débloquer</button>
+            : <button onClick={() => setConfirmBlock(true)} style={headerBtn(pink)}>🚫 Bloquer</button>}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, minHeight: 0, padding: isMobile ? 12 : '16px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, background: BG }}>
+        {confirmBlock && selected && (
+          <div className="animate-slide-up" style={{ background: SURF, border: `1.5px solid ${pink}44`, borderRadius: 18, padding: 18, margin: '0 auto', maxWidth: 380, width: '100%' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: TXT, marginBottom: 6 }}>🚫 Bloquer {selected.profile.display_name} ?</div>
+            <div style={{ fontSize: 12, color: MUT, lineHeight: 1.6, marginBottom: 14 }}>Ce membre ne pourra plus t&apos;écrire ni te voir dans Découvrir. Tu pourras le débloquer à tout moment (liste « Bloqués »).</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirmBlock(false)} style={{ flex: 1, padding: 11, borderRadius: 12, border: `1.5px solid ${BDR}`, background: 'transparent', color: MUT, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: font }}>Annuler</button>
+              <button onClick={() => block(selected.profile)} style={{ flex: 1, padding: 11, borderRadius: 12, border: 'none', background: `linear-gradient(135deg,#E07A7A,${pink})`, color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: font }}>Bloquer</button>
+            </div>
+          </div>
+        )}
+
+        {reportOpen && (
+          <div className="animate-slide-up" style={{ background: SURF, border: `1.5px solid ${pink}33`, borderRadius: 18, padding: 18, margin: '0 auto', maxWidth: 380, width: '100%' }}>
+            <div style={{ fontWeight: 800, fontSize: 15, color: TXT, marginBottom: 10 }}>🚩 Signaler {selectedProfile.display_name}</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+              {REPORT_REASONS.map(r => (
+                <button key={r.id} onClick={() => setReportReason(r.id)}
+                  style={{ padding: '7px 12px', borderRadius: 16, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: font, border: `1.5px solid ${reportReason === r.id ? pink : BDR}`, background: reportReason === r.id ? `${pink}18` : 'transparent', color: reportReason === r.id ? pink : MUT }}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setReportOpen(false)} style={{ flex: 1, padding: 11, borderRadius: 12, border: `1.5px solid ${BDR}`, background: 'transparent', color: MUT, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: font }}>Annuler</button>
+              <button onClick={sendReport} style={{ flex: 1, padding: 11, borderRadius: 12, border: 'none', background: `linear-gradient(135deg,#E8A06A,${pink})`, color: 'white', fontWeight: 800, fontSize: 13, cursor: 'pointer', fontFamily: font }}>Envoyer</button>
+            </div>
+          </div>
+        )}
+
+        {selectedBlocked ? (
+          <div style={{ margin: 'auto', textAlign: 'center', color: MUT, fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>
+            Tu as bloqué {selectedBlocked.display_name}. Débloque ce membre pour reprendre la conversation.
+          </div>
+        ) : messages.length === 0 && !confirmBlock && !reportOpen ? (
+          <div style={{ margin: 'auto', textAlign: 'center', color: MUT, fontSize: 13 }}>Dis bonjour à {selectedProfile.display_name} 👋</div>
+        ) : messages.map(msg => {
+          const mine = msg.sender_id === user.id
+          const isWizz = msg.message_type === 'wizz'
+          return (
+            <div key={msg.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexDirection: mine ? 'row-reverse' : 'row' }}>
+              <div style={{ maxWidth: isMobile ? '80%' : 360, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: MUT, margin: '0 4px 3px', textAlign: mine ? 'right' : 'left' }}>{timeOf(msg.created_at)}</div>
+                <div style={{
+                  padding: '9px 14px', wordBreak: 'break-word',
+                  borderRadius: mine ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  background: mine ? `linear-gradient(135deg,${pink},${blue})` : isWizz ? `${blue}22` : SURF,
+                  color: mine ? 'white' : TXT, fontSize: 14, lineHeight: 1.5,
+                  border: mine ? 'none' : `1.5px solid ${BDR}`,
+                }}>
+                  {msg.content}
+                  {extractMusicUrl(msg.content) && <MusicCard url={extractMusicUrl(msg.content)!} compact />}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        <div ref={endRef} />
+      </div>
+
+      {!selectedBlocked && (
+        <div style={{ borderTop: `1.5px solid ${BDR}`, background: SURF, flexShrink: 0 }}>
+          {warning && (
+            <div style={{ margin: '10px 12px 0', padding: '10px 14px', background: tk.modBg, color: tk.modText, borderRadius: 10, fontSize: 13, fontWeight: 600 }}>{warning}</div>
+          )}
+          {showEmojis && canWrite.ok && (
+            <div className="vz-scroll-x" style={{ padding: '8px 12px 0', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {EMOJIS.map(e => (
+                <button key={e} onClick={() => sendMsg(e, 'emoji')} style={{ fontSize: 22, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, flexShrink: 0 }}>{e}</button>
+              ))}
+            </div>
+          )}
+          {canWrite.ok ? (
+            <div style={{ padding: isMobile ? '10px' : '12px 16px', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button onClick={() => setShowEmojis(v => !v)} aria-label="Émojis"
+                style={{ width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${BDR}`, background: showEmojis ? tk.pinkLight : 'transparent', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>😊</button>
+              <input
+                style={{ flex: 1, minWidth: 0, padding: '11px 16px', border: `1.5px solid ${BDR}`, borderRadius: 24, fontSize: 14, fontFamily: font, outline: 'none', background: BG, color: TXT }}
+                value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}
+                placeholder={`Écrire à ${selectedProfile.display_name}…`} maxLength={2000} enterKeyHint="send"
+              />
+              <button onClick={() => sendMsg()} aria-label="Envoyer" style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', background: `linear-gradient(135deg,${pink},${blue})`, color: 'white', fontSize: 16, cursor: 'pointer', flexShrink: 0 }}>➤</button>
+            </div>
+          ) : (
+            <div style={{ padding: '14px 16px', fontSize: 13, color: MUT, textAlign: 'center' }}>{canWrite.why}</div>
+          )}
+        </div>
+      )}
+    </div>
+  ) : (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: MUT, fontSize: 14, padding: 24, textAlign: 'center' }}>
+      Sélectionne une conversation 💬
     </div>
   )
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', minHeight:'calc(100vh - 60px)', background:BG, fontFamily:font }}>
-
-      {/* ── SIDEBAR liste contacts ── */}
-      <div style={{ borderRight:`1.5px solid ${BDR}`, background:SURF, display:'flex', flexDirection:'column' }}>
-
-        {/* Mon profil */}
-        <div style={{ padding:'14px 16px', borderBottom:`1.5px solid ${BDR}`, background: tk.isDark
-          ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})`
-          : 'linear-gradient(135deg,#FFF5F8,#F0F7FD)' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, cursor:'pointer' }} onClick={() => { setEditPseudo(myPseudo); setEditStatusMsg(myStatusMsg); setShowProfile(true) }}>
-            <AvatarBubble avatar={myAvatar} status={myStatus} size={44} />
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:TXT, display:'flex', alignItems:'center', gap:6 }}>
-                {myPseudo}
-                <span style={{ fontSize:10, color:MUT, fontWeight:600 }}>✏️</span>
-              </div>
-              <div style={{ fontSize:11, color:MUT, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{myStatusMsg || statusLabel(myStatus)}</div>
-            </div>
-          </div>
-
-          {/* Sélecteur de statut */}
-          <div style={{ display:'flex', gap:5, marginTop:10, flexWrap:'wrap' }}>
-            {STATUS_OPTIONS.map(s => (
-              <button key={s.id} onClick={() => setMyStatus(s.id)} style={{
-                padding:'3px 8px', borderRadius:20, fontSize:10, fontWeight:700,
-                border: myStatus===s.id ? `1.5px solid ${s.dot}` : `1.5px solid ${BDR}`,
-                background: myStatus===s.id ? `${s.dot}22` : SURF,
-                color: myStatus===s.id ? s.dot : MUT,
-                cursor:'pointer', fontFamily:font,
-              }}>
-                <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:s.dot, marginRight:4, verticalAlign:'middle' }}/>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Liste contacts */}
-        <div style={{ flex:1, overflowY:'auto', padding:'8px 0' }}>
-          <div style={{ padding:'6px 16px 4px', fontSize:10, fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', color:MUT }}>
-            Contacts ({CONTACTS.filter(c=>!blockedIds.has(c.id)).length})
-          </div>
-          {CONTACTS.filter(c=>!blockedIds.has(c.id)).map(c => {
-            const msgs = allMessages[c.id] || []
-            const lastMsg = msgs[msgs.length-1]
-            const isActive = selected.id === c.id
-            const isOpen = openWindows.includes(c.id)
-            return (
-              <div key={c.id}
-                style={{
-                  display:'flex', alignItems:'center', gap:10,
-                  padding:'10px 16px', cursor:'pointer',
-                  background: isActive
-                    ? (tk.isDark ? `linear-gradient(90deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(90deg,#FFF0F5,#F0F7FD)')
-                    : 'transparent',
-                  borderLeft: isActive ? `3px solid ${pink}` : '3px solid transparent',
-                  transition:'all 0.1s',
-                  opacity: c.status==='offline' ? 0.6 : 1,
-                }}
-                onClick={() => openConversation(c)}
-              >
-                <AvatarBubble avatar={c.avatar} status={c.status} />
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                    <span style={{
-                      fontSize:13, fontWeight:700,
-                      color: c.status==='offline' ? MUT : TXT,
-                      fontStyle: c.status==='offline' ? 'italic' : 'normal',
-                    }}>{c.name}</span>
-                    {isOpen && <span style={{ fontSize:9, background:blue+'22', color:blue, padding:'1px 5px', borderRadius:8, fontWeight:700 }}>ouvert</span>}
-                  </div>
-                  <div style={{ fontSize:11, color:MUT, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                    {c.status!=='offline' && c.statusMsg ? c.statusMsg : lastMsg?.content || ''}
-                  </div>
-                </div>
-                {(allMessages[c.id]?.filter(m=>m.from==='them').length||0)>0 && c.id!==selected.id && (
-                  <div style={{ background:pink, color:'white', fontSize:10, fontWeight:700, borderRadius:10, padding:'1px 6px', minWidth:16, textAlign:'center' }}>
-                    {allMessages[c.id].filter(m=>m.from==='them').length}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* Onglets conversations ouvertes */}
-        {openWindows.length > 0 && (
-          <div style={{ borderTop:`1.5px solid ${BDR}`, padding:'8px 12px' }}>
-            <div style={{ fontSize:10, fontWeight:800, letterSpacing:1.5, textTransform:'uppercase', color:MUT, marginBottom:6 }}>Fenêtres</div>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-              {openWindows.map(wid => {
-                const c = CONTACTS.find(x=>x.id===wid)
-                if (!c) return null
-                return (
-                  <div key={wid} style={{
-                    display:'flex', alignItems:'center', gap:4,
-                    padding:'4px 8px', borderRadius:12,
-                    background: selected.id===wid ? `${pink}22` : SURF2,
-                    border: `1.5px solid ${selected.id===wid ? pink : BDR}`,
-                    cursor:'pointer', fontSize:12,
-                  }}>
-                    <span onClick={() => setSelected(c)}>{c.avatar} {c.name.split(' ')[0]}</span>
-                    <span onClick={() => setOpenWindows(p=>p.filter(x=>x!==wid))} style={{ color:MUT, fontSize:10, cursor:'pointer', marginLeft:2 }}>×</span>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── FENÊTRE DE CONVERSATION ── */}
-      <div style={{ display:'flex', flexDirection:'column', animation: wizzShake ? 'wizz 0.5s ease' : 'none' }}>
-
-        {/* Header contact */}
-        <div style={{
-          padding:'12px 20px', borderBottom:`1.5px solid ${BDR}`,
-          background:SURF, display:'flex', alignItems:'center', gap:12,
-          boxShadow:'0 2px 8px rgba(107,184,232,0.06)',
-        }}>
-          <AvatarBubble avatar={selected.avatar} status={selected.status} size={40} />
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:15, fontWeight:800, color:TXT }}>{selected.name}</div>
-            <div style={{ fontSize:12, color: selected.status==='offline' ? MUT : statusColor(selected.status), fontWeight:600 }}>
-              <span style={{ display:'inline-block', width:7, height:7, borderRadius:'50%', background:statusColor(selected.status), marginRight:5, verticalAlign:'middle' }}/>
-              {statusLabel(selected.status)}
-              {selected.statusMsg && selected.status!=='offline' && ` · ${selected.statusMsg}`}
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div style={{ display:'flex', gap:8 }}>
-            <button
-              style={{
-                padding:'7px 16px', borderRadius:20, border:`1.5px solid ${blue}`,
-                background:`${blue}18`, color:blue, fontSize:12, fontWeight:700,
-                cursor:'pointer', fontFamily:font,
-                animation: wizzing ? 'wizz 0.5s ease' : 'none',
-              }}
-              onClick={sendWizz}
-            >⚡ Wizz !</button>
-            <button
-              onClick={() => setReportOpen(true)}
-              style={{ padding:'7px 14px', borderRadius:20, border:`1.5px solid ${pink}33`, background:`${pink}11`, cursor:'pointer', fontSize:12, fontFamily:font, color:pink, fontWeight:700 }}
-            >🚩 Signaler</button>
-          </div>
-        </div>
-
-        {/* Wizz reçu */}
-        {wizzReceived && (
-          <div style={{ textAlign:'center', padding:'8px', background:`${blue}11`, fontSize:13, color:blue, fontWeight:700, borderBottom:`1px solid ${blue}22` }}>
-            ⚡ {selected.name} t&apos;a envoyé un Wizz ! ⚡
-          </div>
-        )}
-
-        {/* Barre emojis */}
-        <div style={{ padding:'8px 16px 6px', display:'flex', gap:5, flexWrap:'wrap', borderBottom:`1px solid ${BDR}`, background:SURF }}>
-          {EMOJIS.map(e => (
-            <span key={e} style={{ fontSize:18, cursor:'pointer', display:'inline-block', transition:'transform 0.1s' }}
-              onClick={() => sendMsg(e)}
-              onMouseEnter={ev=>(ev.currentTarget.style.transform='scale(1.4)')}
-              onMouseLeave={ev=>(ev.currentTarget.style.transform='scale(1)')}>
-              {e}
-            </span>
-          ))}
-        </div>
-
-        {/* Messages */}
-        <div style={{ flex:1, padding:'16px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:10, background:BG, maxHeight:'calc(100vh - 300px)' }}>
-          {reportOpen && (
-            <div className="animate-slide-up" style={{ background:SURF, border:`1.5px solid ${pink}33`, borderRadius:18, padding:20, margin:'0 auto', maxWidth:380, width:'100%', boxShadow:`0 8px 32px ${pink}22` }}>
-              <div style={{ fontSize:32, textAlign:'center', marginBottom:8 }}>🚨</div>
-              <div style={{ fontWeight:800, fontSize:15, textAlign:'center', marginBottom:6, color:TXT }}>Signalement — {selected.name}</div>
-              <div style={{ fontSize:12, color:MUT, textAlign:'center', lineHeight:1.6, marginBottom:16 }}>Notre IA Guard a détecté un comportement potentiellement inapproprié. Que souhaitez-vous faire ?</div>
-              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                <button onClick={() => { setBlockedIds(p=>new Set(Array.from(p).concat(selected.id))); setReportOpen(false); setSelected(CONTACTS.find(c=>!blockedIds.has(c.id)&&c.id!==selected.id)||CONTACTS[0]) }}
-                  style={{ padding:'12px', borderRadius:14, border:'none', cursor:'pointer', background:`linear-gradient(135deg,#E07A7A,${pink})`, color:'white', fontWeight:800, fontSize:13, fontFamily:font }}>
-                  🚫 Bloquer définitivement {selected.name}
-                </button>
-                <button onClick={() => setReportOpen(false)}
-                  style={{ padding:'12px', borderRadius:14, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${green},#1D9E75)`, color:'white', fontWeight:800, fontSize:13, fontFamily:font }}>
-                  ✅ Continuer la discussion
-                </button>
-                <button onClick={() => setReportOpen(false)}
-                  style={{ padding:'9px', borderRadius:14, border:`1.5px solid ${BDR}`, background:'transparent', cursor:'pointer', fontSize:12, color:MUT, fontFamily:font, fontWeight:700 }}>
-                  Décider plus tard
-                </button>
-              </div>
-            </div>
-          )}
-
-          {messages.map(msg => (
-            <div key={msg.id} style={{ display:'flex', gap:8, alignItems:'flex-end', flexDirection:msg.from==='me'?'row-reverse':'row' }}>
-              <AvatarBubble avatar={msg.from==='me'?myAvatar:selected.avatar} status={msg.from==='me'?myStatus:selected.status} size={28} />
-              <div>
-                <div style={{ fontSize:10, color:MUT, margin:'0 4px 3px', textAlign:msg.from==='me'?'right':'left' }}>
-                  {msg.from==='me' ? myPseudo : selected.name} · {msg.time}
-                </div>
-                <div style={{
-                  maxWidth:300, padding:'9px 14px',
-                  borderRadius: msg.from==='me' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                  background: msg.from==='me'
-                    ? `linear-gradient(135deg,${pink},${blue})`
-                    : msg.content.startsWith('⚡') ? `${blue}22` : SURF,
-                  color: msg.from==='me' ? 'white' : TXT,
-                  fontSize:13, lineHeight:1.5,
-                  border: msg.from==='me' ? 'none' : `1.5px solid ${BDR}`,
-                  boxShadow: msg.from==='me' ? `0 4px 12px ${pink}33` : '0 1px 4px rgba(0,0,0,0.04)',
-                }}>
-                  {msg.content}
-                  {/* Carte musicale intégrée si lien musical détecté */}
-                  {extractMusicUrl(msg.content) && (
-                    <MusicCard url={extractMusicUrl(msg.content)!} compact />
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-          <div ref={endRef}/>
-        </div>
-
-        {/* Zone de saisie */}
-        <div style={{ padding:'12px 16px', borderTop:`1.5px solid ${BDR}`, display:'flex', gap:8, alignItems:'center', background:SURF }}>
-          <input
-            style={{ flex:1, padding:'10px 16px', border:`1.5px solid ${BDR}`, borderRadius:24, fontSize:13, fontFamily:font, outline:'none', background:BG, color:TXT }}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key==='Enter' && sendMsg()}
-            placeholder={`Écrire à ${selected.name}...`}
-          />
-          <button onClick={() => sendMsg()} style={{
-            width:38, height:38, borderRadius:'50%', border:'none',
-            background:`linear-gradient(135deg,${pink},${blue})`,
-            color:'white', fontSize:16, cursor:'pointer',
-            boxShadow:`0 4px 12px ${pink}44`,
-          }}>➤</button>
-        </div>
-      </div>
-
-      {/* ── MODAL PROFIL ── */}
-      {showProfile && (
-        <div style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(26,30,46,0.5)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
-          onClick={() => setShowProfile(false)}>
-          <div onClick={e=>e.stopPropagation()} className="animate-slide-up" style={{
-            background:SURF, borderRadius:24, width:'100%', maxWidth:480, padding:28,
-            boxShadow:`0 24px 64px ${pink}22`, border:`1.5px solid ${BDR}`,
-          }}>
-            <div style={{ fontSize:18, fontWeight:800, color:TXT, marginBottom:4 }}>✏️ Mon profil Vibz</div>
-            <div style={{ fontSize:12, color:MUT, marginBottom:20 }}>Personnalise ton apparence et ton pseudo</div>
-
-            {/* Pseudo */}
-            <label style={{ fontSize:12, fontWeight:700, color:TXT, display:'block', marginBottom:6 }}>Pseudo</label>
-            <input value={editPseudo} onChange={e=>setEditPseudo(e.target.value)}
-              style={{ width:'100%', padding:'10px 14px', border:`1.5px solid ${BDR}`, borderRadius:12, fontSize:14, fontFamily:font, outline:'none', background:BG, color:TXT, boxSizing:'border-box', marginBottom:14 }}
-              placeholder="Ton pseudo Vibz..." />
-
-            {/* Message de statut */}
-            <label style={{ fontSize:12, fontWeight:700, color:TXT, display:'block', marginBottom:6 }}>Message de statut</label>
-            <input value={editStatusMsg} onChange={e=>setEditStatusMsg(e.target.value)}
-              style={{ width:'100%', padding:'10px 14px', border:`1.5px solid ${BDR}`, borderRadius:12, fontSize:14, fontFamily:font, outline:'none', background:BG, color:TXT, boxSizing:'border-box', marginBottom:20 }}
-              placeholder="Ce qui me définit musicalement..." />
-
-            {/* Avatar */}
-            <label style={{ fontSize:12, fontWeight:700, color:TXT, display:'block', marginBottom:10 }}>Avatar</label>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:24 }}>
-              {AVATAR_OPTIONS.map(a => (
-                <button key={a.id} onClick={() => setMyAvatar(a.icon)} title={a.label} style={{
-                  width:44, height:44, borderRadius:12, fontSize:22,
-                  border: myAvatar===a.icon ? `2px solid ${pink}` : `2px solid ${BDR}`,
-                  background: myAvatar===a.icon ? `${pink}11` : SURF2,
-                  cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center',
-                  boxShadow: myAvatar===a.icon ? `0 2px 8px ${pink}33` : 'none',
-                }}>
-                  {a.icon}
-                </button>
-              ))}
-            </div>
-
-            <div style={{ display:'flex', gap:10 }}>
-              <button onClick={saveProfile} style={{
-                flex:1, padding:'12px', borderRadius:14, border:'none', cursor:'pointer',
-                background:`linear-gradient(135deg,${pink},${blue})`, color:'white',
-                fontWeight:800, fontSize:14, fontFamily:font,
-              }}>Enregistrer</button>
-              <button onClick={() => setShowProfile(false)} style={{
-                padding:'12px 20px', borderRadius:14, border:`1.5px solid ${BDR}`,
-                background:SURF, cursor:'pointer', fontSize:14, color:MUT, fontFamily:font, fontWeight:700,
-              }}>Annuler</button>
-            </div>
-          </div>
+    <div style={{ height: 'var(--vz-app-h, calc(100vh - 60px))', background: BG, fontFamily: font, position: 'relative', overflow: 'hidden',
+      display: isMobile ? 'block' : 'grid', gridTemplateColumns: isMobile ? undefined : '280px 1fr' }}>
+      {isMobile ? (selectedProfile ? conversation : list) : <>{list}{conversation}</>}
+      {notice && (
+        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'calc(100% - 24px)', padding: '10px 16px', borderRadius: 12, background: TXT, color: SURF, fontSize: 13, fontWeight: 700, zIndex: 50 }}>
+          {notice}
         </div>
       )}
     </div>

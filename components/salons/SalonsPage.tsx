@@ -1,951 +1,585 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
+import { supabase } from '../../lib/supabase'
 import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
 import { useTheme } from '../../lib/theme'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { CATALOG_BY_ID, searchCatalog, norm } from '../../lib/musicCatalog'
+import { openMixSalon, openOfficialSalon, closeSalon, comboKey, type SalonRow } from '../../lib/salons'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
-import VinylMixCreator, { type MixSalon } from '../shared/VinylMixCreator'
+import VinylMixCreator from '../shared/VinylMixCreator'
 
-interface Props { user: User | null; initialSalonId?: string | null }
+interface Props {
+  user: User
+  initialSalonId?: string | null            // id (uuid) d'un salon à ouvrir directement
+  onInitialSalonOpened?: () => void
+  onSalonChange?: (id: string | null) => void
+  salonCounts: Record<string, number>        // présence réelle par salon (uuid)
+}
 
 const font  = 'Nunito, sans-serif'
 const pink  = '#E07A9A'
 const green = '#52C07A'
 const blue  = '#6BB8E8'
 
-// ── 12 salons principaux ──────────────────────────────────────────────────────
-const MAIN_SALONS = [
-  { id:'1',  icon:'🎸', name:'Rock · Metal · Punk',       count:47,  cat:'Styles',      color:'#E07A9A', hasMod:true  },
-  { id:'2',  icon:'🎷', name:'Jazz · Blues · Soul',        count:23,  cat:'Styles',      color:'#6BB8E8', hasMod:false },
-  { id:'3',  icon:'🎧', name:'Électro · Hip-Hop · Urbain', count:56,  cat:'Styles',      color:'#A78BDB', hasMod:true  },
-  { id:'4',  icon:'🎸', name:'Cordes',                    count:31,  cat:'Instruments', color:'#52C07A', hasMod:false },
-  { id:'5',  icon:'🥁', name:'Rythme & Percussions',      count:19,  cat:'Instruments', color:'#E07A9A', hasMod:false },
-  { id:'6',  icon:'🎹', name:'Claviers · Voix · Chœurs',  count:28,  cat:'Instruments', color:'#6BB8E8', hasMod:true  },
-  { id:'7',  icon:'🎪', name:'Concerts à ne pas louper',  count:88,  cat:'Événements',  color:'#52C07A', hasMod:true  },
-  { id:'8',  icon:'🏟️', name:'Festivals & Scènes',        count:62,  cat:'Événements',  color:'#6BB8E8', hasMod:false },
-  { id:'9',  icon:'📢', name:'Casting & Annonces',         count:38,  cat:'Événements',  color:'#E07A9A', hasMod:true  },
-  { id:'10', icon:'❤️', name:'Coup de foudre musical',    count:74,  cat:'Rencontres',  color:'#E07A9A', hasMod:true  },
-  { id:'11', icon:'🤝', name:'Collabs & Duos',             count:44,  cat:'Rencontres',  color:'#52C07A', hasMod:true  },
-  { id:'12', icon:'🌍', name:'International & Multilingue',count:201, cat:'Rencontres',  color:'#6BB8E8', hasMod:true  },
+// ── Salons officiels Vibz (créés en base à la première visite) ────────────────
+type CatalogSalon = { id: string; icon: string; name: string; cat: string; color: string; family?: string }
+
+const MAIN_SALONS: CatalogSalon[] = [
+  { id:'1',  icon:'🎸', name:'Rock · Metal · Punk',        cat:'Styles',      color:'#E07A9A' },
+  { id:'2',  icon:'🎷', name:'Jazz · Blues · Soul',         cat:'Styles',      color:'#6BB8E8' },
+  { id:'3',  icon:'🎧', name:'Électro · Hip-Hop · Urbain',  cat:'Styles',      color:'#A78BDB' },
+  { id:'4',  icon:'🎸', name:'Cordes',                     cat:'Instruments', color:'#52C07A' },
+  { id:'5',  icon:'🥁', name:'Rythme & Percussions',       cat:'Instruments', color:'#E07A9A' },
+  { id:'6',  icon:'🎹', name:'Claviers · Voix · Chœurs',   cat:'Instruments', color:'#6BB8E8' },
+  { id:'7',  icon:'🎪', name:'Concerts à ne pas louper',   cat:'Événements',  color:'#52C07A' },
+  { id:'8',  icon:'🏟️', name:'Festivals & Scènes',         cat:'Événements',  color:'#6BB8E8' },
+  { id:'9',  icon:'📢', name:'Casting & Annonces',          cat:'Événements',  color:'#E07A9A' },
+  { id:'10', icon:'❤️', name:'Coup de foudre musical',     cat:'Rencontres',  color:'#E07A9A' },
+  { id:'11', icon:'🤝', name:'Collabs & Duos',              cat:'Rencontres',  color:'#52C07A' },
+  { id:'12', icon:'🌍', name:'International & Multilingue', cat:'Rencontres',  color:'#6BB8E8' },
 ]
 
-// ── 26 salons par genre musical ───────────────────────────────────────────────
-const GENRE_SALONS = [
-  { id:'13', icon:'🎸', name:'Rock',                count:42, cat:'Styles', color:'#E8395A', hasMod:false },
-  { id:'14', icon:'🤘', name:'Métal',               count:28, cat:'Styles', color:'#CC2200', hasMod:false },
-  { id:'15', icon:'⚡', name:'Punk · Hardcore',      count:19, cat:'Styles', color:'#FF5722', hasMod:false },
-  { id:'16', icon:'🌧️', name:'Grunge · Alternative', count:22, cat:'Styles', color:'#795548', hasMod:false },
-  { id:'17', icon:'🌿', name:'Indie Rock · Post-Rock',count:31,cat:'Styles', color:'#9C27B0', hasMod:false },
-  { id:'18', icon:'🎵', name:'Blues',               count:15, cat:'Styles', color:'#1565C0', hasMod:false },
-  { id:'19', icon:'🎤', name:'Soul · Gospel',       count:24, cat:'Styles', color:'#FF8F00', hasMod:false },
-  { id:'20', icon:'🕺', name:'R&B · Funk',          count:36, cat:'Styles', color:'#7B1FA2', hasMod:false },
-  { id:'21', icon:'🪩', name:'Disco · Groove',      count:18, cat:'Styles', color:'#E91E63', hasMod:false },
-  { id:'22', icon:'🏠', name:'House · Deep House',  count:44, cat:'Styles', color:'#FF4081', hasMod:true  },
-  { id:'23', icon:'🔊', name:'Techno · Industrial', count:38, cat:'Styles', color:'#546E7A', hasMod:true  },
-  { id:'24', icon:'🌌', name:'Trance · Psytrance',  count:27, cat:'Styles', color:'#7C4DFF', hasMod:false },
-  { id:'25', icon:'🥁', name:'Drum & Bass · Jungle',count:33, cat:'Styles', color:'#FF6D00', hasMod:false },
-  { id:'26', icon:'🔈', name:'Dubstep · Bass Music',count:21, cat:'Styles', color:'#64DD17', hasMod:false },
-  { id:'27', icon:'🌊', name:'Ambient · Drone',     count:12, cat:'Styles', color:'#80CBC4', hasMod:false },
-  { id:'28', icon:'🌆', name:'Synthwave · Retrowave',count:29,cat:'Styles', color:'#CE93D8', hasMod:false },
-  { id:'29', icon:'☁️', name:'Lo-fi · Chillhop',   count:51, cat:'Styles', color:'#A5D6A7', hasMod:false },
-  { id:'30', icon:'🎤', name:'Trap · Cloud Rap',    count:45, cat:'Styles', color:'#607D8B', hasMod:true  },
-  { id:'31', icon:'🌸', name:'Pop · Dance Pop',     count:67, cat:'Styles', color:'#F06292', hasMod:true  },
-  { id:'32', icon:'💫', name:'K-Pop · J-Pop',       count:89, cat:'Styles', color:'#FF80AB', hasMod:true  },
-  { id:'33', icon:'🎻', name:'Classique · Opéra',   count:16, cat:'Styles', color:'#A1887F', hasMod:false },
-  { id:'34', icon:'🪕', name:'Folk · Acoustique',   count:34, cat:'Styles', color:'#8BC34A', hasMod:false },
-  { id:'35', icon:'🤠', name:'Country · Bluegrass', count:14, cat:'Styles', color:'#FFA726', hasMod:false },
-  { id:'36', icon:'🌴', name:'Reggae · Ska · Dub',  count:26, cat:'Styles', color:'#4CAF50', hasMod:false },
-  { id:'37', icon:'💃', name:'Latin · Bossa Nova',  count:31, cat:'Styles', color:'#F44336', hasMod:false },
-  { id:'38', icon:'🌍', name:'World · Afrobeat',    count:23, cat:'Styles', color:'#E65100', hasMod:false },
+const GENRE_SALONS: CatalogSalon[] = [
+  ['13','🎸','Rock','#E8395A'], ['14','🤘','Métal','#CC2200'], ['15','⚡','Punk · Hardcore','#FF5722'],
+  ['16','🌧️','Grunge · Alternative','#795548'], ['17','🌿','Indie Rock · Post-Rock','#9C27B0'], ['18','🎵','Blues','#1565C0'],
+  ['19','🎤','Soul · Gospel','#FF8F00'], ['20','🕺','R&B · Funk','#7B1FA2'], ['21','🪩','Disco · Groove','#E91E63'],
+  ['22','🏠','House · Deep House','#FF4081'], ['23','🔊','Techno · Industrial','#546E7A'], ['24','🌌','Trance · Psytrance','#7C4DFF'],
+  ['25','🥁','Drum & Bass · Jungle','#FF6D00'], ['26','🔈','Dubstep · Bass Music','#64DD17'], ['27','🌊','Ambient · Drone','#80CBC4'],
+  ['28','🌆','Synthwave · Retrowave','#CE93D8'], ['29','☁️','Lo-fi · Chillhop','#A5D6A7'], ['30','🎤','Trap · Cloud Rap','#607D8B'],
+  ['31','🌸','Pop · Dance Pop','#F06292'], ['32','💫','K-Pop · J-Pop','#FF80AB'], ['33','🎻','Classique · Opéra','#A1887F'],
+  ['34','🪕','Folk · Acoustique','#8BC34A'], ['35','🤠','Country · Bluegrass','#FFA726'], ['36','🌴','Reggae · Ska · Dub','#4CAF50'],
+  ['37','💃','Latin · Bossa Nova','#F44336'], ['38','🌍','World · Afrobeat','#E65100'],
+].map(([id, icon, name, color]) => ({ id, icon, name, color, cat: 'Styles' }))
+
+const INSTR_FAMILIES: [string, [string, string, string, string][]][] = [
+  ['🎸 Cordes', [
+    ['39','🎸','Guitare électrique','#52C07A'], ['40','🎸','Guitare acoustique · Folk','#6DBF6D'], ['41','🎸','Guitare basse','#3DAD7A'],
+    ['42','🎻','Violon · Alto','#8BC34A'], ['43','🎻','Violoncelle · Contrebasse','#558B2F'], ['44','🪕','Ukulélé · Mandoline · Banjo','#9CCC65'],
+    ['45','🎵','Harpe · Sitar · Luth','#AED581'],
+  ]],
+  ['🎹 Claviers & Électro', [
+    ['46','🎹','Piano acoustique','#29B6F6'], ['47','🎹','Piano numérique · Claviers','#0288D1'], ['48','🎛️','Synthétiseur · Modulaire','#7C4DFF'],
+    ['49','🎹','Orgue · Hammond','#5E35B1'], ['50','🪗','Accordéon · Harmonica','#AB47BC'], ['51','🎧','Beatmaking · MPC · Launchpad','#8E24AA'],
+  ]],
+  ['🥁 Percussions', [
+    ['52','🥁','Batterie acoustique','#EF5350'], ['53','🥁','Batterie électronique','#E53935'], ['54','🪘','Cajon · Djembé · Congas','#FF7043'],
+    ['55','🪘','Percussions latines','#FF5722'], ['56','🎵','Marimba · Xylophone · Vibes','#FFCA28'], ['57','🎵','Hang drum · Handpan','#FFB300'],
+  ]],
+  ['🎷 Vents', [
+    ['58','🎷','Saxophone','#FF8F00'], ['59','🎺','Trompette · Bugle','#FFA000'], ['60','🎺','Trombone · Tuba','#F57F17'],
+    ['61','🎵','Clarinette · Hautbois · Basson','#6D4C41'], ['62','🎵','Flûte traversière','#80CBC4'], ['63','🎵','Cor · Cor anglais','#26A69A'],
+    ['64','🎵','Cornemuse · Flûte irlandaise','#00897B'],
+  ]],
+  ['🎤 Voix', [
+    ['65','🎤','Chant classique · Lyrique','#EC407A'], ['66','🎤','Chant pop · Rock · Indie','#E91E63'], ['67','🎤','Rap · Slam · Spoken word','#AD1457'],
+    ['68','🎤','Beatbox','#880E4F'], ['69','🎶','Chœurs · Harmonies vocales','#F06292'],
+  ]],
+  ['🎧 Production', [
+    ['70','🎧','DJ · Platines · Mixage','#546E7A'], ['71','💻','Producteur · DAW · Studio','#37474F'], ['72','🎸','Guitare électro · Pédaliers','#455A64'],
+    ['73','🎵','Lap steel · Pedal steel','#78909C'], ['74','🎵','Theremin · Instruments rares','#90A4AE'],
+  ]],
 ]
+const INSTR_SALONS: CatalogSalon[] = INSTR_FAMILIES.flatMap(([family, items]) =>
+  items.map(([id, icon, name, color]) => ({ id, icon, name, color, cat: 'Instruments', family })))
 
-// ── Salons instruments — liste exhaustive ─────────────────────────────────────
-const INSTR_SALONS = [
-  // Cordes
-  { id:'39', icon:'🎸', name:'Guitare électrique',         count:54, cat:'Instruments', color:'#52C07A', hasMod:false },
-  { id:'40', icon:'🎸', name:'Guitare acoustique · Folk',   count:38, cat:'Instruments', color:'#6DBF6D', hasMod:false },
-  { id:'41', icon:'🎸', name:'Guitare basse',               count:29, cat:'Instruments', color:'#3DAD7A', hasMod:false },
-  { id:'42', icon:'🎻', name:'Violon · Alto',               count:18, cat:'Instruments', color:'#8BC34A', hasMod:false },
-  { id:'43', icon:'🎻', name:'Violoncelle · Contrebasse',   count:11, cat:'Instruments', color:'#558B2F', hasMod:false },
-  { id:'44', icon:'🪕', name:'Ukulélé · Mandoline · Banjo', count:22, cat:'Instruments', color:'#9CCC65', hasMod:false },
-  { id:'45', icon:'🎵', name:'Harpe · Sitar · Luth',        count:8,  cat:'Instruments', color:'#AED581', hasMod:false },
-  // Claviers / Électronique
-  { id:'46', icon:'🎹', name:'Piano acoustique',            count:32, cat:'Instruments', color:'#29B6F6', hasMod:false },
-  { id:'47', icon:'🎹', name:'Piano numérique · Claviers',  count:27, cat:'Instruments', color:'#0288D1', hasMod:false },
-  { id:'48', icon:'🎛️', name:'Synthétiseur · Modulaire',   count:35, cat:'Instruments', color:'#7C4DFF', hasMod:false },
-  { id:'49', icon:'🎹', name:'Orgue · Hammond',             count:14, cat:'Instruments', color:'#5E35B1', hasMod:false },
-  { id:'50', icon:'🪗', name:'Accordéon · Harmonica',       count:16, cat:'Instruments', color:'#AB47BC', hasMod:false },
-  { id:'51', icon:'🎧', name:'Beatmaking · MPC · Launchpad',count:43, cat:'Instruments', color:'#8E24AA', hasMod:true  },
-  // Percussions
-  { id:'52', icon:'🥁', name:'Batterie acoustique',         count:41, cat:'Instruments', color:'#EF5350', hasMod:false },
-  { id:'53', icon:'🥁', name:'Batterie électronique',       count:28, cat:'Instruments', color:'#E53935', hasMod:false },
-  { id:'54', icon:'🪘', name:'Cajon · Djembé · Congas',     count:19, cat:'Instruments', color:'#FF7043', hasMod:false },
-  { id:'55', icon:'🪘', name:'Percussions latines',         count:13, cat:'Instruments', color:'#FF5722', hasMod:false },
-  { id:'56', icon:'🎵', name:'Marimba · Xylophone · Vibes', count:9,  cat:'Instruments', color:'#FFCA28', hasMod:false },
-  { id:'57', icon:'🎵', name:'Hang drum · Handpan',         count:12, cat:'Instruments', color:'#FFB300', hasMod:false },
-  // Vents
-  { id:'58', icon:'🎷', name:'Saxophone',                   count:26, cat:'Instruments', color:'#FF8F00', hasMod:false },
-  { id:'59', icon:'🎺', name:'Trompette · Bugle',           count:17, cat:'Instruments', color:'#FFA000', hasMod:false },
-  { id:'60', icon:'🎺', name:'Trombone · Tuba',             count:11, cat:'Instruments', color:'#F57F17', hasMod:false },
-  { id:'61', icon:'🎵', name:'Clarinette · Hautbois · Basson',count:14,cat:'Instruments', color:'#6D4C41', hasMod:false },
-  { id:'62', icon:'🎵', name:'Flûte traversière',           count:19, cat:'Instruments', color:'#80CBC4', hasMod:false },
-  { id:'63', icon:'🎵', name:'Cor · Cor anglais',           count:8,  cat:'Instruments', color:'#26A69A', hasMod:false },
-  { id:'64', icon:'🎵', name:'Cornemuse · Flûte irlandaise',count:10, cat:'Instruments', color:'#00897B', hasMod:false },
-  // Voix
-  { id:'65', icon:'🎤', name:'Chant classique · Lyrique',   count:21, cat:'Instruments', color:'#EC407A', hasMod:false },
-  { id:'66', icon:'🎤', name:'Chant pop · Rock · Indie',    count:48, cat:'Instruments', color:'#E91E63', hasMod:true  },
-  { id:'67', icon:'🎤', name:'Rap · Slam · Spoken word',    count:37, cat:'Instruments', color:'#AD1457', hasMod:true  },
-  { id:'68', icon:'🎤', name:'Beatbox',                     count:16, cat:'Instruments', color:'#880E4F', hasMod:false },
-  { id:'69', icon:'🎶', name:'Chœurs · Harmonies vocales',  count:23, cat:'Instruments', color:'#F06292', hasMod:false },
-  // Production / Autres
-  { id:'70', icon:'🎧', name:'DJ · Platines · Mixage',      count:52, cat:'Instruments', color:'#546E7A', hasMod:true  },
-  { id:'71', icon:'💻', name:'Producteur · DAW · Studio',   count:61, cat:'Instruments', color:'#37474F', hasMod:true  },
-  { id:'72', icon:'🎸', name:'Guitare électro · Pédaliers', count:24, cat:'Instruments', color:'#455A64', hasMod:false },
-  { id:'73', icon:'🎵', name:'Lap steel · Pedal steel',     count:7,  cat:'Instruments', color:'#78909C', hasMod:false },
-  { id:'74', icon:'🎵', name:'Theremin · Instruments rares',count:6,  cat:'Instruments', color:'#90A4AE', hasMod:false },
-]
-
-const SALONS = [...MAIN_SALONS, ...GENRE_SALONS, ...INSTR_SALONS]
-
-const STYLE_IDS = SALONS.filter(s => s.cat === 'Styles').map(s => s.id)
-const INSTR_IDS = SALONS.filter(s => s.cat === 'Instruments').map(s => s.id)
-
-const BRANCHES = [
-  { id:'styles',      label:'🎼 Styles musicaux',       ids: STYLE_IDS, color:'#E07A9A' },
-  { id:'instruments', label:'🎵 Instruments pratiqués', ids: INSTR_IDS, color:'#52C07A' },
-  { id:'evenements',  label:'🎤 Concerts & Événements', ids:['7','8','9'],       color:'#6BB8E8' },
-  { id:'rencontres',  label:'💑 Rencontres musicales',  ids:['10','11','12'],    color:'#E07A9A' },
-]
-
-const CATS = ['Tous', 'Styles', 'Instruments', 'Événements', 'Rencontres']
+const ALL_CATALOG = [...MAIN_SALONS, ...GENRE_SALONS, ...INSTR_SALONS]
+const CATS = ['Tous', 'Communauté', 'Styles', 'Instruments', 'Événements', 'Rencontres']
 
 type Msg = {
-  id: string; author: string; avatar: string; content: string
-  isMod?: boolean; isBot?: boolean; lang?: string; translated?: string; time: string
+  id: string
+  sender_id: string
+  content: string
+  created_at: string
+  author?: string
 }
 
-const INIT_MSGS: Record<string, Msg[]> = {
-  '1':  [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Rock·Metal·Punk — Partagez votre passion, restez bienveillants.',isBot:true,time:''},
-    {id:'2',author:'Éric (Modo)',avatar:'🎸',content:'Quelqu\'un connaît de bons concerts metal à Lyon ce mois-ci ? 🤘',isMod:true,time:'20:14'},
-    {id:'3',author:'Léa R.',avatar:'🎵',content:'Gojira au Transbordeur le 12 novembre, fonce 🔥',time:'20:15'},
-  ],
-  '2':  [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Jazz·Blues·Soul — Le salon des âmes fines.',isBot:true,time:''},
-    {id:'2',author:'Pierre M.',avatar:'🎷',content:'Cherche jam session sur Paris ce week-end 🎷',time:'21:10'},
-  ],
-  '3':  [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Électro·Hip-Hop·Urbain — Beats, flows et drops.',isBot:true,time:''},
-    {id:'2',author:'Nico B.',avatar:'🎧',content:'Qui connaît des événements drum & bass en région parisienne ? 🎧',time:'19:30'},
-    {id:'3',author:'Malia K.',avatar:'🎤',content:'Le Concrete ce samedi ! Lineup de folie 🔊',time:'19:31'},
-  ],
-  '4':  [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Cordes — Guitaristes, bassistes, violonistes…',isBot:true,time:''},
-    {id:'2',author:'Sam G.',avatar:'🎸',content:'Quelqu\'un bosse le fingerstyle ? 🎸',time:'17:00'},
-  ],
-  '5':  [{id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Rythme & Percussions — Le temple du groove.',isBot:true,time:''}],
-  '6':  [{id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Claviers·Voix·Chœurs — Tous les timbres ici.',isBot:true,time:''}],
-  '7':  [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Concerts — Partagez vos dates et coups de cœur !',isBot:true,time:''},
-    {id:'2',author:'Marie F.',avatar:'🎪',content:'Coldplay à Saint-Denis en juillet — qui y va ? 🎪',time:'15:00'},
-  ],
-  '8':  [{id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Festivals & Scènes — Bons plans et open mics.',isBot:true,time:''}],
-  '9':  [{id:'1',author:'VibzGuard',avatar:'🤖',content:'🛡️ Casting & Annonces — Cherche musicien, groupe qui recrute.',isBot:true,time:''}],
-  '10': [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'💑 Coup de foudre musical — Bienveillance et authenticité.',isBot:true,time:''},
-    {id:'2',author:'Sophie L.',avatar:'🎤',content:'Qui est musicien(ne) ici ? Je cherche quelqu\'un qui vibre 😊',time:'19:30'},
-    {id:'3',author:'Marco D.',avatar:'🎹',content:'Moi ! Pianiste jazz passionné 🌅',time:'19:31'},
-  ],
-  '11': [{id:'1',author:'VibzGuard',avatar:'🤖',content:'🤝 Collabs & Duos — Créez ensemble : duo, EP, collab.',isBot:true,time:''}],
-  '12': [
-    {id:'1',author:'VibzGuard',avatar:'🤖',content:'🌍 International — Traduction IA activée !',isBot:true,time:''},
-    {id:'2',author:'Yuki 🇯🇵',avatar:'🎸',content:'こんにちは！ギターを弾く人いますか？',lang:'🇯🇵 Japonais',translated:'Bonjour ! Y a-t-il des guitaristes ici ?',time:'18:00'},
-    {id:'3',author:'Carlos 🇧🇷',avatar:'🥁',content:'Olá! Sou baterista, procuro colaborar!',lang:'🇧🇷 Portugais',translated:'Salut ! Je suis batteur, je cherche à collaborer !',time:'18:01'},
-  ],
+type Current = {
+  dbId: string
+  name: string
+  icon: string
+  color: string
+  isOfficial: boolean
+  createdBy: string | null
+  tags: string[]
 }
 
-const MATCH_PROFILES = [
-  { pseudo:'Léa R.',   avatar:'🎸', instrument:'Guitare', city:'Lyon',      looking:'collaboration' },
-  { pseudo:'Marco D.', avatar:'🎹', instrument:'Piano',   city:'Paris',     looking:'rencontre'     },
-  { pseudo:'Sophie L.',avatar:'🎤', instrument:'Chant',   city:'Bordeaux',  looking:'rencontre'     },
-  { pseudo:'Nico B.',  avatar:'🎧', instrument:'DJ',      city:'Marseille', looking:'collaboration' },
-]
+const toCurrent = (s: SalonRow): Current => ({
+  dbId: s.id, name: s.name, icon: s.icon || '🎛️', color: s.color || '#A78BDB',
+  isOfficial: s.is_official, createdBy: s.created_by, tags: s.tags || [],
+})
 
-const VISITOR_COLORS = [
-  { bg:'#FFF0F5', color:'#C0345A', border:'#E07A9A' },
-  { bg:'#F0F7FD', color:'#2A6090', border:'#6BB8E8' },
-  { bg:'#F0FBF4', color:'#2A7A4A', border:'#52C07A' },
-  { bg:'#F5F0FC', color:'#5040A0', border:'#A78BDB' },
-]
-
-// ── Salons mixés — stockés en localStorage ─────────────────────────────────
-const MIX_KEY = 'vibz-mixed-salons'
-
-interface MixedSalon {
-  id: string; icon: string; name: string; count: number
-  cat: string; color: string; hasMod: boolean
-  sourceNames: string[]; createdAt: number
+const timeOf = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-function parseMixId(mixId: string): { names: string[]; salonIds: string[] } | null {
-  if (!mixId.startsWith('mix:')) return null
-  const rest = mixId.slice(4)
-  const [namesPart, idsPart] = rest.split('|')
-  return { names: namesPart.split('+'), salonIds: idsPart ? idsPart.split('+') : [] }
-}
-
-function mixColor(names: string[]): string {
-  const palette = ['#A78BDB','#E07A9A','#6BB8E8','#52C07A','#FF6D00','#7C4DFF','#00ACC1','#F06292']
-  const idx = names.reduce((acc, n) => acc + n.charCodeAt(0), 0) % palette.length
-  return palette[idx]
-}
-
-function mixToSalon(mixedSalon: MixedSalon): typeof SALONS[0] {
-  return { id: mixedSalon.id, icon: mixedSalon.icon, name: mixedSalon.name, count: mixedSalon.count, cat: mixedSalon.cat, color: mixedSalon.color, hasMod: mixedSalon.hasMod }
-}
-
-export default function SalonsPage({ user, initialSalonId }: Props) {
+export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened, onSalonChange, salonCounts }: Props) {
   const { theme: tk } = useTheme()
-  const BG   = tk.bg2; const SURF = tk.surface; const BDR = tk.border; const TXT = tk.text; const MUT = tk.textMuted
+  const isMobile = useIsMobile()
+  const BG = tk.bg2; const SURF = tk.surface; const BDR = tk.border; const TXT = tk.text; const MUT = tk.textMuted
 
-  // ── Salons mixés ────────────────────────────────────────────────────────────
-  const [mixedSalons, setMixedSalons] = useState<MixedSalon[]>(() => {
-    try { const s = localStorage.getItem(MIX_KEY); return s ? JSON.parse(s) : [] } catch { return [] }
-  })
-  useEffect(() => { localStorage.setItem(MIX_KEY, JSON.stringify(mixedSalons)) }, [mixedSalons])
-  const [mixesOpen, setMixesOpen] = useState(false)
+  const [current, setCurrent]         = useState<Current | null>(null)
+  const [opening, setOpening]         = useState<string | null>(null)
+  const [community, setCommunity]     = useState<SalonRow[]>([])
+  const [catFilter, setCatFilter]     = useState('Tous')
+  const [search, setSearch]           = useState('')
+  const [searchSel, setSearchSel]     = useState<string[]>([])
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({ communaute: true, principaux: true })
+  const [msgs, setMsgs]               = useState<Msg[]>([])
+  const [loadingMsgs, setLoadingMsgs] = useState(false)
+  const [input, setInput]             = useState('')
+  const [warning, setWarning]         = useState('')
+  const [notice, setNotice]           = useState('')
+  const [showVinylMix, setShowVinylMix] = useState(false)
+  const [confirmClose, setConfirmClose] = useState(false)
+  const [myName, setMyName]           = useState(user.email?.split('@')[0] || 'Moi')
+  const namesRef   = useRef<Record<string, string>>({})
+  const msgAreaRef = useRef<HTMLDivElement>(null)
+  // Correspondance salon officiel (id catalogue) → ligne en base
+  const officialRows = useRef<Record<string, SalonRow>>({})
 
-  const getInitialSalon = () => {
-    if (initialSalonId) {
-      if (initialSalonId.startsWith('mix:')) {
-        const parsed = parseMixId(initialSalonId)
-        if (parsed) {
-          const col   = mixColor(parsed.names)
-          const newMix: MixedSalon = {
-            id: `mix-${Date.now()}`, icon: '🎛️',
-            name: parsed.names.join(' × '),
-            count: Math.floor(Math.random()*18)+3,
-            cat: 'Mix', color: col, hasMod: false,
-            sourceNames: parsed.names, createdAt: Date.now(),
-          }
-          // Évite les doublons (même combinaison de noms)
-          setMixedSalons(prev => {
-            const already = prev.find(m => m.name === newMix.name)
-            return already ? prev : [newMix, ...prev]
-          })
-          return mixToSalon(newMix)
-        }
-      }
-      const found = SALONS.find(s => s.id === initialSalonId)
-      if (found) return found
-    }
-    return SALONS[0]
-  }
-
-  const now = () => { const d = new Date(); return `${d.getHours()}:${String(d.getMinutes()).padStart(2,'0')}` }
-
-  const [visitorPseudo, setVisitorPseudo] = useState('')
-  const [visitorInput,  setVisitorInput]  = useState('')
-  const [isVisitor,     setIsVisitor]     = useState(!user)
-  const [visitorReady,  setVisitorReady]  = useState(!!user)
-  const visitorColor = VISITOR_COLORS[visitorPseudo.length % 4]
-
-  const myPseudo = user ? (user.email?.split('@')[0] || 'Moi') : visitorPseudo
-  const myAvatar = user ? '🎵' : '👤'
-
-  const [salon,      setSalon]      = useState(getInitialSalon)
-  const [catFilter,  setCatFilter]  = useState('Tous')
-  const [allMsgs,    setAllMsgs]    = useState<Record<string,Msg[]>>(INIT_MSGS)
-  const [input,      setInput]      = useState('')
-  const [warning,    setWarning]    = useState('')
-  const [translateOn,setTranslateOn]= useState(true)
-  const [stylesOpen,    setStylesOpen]    = useState(!!initialSalonId && GENRE_SALONS.some(s => s.id === initialSalonId))
-  const [instrOpen,     setInstrOpen]     = useState(!!initialSalonId && INSTR_SALONS.some(s => s.id === initialSalonId))
-  const [instrMixOpen,  setInstrMixOpen]  = useState(false)
-  const [instrMixSel,   setInstrMixSel]   = useState<typeof SALONS>([])
-
-  const toggleInstrMix = (s: typeof SALONS[0]) =>
-    setInstrMixSel(prev => prev.find(x => x.id===s.id) ? prev.filter(x=>x.id!==s.id) : [...prev, s])
-
-  const createInstrMix = () => {
-    if (instrMixSel.length < 2) return
-    const name = instrMixSel.map(s=>s.name).join(' × ')
-    const col  = instrMixSel[0].color
-    const newMix: MixedSalon = {
-      id:`mix-${Date.now()}`, icon:'🎸', name, count:Math.floor(Math.random()*12)+3,
-      cat:'Mix', color:col, hasMod:false,
-      sourceNames: instrMixSel.map(s=>s.name), createdAt:Date.now(),
-    }
-    setMixedSalons(prev => prev.find(m=>m.name===name) ? prev : [newMix, ...prev])
-    setSalon(mixToSalon(newMix))
-    setMixesOpen(true); setInstrMixOpen(false); setInstrMixSel([])
-  }
-  const endRef      = useRef<HTMLDivElement>(null)
-  const msgAreaRef  = useRef<HTMLDivElement>(null)
-
-  const [matchSuggestion,  setMatchSuggestion]  = useState<typeof MATCH_PROFILES[0]|null>(null)
-  const [matchDismissed,   setMatchDismissed]   = useState(false)
-  const [showSignupPrompt, setShowSignupPrompt] = useState(false)
-  const [showInscription,  setShowInscription]  = useState(false)
-  const [showVinylMix,  setShowVinylMix]  = useState(false)
-  const [mixSalons,     setMixSalons]     = useState<MixSalon[]>([])
-
-  const handleCreateMixSalon = (name: string, selections: string[], key: string) => {
-    const colors = ['#E07A9A','#6BB8E8','#52C07A','#A78BDB']
-    const newMix: MixSalon = {
-      id: `mix_${Date.now()}`,
-      name,
-      key,
-      selections,
-      color: colors[mixSalons.length % 4],
-      memberCount: 1,
-      hasMod: true,
-    }
-    setMixSalons(p => [...p, newMix])
-    // Ouvrir le salon créé
-    selectSalon({ id: newMix.id, icon:'🎛️', name: newMix.name, count:1, cat:'Mix', color: newMix.color, hasMod: true })
-  }
-
-  const handleJoinMixSalon = (mix: MixSalon) => {
-    setMixSalons(p => p.map(s => s.id === mix.id ? { ...s, memberCount: s.memberCount + 1 } : s))
-    selectSalon({ id: mix.id, icon:'🎛️', name: mix.name, count: mix.memberCount + 1, cat:'Mix', color: mix.color, hasMod: true })
-  }
+  const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 4000) }
 
   useEffect(() => {
-    if (!initialSalonId) return
-    if (initialSalonId.startsWith('mix:')) {
-      const parsed = parseMixId(initialSalonId)
-      if (parsed) {
-        const name = parsed.names.join(' × ')
-        // Cherche dans les salons mixés existants ou crée
-        setMixedSalons(prev => {
-          const already = prev.find(m => m.name === name)
-          if (already) { setSalon(mixToSalon(already)); setMixesOpen(true); return prev }
-          const newMix: MixedSalon = {
-            id: `mix-${Date.now()}`, icon: '🎛️', name,
-            count: Math.floor(Math.random()*18)+3,
-            cat: 'Mix', color: mixColor(parsed.names), hasMod: false,
-            sourceNames: parsed.names, createdAt: Date.now(),
-          }
-          setSalon(mixToSalon(newMix))
-          setMixesOpen(true)
-          return [newMix, ...prev]
-        })
-      }
-      return
-    }
-    const found = SALONS.find(s => s.id === initialSalonId)
-    if (found) {
-      setSalon(found)
-      if (GENRE_SALONS.some(s => s.id === initialSalonId)) setStylesOpen(true)
-    }
-  }, [initialSalonId])
+    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (data?.display_name) setMyName(data.display_name) })
+  }, [user.id])
 
-  const messages = allMsgs[salon.id] || [{id:'1',author:'VibzGuard',avatar:'🤖',content:`🛡️ Bienvenue dans ${salon.name} !`,isBot:true,time:''}]
+  // ── Salons de la communauté (temps réel) ──
+  const loadCommunity = useCallback(async () => {
+    const { data } = await supabase.from('salons').select('*').eq('is_active', true).eq('is_official', false)
+      .order('created_at', { ascending: false }).limit(100)
+    setCommunity((data as SalonRow[]) || [])
+  }, [])
+
+  useEffect(() => {
+    loadCommunity()
+    const ch = supabase.channel('salons-list')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'salons' }, payload => {
+        loadCommunity()
+        // Le salon ouvert vient d'être fermé par son créateur
+        const row = payload.new as Partial<SalonRow>
+        setCurrent(c => {
+          if (c && row?.id === c.dbId && row.is_active === false) {
+            flash('Ce salon a été fermé par son créateur.')
+            return null
+          }
+          return c
+        })
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [loadCommunity])
+
+  useEffect(() => { onSalonChange?.(current?.dbId ?? null) }, [current?.dbId, onSalonChange])
+  useEffect(() => () => onSalonChange?.(null), [onSalonChange])
+
+  // ── Ouverture d'un salon ──
+  const openRow = useCallback((row: SalonRow) => {
+    setCurrent(toCurrent(row))
+    setWarning('')
+  }, [])
+
+  const openCatalog = async (s: CatalogSalon) => {
+    const cached = officialRows.current[s.id]
+    if (cached) { openRow(cached); return }
+    setOpening(s.id)
+    const { salon, error } = await openOfficialSalon(s.id, s.name, s.icon, s.color)
+    setOpening(null)
+    if (error || !salon) { flash('Impossible d\'ouvrir ce salon pour le moment.'); return }
+    officialRows.current[s.id] = salon
+    openRow(salon)
+  }
+
+  const openMix = async (ids: string[], name?: string): Promise<string | null> => {
+    const { salon, error } = await openMixSalon(ids, name)
+    if (error || !salon) return 'La création du salon a échoué. Réessaie dans un instant.'
+    openRow(salon)
+    loadCommunity()
+    return null
+  }
+
+  // Salon demandé depuis Découvrir
+  useEffect(() => {
+    if (!initialSalonId) return
+    supabase.from('salons').select('*').eq('id', initialSalonId).maybeSingle().then(({ data }) => {
+      if (data) openRow(data as SalonRow)
+      onInitialSalonOpened?.()
+    })
+  }, [initialSalonId, onInitialSalonOpened, openRow])
+
+  // Sur ordinateur, on ouvre le premier salon officiel par défaut
+  useEffect(() => {
+    if (!isMobile && !initialSalonId && !current) openCatalog(MAIN_SALONS[0])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMobile])
+
+  // ── Messages du salon ouvert (temps réel) ──
+  const resolveNames = useCallback(async (ids: string[]) => {
+    const missing = Array.from(new Set(ids)).filter(id => !namesRef.current[id])
+    if (!missing.length) return
+    const { data } = await supabase.from('profiles').select('id, display_name, username').in('id', missing)
+    ;(data || []).forEach(p => { namesRef.current[p.id] = p.display_name || p.username || 'Membre' })
+  }, [])
+
+  const loadMsgs = useCallback(async (salonId: string) => {
+    setLoadingMsgs(true)
+    const { data } = await supabase.from('salon_messages').select('id, sender_id, content, created_at')
+      .eq('salon_id', salonId).eq('is_deleted', false)
+      .order('created_at', { ascending: false }).limit(100)
+    const list = ((data as Msg[]) || []).reverse()
+    await resolveNames(list.map(m => m.sender_id))
+    setMsgs(list.map(m => ({ ...m, author: namesRef.current[m.sender_id] })))
+    setLoadingMsgs(false)
+  }, [resolveNames])
+
+  useEffect(() => {
+    if (!current) { setMsgs([]); return }
+    const salonId = current.dbId
+    loadMsgs(salonId)
+    const ch = supabase.channel(`salon-msgs-${salonId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'salon_messages', filter: `salon_id=eq.${salonId}` },
+        async payload => {
+          const m = payload.new as Msg
+          await resolveNames([m.sender_id])
+          setMsgs(prev => prev.some(x => x.id === m.id) ? prev : [...prev, { ...m, author: namesRef.current[m.sender_id] }])
+        })
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [current, loadMsgs, resolveNames])
 
   useEffect(() => {
     const el = msgAreaRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [messages, salon])
+  }, [msgs])
 
-  useEffect(() => {
-    const MATCH_SALONS = ['10','11','12']
-    const userMsgs = (allMsgs[salon.id]||[]).filter(m=>m.author===myPseudo)
-    if (userMsgs.length >= 3 && !matchDismissed && !matchSuggestion && MATCH_SALONS.includes(salon.id)) {
-      setMatchSuggestion(MATCH_PROFILES[Math.floor(Math.random()*MATCH_PROFILES.length)])
-    }
-  }, [allMsgs, salon, myPseudo, matchDismissed, matchSuggestion])
-
-  const selectSalon = (s: typeof SALONS[0]) => {
-    setSalon(s); setMatchSuggestion(null); setMatchDismissed(false)
-    if (s.id==='12') setTranslateOn(true)
-  }
-
-  const addMsg = (msg: Omit<Msg,'id'>) => {
-    setAllMsgs(prev => ({ ...prev, [salon.id]: [...(prev[salon.id]||[]), { ...msg, id:Date.now().toString() }] }))
-  }
-
-  const send = () => {
-    if (!input.trim()) return
-    const myMsgsCount = (allMsgs[salon.id]||[]).filter(m=>m.author===myPseudo).length
-    if (isVisitor && myMsgsCount >= 10) { setShowSignupPrompt(true); return }
-    const result = moderateMessage(input)
-    if (result.isBlocked) { setWarning(result.suggestion||''); setTimeout(()=>setWarning(''),4000); return }
-    addMsg({ author:myPseudo, avatar:myAvatar, content:input, time:now() })
+  const send = async () => {
+    const content = input.trim()
+    if (!content || !current) return
+    const result = moderateMessage(content)
+    if (result.isBlocked) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000); return }
     setInput('')
-    if (result.isWarning) {
-      setTimeout(() => addMsg({author:'VibzGuard',avatar:'🤖',content:getIAGuardMessage(result),isBot:true,time:now()}), 600)
-    }
+    const { data, error } = await supabase.from('salon_messages')
+      .insert({ salon_id: current.dbId, sender_id: user.id, content })
+      .select('id, sender_id, content, created_at').single()
+    if (error) { setInput(content); flash('Message non envoyé. Vérifie ta connexion.'); return }
+    namesRef.current[user.id] = myName
+    setMsgs(prev => prev.some(x => x.id === (data as Msg).id) ? prev : [...prev, { ...(data as Msg), author: myName }])
+    if (result.isWarning) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000) }
   }
 
-  // ── Feuille d'arbre — lignes continues ────────────────────────────────────
-  // Principe : chaque item occupe toute la hauteur de sa rangée (flex stretch).
-  // La ligne verticale va de 0 → 50% (haut) et 50% → 100% (bas, sauf dernier).
-  // Aucun margin entre items → les lignes se raccordent parfaitement.
-  const renderLeaf = (s: typeof SALONS[0], i: number, arr: typeof SALONS) => {
-    const active  = salon.id === s.id
-    const isLast  = i === arr.length - 1
-    const lineCol = tk.isDark ? '#2A3A5A' : '#C8D4EC'
+  const doClose = async () => {
+    if (!current) return
+    setConfirmClose(false)
+    const { error } = await closeSalon(current.dbId)
+    if (error) { flash('Seul le créateur peut fermer ce salon.'); return }
+    setCurrent(null)
+    loadCommunity()
+    flash('Salon fermé.')
+  }
 
+  // ── Recherche : filtre les salons + propose de créer la combinaison ──
+  const q = norm(search)
+  const catalogMatches = useMemo(() => (q ? searchCatalog(search).slice(0, 12) : []), [q, search])
+  const matchName = (name: string) => !q || norm(name).includes(q)
+  const communityShown = community.filter(s => matchName(s.name) || (s.tags || []).some(t => CATALOG_BY_ID[t] && norm(CATALOG_BY_ID[t].label).includes(q)))
+  const existingForSel = searchSel.length ? community.find(s => s.combo_key === comboKey(searchSel)) : undefined
+
+  const toggleSel = (id: string) => setSearchSel(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
+
+  const createFromSearch = async () => {
+    if (!searchSel.length) return
+    const err = await openMix(searchSel)
+    if (err) flash(err)
+    else { setSearchSel([]); setSearch('') }
+  }
+
+  const count = (id: string | undefined) => (id ? salonCounts[id] || 0 : 0)
+  const officialCount = (s: CatalogSalon) => count(officialRows.current[s.id]?.id)
+
+  // ── Rendu d'une ligne de salon ──
+  const SalonItem = ({ icon, name, color, active, n, sub, onClick, busy }: {
+    icon: string; name: string; color: string; active: boolean; n: number; sub?: string; onClick: () => void; busy?: boolean
+  }) => (
+    <button onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8, width: '100%', textAlign: 'left',
+        padding: isMobile ? '11px 10px' : '8px 10px', borderRadius: 10, cursor: 'pointer', fontFamily: font,
+        border: active ? `1.5px solid ${color}` : '1.5px solid transparent',
+        background: active ? `${color}13` : 'transparent', transition: 'background 0.15s',
+      }}>
+      <span style={{ fontSize: isMobile ? 18 : 14, flexShrink: 0 }}>{icon}</span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'block', fontSize: isMobile ? 14 : 12, fontWeight: 700, color: active ? color : TXT, lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+        {sub && <span style={{ display: 'block', fontSize: 10, color: MUT, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</span>}
+      </span>
+      {busy ? <span style={{ fontSize: 10, color: MUT }}>…</span>
+        : n > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: green, whiteSpace: 'nowrap' }}>● {n}</span>}
+    </button>
+  )
+
+  const Section = ({ id, label, color, children, countLabel, defaultOpen = false }: { id: string; label: string; color: string; children: React.ReactNode; countLabel?: string; defaultOpen?: boolean }) => {
+    const open = openSections[id] ?? defaultOpen
     return (
-      <div key={s.id} style={{ display:'flex', alignItems:'stretch', paddingLeft:10 }}>
-
-        {/* ── Connecteur arbre ── */}
-        <div style={{ width:24, flexShrink:0, position:'relative' }}>
-
-          {/* Tronc haut : du bord sup jusqu'au milieu */}
-          <div style={{
-            position:'absolute', left:8, top:0, bottom:'50%', width:2,
-            background: lineCol,
-          }}/>
-
-          {/* Tronc bas : du milieu jusqu'au bord inf (absent pour le dernier) */}
-          {!isLast && <div style={{
-            position:'absolute', left:8, top:'50%', bottom:0, width:2,
-            background: lineCol,
-          }}/>}
-
-          {/* Branche horizontale vers la carte */}
-          <div style={{
-            position:'absolute', left:8, top:'50%',
-            width:14, height:2,
-            background: active ? s.color : lineCol,
-            transform:'translateY(-50%)',
-            transition:'background 0.2s',
-          }}/>
-
-          {/* Nœud — petit cercle à l'intersection */}
-          <div style={{
-            position:'absolute', left:5, top:'50%',
-            width:7, height:7, borderRadius:'50%',
-            background: active ? s.color : (tk.isDark ? '#3A4A6A' : '#B8C8E4'),
-            border:`1.5px solid ${active ? s.color : (tk.isDark ? '#1C2233' : SURF)}`,
-            transform:'translateY(-50%)',
-            boxShadow: active ? `0 0 8px ${s.color}88` : 'none',
-            transition:'all 0.2s',
-            zIndex:1,
-          }}/>
-        </div>
-
-        {/* ── Carte du salon ── */}
-        <div style={{ flex:1, paddingTop:2, paddingBottom:2, paddingRight:4 }}>
-          <div
-            style={{
-              padding:'6px 8px', borderRadius:10,
-              border: active ? `1.5px solid ${s.color}` : `1px solid transparent`,
-              background: active ? `${s.color}13` : 'transparent',
-              cursor:'pointer', transition:'all 0.15s',
-            }}
-            onClick={() => selectSalon(s)}
-            onMouseEnter={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background = tk.isDark ? tk.surface2 : '#F2F6FF' }}
-            onMouseLeave={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-          >
-            <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
-              <span style={{ fontSize:12 }}>{s.icon}</span>
-              <div style={{ fontSize:10, fontWeight:700, color:active?s.color:TXT, lineHeight:1.2 }}>{s.name}</div>
-            </div>
-            <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-              <div style={{ width:5, height:5, borderRadius:'50%', background:active?s.color:green, opacity:0.7 }}/>
-              <span style={{ fontSize:9, color:MUT }}>{s.count} en ligne</span>
-              {s.hasMod && <span style={{ fontSize:8, fontWeight:700, padding:'0 4px', borderRadius:4, background:tk.modBg, color:tk.modText }}>MOD</span>}
-              <span style={{ fontSize:8, fontWeight:700, padding:'0 4px', borderRadius:4, background:tk.guardBg, color:tk.guardText }}>IA</span>
-            </div>
-          </div>
-        </div>
-
+      <div style={{ marginBottom: 8 }}>
+        <button onClick={() => setOpenSections(s => ({ ...s, [id]: !open }))}
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '10px 10px' : '7px 10px', fontSize: 11, fontWeight: 800, color, letterSpacing: 0.3, border: 'none', borderRadius: '0 8px 8px 0', background: `${color}${tk.isDark ? '18' : '0D'}`, cursor: 'pointer', fontFamily: font, textAlign: 'left', boxShadow: `inset 3px 0 0 ${color}` }}>
+          <span>{label}{countLabel ? <span style={{ opacity: 0.7, fontWeight: 700 }}> · {countLabel}</span> : null}</span>
+          <span style={{ fontSize: 9, opacity: 0.6 }}>{open ? '▲' : '▼'}</span>
+        </button>
+        {open && <div style={{ padding: '4px 0 0 4px' }}>{children}</div>}
       </div>
     )
   }
 
-  // En-tête de branche avec tronc descendant vers le premier enfant
-  const renderBranchHeader = (label: string, color: string, toggle?: () => void, open?: boolean) => (
-    <div style={{ position:'relative', marginBottom:0 }}>
-      <div
-        onClick={toggle}
-        style={{
-          padding:'6px 10px 6px 10px', fontSize:10, fontWeight:800,
-          color, letterSpacing:0.4,
-          borderLeft:`3px solid ${color}`,
-          background: `${color}${tk.isDark?'18':'0D'}`,
-          borderRadius:'0 8px 8px 0',
-          cursor: toggle ? 'pointer' : 'default',
-          display:'flex', alignItems:'center', justifyContent:'space-between',
-        }}
-      >
-        <span>{label}</span>
-        {toggle !== undefined && <span style={{ fontSize:9, opacity:0.6 }}>{open ? '▲' : '▼'}</span>}
+  const showCat = (cat: string) => catFilter === 'Tous' || catFilter === cat
+
+  // ── Barre latérale (liste des salons) ──
+  const sidebar = (
+    <div style={{ borderRight: isMobile ? 'none' : `1.5px solid ${BDR}`, background: SURF, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+      <div style={{ padding: '12px 10px 8px', borderBottom: `1.5px solid ${BDR}`, flexShrink: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 800, color: TXT, marginBottom: 8 }}>🎵 Salons Vibz</div>
+
+        {/* Recherche : salons existants + création d'une combinaison */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderRadius: 12, border: `1.5px solid ${BDR}`, background: tk.inputBg, marginBottom: 8 }}>
+          <span style={{ fontSize: 12, opacity: 0.6 }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && catalogMatches[0]) toggleSel(catalogMatches[0].id) }}
+            placeholder="Salon, style ou instrument…" aria-label="Rechercher un salon, un style ou un instrument"
+            style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', outline: 'none', color: TXT, fontSize: 13, fontFamily: font }} />
+          {search && <button onClick={() => setSearch('')} aria-label="Effacer" style={{ border: 'none', background: 'transparent', color: MUT, cursor: 'pointer', fontSize: 12, padding: 2 }}>✕</button>}
+        </div>
+
+        {(catalogMatches.length > 0 || searchSel.length > 0) && (
+          <div style={{ padding: 8, borderRadius: 12, background: `${pink}0A`, border: `1px dashed ${pink}55`, marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, color: MUT, marginBottom: 6 }}>Compose ton salon (styles + instruments) :</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {searchSel.map(id => CATALOG_BY_ID[id]).filter(Boolean).map(item => (
+                <button key={item.id} onClick={() => toggleSel(item.id)}
+                  style={{ padding: '4px 9px', borderRadius: 14, fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: font, border: `1px solid ${item.color}`, background: item.color, color: '#fff' }}>
+                  {item.emoji} {item.label} ✕
+                </button>
+              ))}
+              {catalogMatches.filter(i => !searchSel.includes(i.id)).map(item => (
+                <button key={item.id} onClick={() => toggleSel(item.id)}
+                  style={{ padding: '4px 9px', borderRadius: 14, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: font, border: `1px solid ${item.color}66`, background: `${item.color}14`, color: item.color }}>
+                  + {item.emoji} {item.label}
+                </button>
+              ))}
+            </div>
+            {searchSel.length > 0 && (
+              <button onClick={createFromSearch}
+                style={{ marginTop: 8, width: '100%', padding: 9, borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: font, fontWeight: 800, fontSize: 12, color: 'white', background: existingForSel ? `linear-gradient(135deg,${blue},${green})` : 'linear-gradient(135deg,#A78BDB,#E07A9A)' }}>
+                {existingForSel ? `🔀 Rejoindre « ${existingForSel.name} »` : `🎛️ Ouvrir le salon (${searchSel.length})`}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div className="vz-scroll-x" style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {CATS.map(cat => (
+            <button key={cat} onClick={() => setCatFilter(cat)} style={{
+              padding: isMobile ? '6px 11px' : '3px 8px', borderRadius: 20, fontSize: isMobile ? 12 : 10, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0,
+              border: catFilter === cat ? `1.5px solid ${pink}` : `1.5px solid ${BDR}`,
+              background: catFilter === cat ? `${pink}18` : tk.surface2,
+              color: catFilter === cat ? pink : MUT, cursor: 'pointer', fontFamily: font,
+            }}>{cat}</button>
+          ))}
+        </div>
       </div>
-      {/* Tronc descendant qui relie le header au premier enfant */}
-      <div style={{
-        position:'absolute', left:13, top:'100%',
-        width:2, height:10,
-        background: tk.isDark ? '#2A3A5A' : '#C8D4EC',
-        zIndex:0,
-      }}/>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: 6, minHeight: 0 }}>
+        {showCat('Communauté') && (
+          <Section id="communaute" label="🎛️ Salons de la communauté" color="#A78BDB" countLabel={String(communityShown.length)}>
+            {communityShown.length === 0 && (
+              <div style={{ fontSize: 11, color: MUT, padding: '6px 10px', lineHeight: 1.5 }}>
+                {q ? 'Aucun salon ne correspond. Compose-le ci-dessus !' : 'Aucun salon ouvert. Crée le premier !'}
+              </div>
+            )}
+            {communityShown.map(s => (
+              <SalonItem key={s.id} icon={s.icon || '🎛️'} name={s.name} color={s.color || '#A78BDB'}
+                active={current?.dbId === s.id} n={count(s.id)}
+                sub={s.created_by === user.id ? '👑 Ton salon' : (s.tags || []).map(t => CATALOG_BY_ID[t]?.label).filter(Boolean).join(' · ')}
+                onClick={() => openRow(s)} />
+            ))}
+          </Section>
+        )}
+
+        {(['Styles', 'Instruments', 'Événements', 'Rencontres'] as const).filter(showCat).map(cat => {
+          const main = MAIN_SALONS.filter(s => s.cat === cat && matchName(s.name))
+          const extra = cat === 'Styles' ? GENRE_SALONS : cat === 'Instruments' ? INSTR_SALONS : []
+          const extraShown = extra.filter(s => matchName(s.name))
+          if (!main.length && !extraShown.length) return null
+          const color = cat === 'Styles' ? pink : cat === 'Instruments' ? green : cat === 'Événements' ? blue : pink
+          const label = cat === 'Styles' ? '🎼 Styles musicaux' : cat === 'Instruments' ? '🎵 Instruments' : cat === 'Événements' ? '🎤 Concerts & Événements' : '💑 Rencontres musicales'
+          const secId = `cat-${cat}`
+          // Pendant une recherche tout est déplié ; sinon les longues listes sont repliées
+          const defaultOpen = !!q || (cat !== 'Styles' && cat !== 'Instruments')
+          return (
+            <div key={cat}>
+              <Section id={secId} label={label} color={color} countLabel={String(main.length + extraShown.length)} defaultOpen={defaultOpen}>
+                {main.map(s => (
+                  <SalonItem key={s.id} icon={s.icon} name={s.name} color={s.color} busy={opening === s.id}
+                    active={!!current && officialRows.current[s.id]?.id === current.dbId} n={officialCount(s)} onClick={() => openCatalog(s)} />
+                ))}
+                {extraShown.map((s, i) => (
+                  <div key={s.id}>
+                    {s.family && s.family !== extraShown[i - 1]?.family && (
+                      <div style={{ padding: '8px 10px 2px', fontSize: 9, fontWeight: 800, color: MUT, letterSpacing: 0.6, textTransform: 'uppercase' }}>{s.family}</div>
+                    )}
+                    <SalonItem icon={s.icon} name={s.name} color={s.color} busy={opening === s.id}
+                      active={!!current && officialRows.current[s.id]?.id === current.dbId} n={officialCount(s)} onClick={() => openCatalog(s)} />
+                  </div>
+                ))}
+              </Section>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ padding: 10, borderTop: `1.5px solid ${BDR}`, flexShrink: 0 }}>
+        <button onClick={() => setShowVinylMix(true)}
+          style={{ width: '100%', padding: isMobile ? 13 : 10, borderRadius: 12, border: 'none', cursor: 'pointer', background: 'linear-gradient(135deg,#A78BDB,#E07A9A)', color: 'white', fontWeight: 800, fontSize: 13, fontFamily: font, boxShadow: '0 4px 14px rgba(167,139,219,0.35)' }}>
+          🎛️ Créer un salon Mix
+        </button>
+      </div>
     </div>
   )
 
-  // ── ÉCRAN VISITEUR ────────────────────────────────────────────────────────
-  if (!visitorReady) {
-    return (
-      <div style={{ minHeight:'calc(100vh - 60px)', background:BG, display:'flex', alignItems:'center', justifyContent:'center', padding:20, fontFamily:font }}>
-        <div style={{ background:SURF, borderRadius:24, padding:36, width:'100%', maxWidth:440, boxShadow:`0 8px 40px ${blue}18`, border:`1.5px solid ${BDR}` }}>
-          <div style={{ textAlign:'center', marginBottom:24 }}>
-            <div style={{ fontSize:48, marginBottom:8 }}>💬</div>
-            <div style={{ fontSize:22, fontWeight:800, color:TXT, marginBottom:6 }}>Rejoindre les Salons</div>
-            <div style={{ fontSize:13, color:MUT, lineHeight:1.6 }}>Entre un pseudo pour accéder aux salons en mode visiteur, ou connecte-toi.</div>
+  const isCreator = !!current && !current.isOfficial && current.createdBy === user.id
+  const n = count(current?.dbId)
+
+  // ── Zone de discussion ──
+  const chat = current ? (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden', minWidth: 0 }}>
+      <div style={{ padding: isMobile ? '10px 12px' : '12px 20px', borderBottom: `1.5px solid ${BDR}`, background: SURF, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        {isMobile && (
+          <button onClick={() => setCurrent(null)} aria-label="Retour à la liste des salons"
+            style={{ width: 36, height: 36, borderRadius: 10, border: `1px solid ${BDR}`, background: 'transparent', color: TXT, fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>‹</button>
+        )}
+        <span style={{ fontSize: isMobile ? 22 : 26 }}>{current.icon}</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 800, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{current.name}</div>
+          <div style={{ fontSize: 11, color: MUT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ color: n > 0 ? green : MUT, fontWeight: 700 }}>● {n} connecté{n > 1 ? 's' : ''}</span>
+            {' · '}{current.isOfficial ? 'Salon officiel' : isCreator ? 'Créé par toi' : 'Salon de la communauté'}
           </div>
-          <div style={{ background:BG, borderRadius:16, padding:20, marginBottom:16, border:`1.5px solid ${BDR}` }}>
-            <div style={{ fontSize:13, fontWeight:800, color:TXT, marginBottom:12 }}>👤 Entrer en visiteur</div>
-            <input
-              value={visitorInput} onChange={e=>setVisitorInput(e.target.value)}
-              onKeyDown={e=>e.key==='Enter'&&visitorInput.trim().length>=2&&(setVisitorPseudo(visitorInput.trim()),setIsVisitor(true),setVisitorReady(true))}
-              placeholder="Ton pseudo (ex: guitar_fan)"
-              style={{ width:'100%', padding:'11px 14px', border:`1.5px solid ${BDR}`, borderRadius:12, fontSize:14, fontFamily:font, outline:'none', background:SURF, color:TXT, boxSizing:'border-box', marginBottom:10 }}
-            />
-            <div style={{ fontSize:11, color:MUT, marginBottom:12 }}>Limité à 10 messages par salon · Sans inscription</div>
-            <button
-              disabled={visitorInput.trim().length < 2}
-              onClick={() => { setVisitorPseudo(visitorInput.trim()); setIsVisitor(true); setVisitorReady(true) }}
-              style={{ width:'100%', padding:'12px', borderRadius:14, border:'none', cursor: visitorInput.trim().length<2?'not-allowed':'pointer', background: visitorInput.trim().length<2?tk.surface2:`linear-gradient(135deg,${blue},${green})`, color: visitorInput.trim().length<2?MUT:'white', fontWeight:800, fontSize:14, fontFamily:font }}
-            >Entrer dans les salons →</button>
-          </div>
-          <div style={{ display:'flex', alignItems:'center', gap:10, margin:'16px 0', color:MUT, fontSize:12, fontWeight:700 }}>
-            <div style={{ flex:1, height:1, background:BDR }}/> ou <div style={{ flex:1, height:1, background:BDR }}/>
-          </div>
-          <button onClick={() => window.location.href='/'} style={{ width:'100%', padding:'12px', borderRadius:14, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:14, fontFamily:font }}>
-            🔑 Se connecter / S&apos;inscrire à Vibz
+        </div>
+        {isCreator && (
+          <button onClick={() => setConfirmClose(true)}
+            style={{ padding: '7px 12px', borderRadius: 20, border: `1.5px solid ${pink}55`, background: `${pink}11`, color: pink, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: font, whiteSpace: 'nowrap' }}>
+            🔒 Fermer
           </button>
+        )}
+        {!isMobile && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', background: `${green}18`, borderRadius: 20, fontSize: 11, fontWeight: 700, color: green }}>
+            <div style={{ width: 7, height: 7, background: green, borderRadius: '50%' }} /> IA Guard
+          </div>
+        )}
+      </div>
+
+      {current.tags.length > 0 && (
+        <div className="vz-scroll-x" style={{ display: 'flex', gap: 5, padding: '8px 12px', borderBottom: `1px solid ${BDR}`, background: SURF, flexWrap: 'wrap', flexShrink: 0 }}>
+          {current.tags.map(t => CATALOG_BY_ID[t]).filter(Boolean).map(item => (
+            <span key={item.id} style={{ padding: '2px 9px', borderRadius: 12, fontSize: 11, fontWeight: 700, background: `${item.color}18`, color: item.color, whiteSpace: 'nowrap' }}>{item.emoji} {item.label}</span>
+          ))}
+        </div>
+      )}
+
+      <div ref={msgAreaRef} style={{ flex: 1, minHeight: 0, padding: isMobile ? '12px' : '14px 20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, background: BG }}>
+        <div style={{ alignSelf: 'center', maxWidth: 460, textAlign: 'center', padding: '8px 14px', borderRadius: 12, background: tk.modBg, color: tk.modText, fontSize: 12, lineHeight: 1.5 }}>
+          🛡️ Bienvenue dans <strong>{current.name}</strong>. Reste bienveillant·e ; VibzGuard filtre les messages qui partagent des données personnelles ou harcèlent.
+        </div>
+        {loadingMsgs ? (
+          <div style={{ textAlign: 'center', color: MUT, fontSize: 13, padding: 24 }}>Chargement des messages…</div>
+        ) : msgs.length === 0 ? (
+          <div style={{ textAlign: 'center', color: MUT, fontSize: 13, padding: 24 }}>Aucun message pour l&apos;instant. Lance la conversation 🎶</div>
+        ) : msgs.map(msg => {
+          const isMe = msg.sender_id === user.id
+          const author = isMe ? myName : (msg.author || 'Membre')
+          return (
+            <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+              <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, fontSize: 11, fontWeight: 800, background: isMe ? `${current.color}33` : `${current.color}18`, border: `1.5px solid ${current.color}44`, color: current.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {author.slice(0, 2).toUpperCase()}
+              </div>
+              <div style={{ maxWidth: isMobile ? '78%' : '62%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: isMe ? current.color : TXT }}>{author}</span>
+                  <span style={{ fontSize: 10, color: MUT }}>{timeOf(msg.created_at)}</span>
+                </div>
+                <div style={{
+                  padding: '9px 13px', fontSize: 14, lineHeight: 1.5, wordBreak: 'break-word', maxWidth: '100%',
+                  background: isMe ? `linear-gradient(135deg,${current.color},${current.color}CC)` : SURF,
+                  borderRadius: isMe ? '14px 14px 4px 14px' : '4px 14px 14px 14px',
+                  border: isMe ? 'none' : `1px solid ${BDR}`,
+                  color: isMe ? '#fff' : TXT,
+                }}>
+                  {msg.content}
+                  {extractMusicUrl(msg.content) && <MusicCard url={extractMusicUrl(msg.content)!} compact />}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div style={{ padding: isMobile ? '10px 10px' : '12px 16px', borderTop: `1.5px solid ${BDR}`, background: SURF, display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+        {warning && (
+          <div style={{ padding: '10px 14px', background: tk.modBg, color: tk.modText, borderRadius: 10, fontSize: 13, fontWeight: 600, borderLeft: `3px solid ${tk.modBorder}` }}>{warning}</div>
+        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            style={{ flex: 1, minWidth: 0, padding: '11px 16px', border: `1.5px solid ${BDR}`, borderRadius: 24, fontSize: 14, fontFamily: font, outline: 'none', background: BG, color: TXT }}
+            value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}
+            placeholder={`Écrire dans ${current.name}…`} maxLength={1000} enterKeyHint="send"
+          />
+          <button onClick={send} aria-label="Envoyer" style={{ width: 42, height: 42, borderRadius: '50%', border: 'none', cursor: 'pointer', background: `linear-gradient(135deg,${current.color},${blue})`, color: 'white', fontSize: 16, flexShrink: 0 }}>➤</button>
         </div>
       </div>
-    )
-  }
+    </div>
+  ) : (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 24, textAlign: 'center', color: MUT, fontSize: 14, lineHeight: 1.6 }}>
+      <div>
+        <div style={{ fontSize: 42, marginBottom: 8 }}>🎵</div>
+        Choisis un salon dans la liste<br />ou crée le tien avec n&apos;importe quelle combinaison de styles et d&apos;instruments.
+      </div>
+    </div>
+  )
 
   return (
-    <div style={{ display:'grid', gridTemplateColumns:'230px 1fr', minHeight:'calc(100vh - 60px)', background:BG, fontFamily:font }}>
+    <div style={{ height: 'var(--vz-app-h, calc(100vh - 60px))', background: BG, fontFamily: font, position: 'relative', overflow: 'hidden',
+      display: isMobile ? 'block' : 'grid', gridTemplateColumns: isMobile ? undefined : '260px 1fr' }}>
+      {isMobile ? (current ? chat : sidebar) : <>{sidebar}{chat}</>}
 
-      {/* ── SIDEBAR ── */}
-      <div style={{ borderRight:`1.5px solid ${BDR}`, background:SURF, display:'flex', flexDirection:'column' }}>
-        <div style={{ padding:'12px 10px 8px', borderBottom:`1.5px solid ${BDR}` }}>
-          <div style={{ fontSize:12, fontWeight:800, color:TXT, marginBottom:8 }}>🎵 Salons Vibz</div>
-          <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
-            {CATS.map(cat => (
-              <button key={cat} onClick={() => setCatFilter(cat)} style={{
-                padding:'3px 8px', borderRadius:20, fontSize:10, fontWeight:700,
-                border: catFilter===cat ? `1.5px solid ${pink}` : `1.5px solid ${BDR}`,
-                background: catFilter===cat ? `${pink}18` : tk.surface2,
-                color: catFilter===cat ? pink : MUT,
-                cursor:'pointer', fontFamily:font,
-              }}>{cat}</button>
-            ))}
+      {notice && (
+        <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 'max-content', maxWidth: 'calc(100% - 24px)', padding: '10px 16px', borderRadius: 12, background: TXT, color: SURF, fontSize: 13, fontWeight: 700, zIndex: 50 }}>
+          {notice}
+        </div>
+      )}
+
+      {confirmClose && current && (
+        <div onClick={() => setConfirmClose(false)} style={{ position: 'fixed', inset: 0, zIndex: 600, background: tk.overlay, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: SURF, borderRadius: 20, padding: 22, maxWidth: 380, width: '100%', border: `1px solid ${BDR}` }}>
+            <div style={{ fontSize: 17, fontWeight: 800, color: TXT, marginBottom: 6 }}>🔒 Fermer « {current.name} » ?</div>
+            <div style={{ fontSize: 13, color: MUT, lineHeight: 1.6, marginBottom: 18 }}>
+              Le salon disparaît de la liste et ses messages sont effacés. N&apos;importe qui pourra le rouvrir plus tard avec la même combinaison.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirmClose(false)} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${BDR}`, background: 'transparent', color: MUT, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: font }}>Annuler</button>
+              <button onClick={doClose} style={{ flex: 1, padding: 12, borderRadius: 12, border: 'none', background: `linear-gradient(135deg,#E07A7A,${pink})`, color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: font }}>Fermer le salon</button>
+            </div>
           </div>
         </div>
+      )}
 
-        <div style={{ flex:1, overflowY:'auto', padding:'6px 6px' }}>
-          {/* Salons Mix créés par l'utilisateur */}
-          {mixSalons.length > 0 && (
-            <div style={{ marginBottom:6 }}>
-              <div style={{ padding:'5px 8px', fontSize:10, fontWeight:800, color:'#A78BDB', letterSpacing:0.3, borderLeft:'3px solid #A78BDB', background:'rgba(167,139,219,0.08)', borderRadius:'0 8px 8px 0', marginBottom:3 }}>
-                🎛️ Mes salons Mix
-              </div>
-              {mixSalons.map(s => {
-                const active = salon.id === s.id
-                return (
-                  <div key={s.id} style={{ display:'flex', alignItems:'flex-start', paddingLeft:6, marginBottom:2 }}>
-                    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginRight:4, paddingTop:4, width:12, flexShrink:0 }}>
-                      <div style={{ width:1, height:8, background:'#DEE4F0' }}/>
-                      <div style={{ width:10, height:1, background:'#DEE4F0' }}/>
-                    </div>
-                    <div
-                      style={{ flex:1, padding:'7px 8px', borderRadius:10, border: active ? `1.5px solid ${s.color}` : '1.5px solid transparent', background: active ? `${s.color}13` : 'transparent', cursor:'pointer', transition:'all 0.1s' }}
-                      onClick={() => selectSalon({ id: s.id, icon:'🎛️', name: s.name, count: s.memberCount, cat:'Mix', color: s.color, hasMod: s.hasMod })}
-                    >
-                      <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
-                        <span style={{ fontSize:14 }}>🎛️</span>
-                        <div style={{ fontSize:11, fontWeight:700, color: active ? s.color : '#1A1E2E', lineHeight:1.2 }}>{s.name}</div>
-                      </div>
-                      <div style={{ display:'flex', alignItems:'center', gap:3, paddingLeft:1 }}>
-                        <div style={{ width:5, height:5, borderRadius:'50%', background:s.color, opacity:0.7 }}/>
-                        <span style={{ fontSize:9, color:'#9BA8C0' }}>Mix personnalisé</span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {BRANCHES.map(branch => {
-            const branchSalons = SALONS.filter(s => branch.ids.includes(s.id))
-            const visible = catFilter==='Tous' || branchSalons.some(s=>s.cat===catFilter)
-            if (!visible) return null
-
-            // ── Branche Styles musicaux : collapsible ──
-            if (branch.id === 'styles') {
-              const mainStyles  = branchSalons.filter(s => ['1','2','3'].includes(s.id))
-              const genreStyles = branchSalons.filter(s => !['1','2','3'].includes(s.id))
-              const filtered    = catFilter==='Tous' ? mainStyles : branchSalons.filter(s=>s.cat===catFilter)
-              const filteredGenres = catFilter==='Tous' ? genreStyles : []
-
-              // Tous les items à afficher (3 principaux + genres si ouvert)
-              const allVisible = stylesOpen
-                ? [...filtered, ...filteredGenres]
-                : filtered
-
-              return (
-                <div key={branch.id} style={{ marginBottom:8 }}>
-                  {renderBranchHeader(branch.label, branch.color, () => setStylesOpen(v=>!v), stylesOpen)}
-                  {allVisible.map((s, i, arr) => renderLeaf(s, i, arr))}
-                  {/* Bouton dérouler / replier */}
-                  <div onClick={() => setStylesOpen(v=>!v)} style={{ marginLeft:34, marginTop:2, padding:'4px 10px', borderRadius:8, fontSize:10, fontWeight:700, color:branch.color, background:`${branch.color}0D`, border:`1px dashed ${branch.color}55`, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5 }}>
-                    {stylesOpen ? `▲ Replier` : `▼ Voir ${filteredGenres.length} genres musicaux`}
-                  </div>
-                </div>
-              )
-            }
-
-            // ── Branche Instruments : collapsible + mixer ──
-            if (branch.id === 'instruments') {
-              const mainInstrs  = branchSalons.filter(s => ['4','5','6'].includes(s.id))
-              const extraInstrs = branchSalons.filter(s => !['4','5','6'].includes(s.id))
-              const visible     = catFilter==='Tous' || branchSalons.some(s=>s.cat===catFilter)
-              if (!visible) return null
-
-              // Regroupement par famille pour l'affichage étendu
-              const FAMILIES = [
-                { label:'🎸 Cordes',              ids:['39','40','41','42','43','44','45'] },
-                { label:'🎹 Claviers & Électro',  ids:['46','47','48','49','50','51'] },
-                { label:'🥁 Percussions',          ids:['52','53','54','55','56','57'] },
-                { label:'🎷 Vents',                ids:['58','59','60','61','62','63','64'] },
-                { label:'🎤 Voix',                 ids:['65','66','67','68','69'] },
-                { label:'🎧 Production',            ids:['70','71','72','73','74'] },
-              ]
-
-              return (
-                <div key={branch.id} style={{ marginBottom:8 }}>
-                  {renderBranchHeader(branch.label, branch.color, () => setInstrOpen(v=>!v), instrOpen)}
-
-                  {/* 3 salons principaux — toujours visibles */}
-                  {mainInstrs.map((s,i,arr) => renderLeaf(s,i,arr))}
-
-                  {/* Bouton dérouler */}
-                  <div onClick={() => setInstrOpen(v=>!v)} style={{ marginLeft:34, marginTop:2, padding:'4px 10px', borderRadius:8, fontSize:10, fontWeight:700, color:branch.color, background:`${branch.color}0D`, border:`1px dashed ${branch.color}55`, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:5 }}>
-                    {instrOpen ? `▲ Replier` : `▼ Voir ${extraInstrs.length} instruments`}
-                  </div>
-
-                  {/* Instruments étendus par famille, avec sous-en-têtes */}
-                  {instrOpen && FAMILIES.map(fam => {
-                    const famSalons = extraInstrs.filter(s => fam.ids.includes(s.id))
-                    if (!famSalons.length) return null
-                    return (
-                      <div key={fam.label} style={{ marginTop:6 }}>
-                        {/* Sous-en-tête famille */}
-                        <div style={{ position:'relative', marginLeft:10, marginBottom:0 }}>
-                          <div style={{ padding:'3px 8px', fontSize:9, fontWeight:800, color:MUT, letterSpacing:0.6, textTransform:'uppercase', borderLeft:`2px solid ${tk.isDark?'#2A3A5A':'#C8D4EC'}`, background:tk.isDark?'#1C223322':'#F0F4FC44' }}>
-                            {fam.label}
-                          </div>
-                          {/* Tronc vers premier enfant */}
-                          <div style={{ position:'absolute', left:18, top:'100%', width:2, height:8, background:tk.isDark?'#2A3A5A':'#C8D4EC' }}/>
-                        </div>
-                        {famSalons.map((s,i,arr) => renderLeaf(s,i,arr))}
-                      </div>
-                    )
-                  })}
-
-                  {/* Bouton Mixer des instruments */}
-                  {instrOpen && (
-                    <div style={{ margin:'6px 0 2px 6px' }}>
-                      <div
-                        onClick={() => { setInstrMixOpen(v=>!v); setInstrMixSel([]) }}
-                        style={{ padding:'6px 10px', borderRadius:8, fontSize:10, fontWeight:700, color:green, background:`${green}0D`, border:`1px dashed ${green}55`, cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}
-                      >
-                        🎸 {instrMixOpen ? '▲ Fermer le mixeur' : '▼ Mixer des instruments →'}
-                      </div>
-
-                      {instrMixOpen && (
-                        <div style={{ margin:'6px 0 0 0', padding:'8px', background:`${green}08`, borderRadius:10, border:`1px solid ${green}22` }}>
-                          <div style={{ fontSize:9, color:MUT, fontWeight:700, marginBottom:6 }}>
-                            Sélectionne 2+ instruments pour créer ton salon personnalisé
-                          </div>
-                          {/* Chips de sélection par famille */}
-                          {FAMILIES.map(fam => {
-                            const famAll = branchSalons.filter(s => fam.ids.includes(s.id))
-                            if (!famAll.length) return null
-                            return (
-                              <div key={fam.label} style={{ marginBottom:5 }}>
-                                <div style={{ fontSize:8, color:MUT, fontWeight:800, letterSpacing:0.5, marginBottom:3 }}>{fam.label}</div>
-                                <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
-                                  {famAll.map(s => {
-                                    const sel = !!instrMixSel.find(x=>x.id===s.id)
-                                    return (
-                                      <div key={s.id} onClick={() => toggleInstrMix(s)} style={{ padding:'2px 7px', borderRadius:10, fontSize:9, fontWeight:700, cursor:'pointer', border:`1px solid ${s.color}`, background: sel?s.color:`${s.color}18`, color: sel?'#fff':s.color, transition:'all 0.15s' }}>
-                                        {s.icon} {s.name}
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                            )
-                          })}
-                          {/* Sélection en cours */}
-                          {instrMixSel.length > 0 && (
-                            <div style={{ marginTop:8, padding:'6px 8px', borderRadius:8, background:`${green}15`, border:`1px solid ${green}33` }}>
-                              <div style={{ fontSize:9, color:green, fontWeight:700, marginBottom:4 }}>
-                                Mixage : {instrMixSel.map(s=>s.name).join(' × ')}
-                              </div>
-                              <button onClick={createInstrMix} disabled={instrMixSel.length < 2} style={{ width:'100%', padding:'6px', borderRadius:8, border:'none', background:instrMixSel.length>=2?`linear-gradient(135deg,${green},${blue})`:'#DDD', color:'#fff', fontWeight:800, fontSize:10, cursor:instrMixSel.length>=2?'pointer':'not-allowed', fontFamily:font }}>
-                                🎸 Créer ce salon ({instrMixSel.length} instruments)
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )
-            }
-
-            // ── Autres branches : toujours dépliées ──
-            const visibleItems = branchSalons.filter(s => catFilter==='Tous' || s.cat===catFilter)
-            return (
-              <div key={branch.id} style={{ marginBottom:8 }}>
-                {renderBranchHeader(branch.label, branch.color)}
-                {visibleItems.map((s, i, arr) => renderLeaf(s, i, arr))}
-              </div>
-            )
-          })}
-        </div>
-
-        {/* ── Section Salons Mixés ── */}
-        {mixedSalons.length > 0 && (
-          <div style={{ borderTop:`1.5px solid ${BDR}`, padding:'6px 6px 4px' }}>
-            <div
-              onClick={() => setMixesOpen(v => !v)}
-              style={{ padding:'5px 8px', fontSize:10, fontWeight:800, color:'#A78BDB', letterSpacing:0.3, borderLeft:`3px solid #A78BDB`, background:'#A78BDB0D', borderRadius:'0 8px 8px 0', marginBottom:3, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between' }}
-            >
-              <span>🎛️ Mes salons mixés ({mixedSalons.length})</span>
-              <span style={{ fontSize:10, opacity:0.7 }}>{mixesOpen ? '▲' : '▼'}</span>
-            </div>
-            {mixesOpen && mixedSalons.map(mx => {
-              const s = mixToSalon(mx)
-              const active = salon.id === s.id
-              return (
-                <div key={s.id} style={{ display:'flex', alignItems:'flex-start', paddingLeft:6, marginBottom:2 }}>
-                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', marginRight:4, paddingTop:4, width:12, flexShrink:0 }}>
-                    <div style={{ width:1, height:8, background:'#DEE4F0' }}/><div style={{ width:10, height:1, background:'#DEE4F0' }}/>
-                  </div>
-                  <div
-                    style={{ flex:1, padding:'7px 8px', borderRadius:10, border: active?`1.5px solid ${s.color}`:'1.5px solid transparent', background: active?`${s.color}13`:'transparent', cursor:'pointer', transition:'all 0.1s' }}
-                    onClick={() => setSalon(s)}
-                    onMouseEnter={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background=BG }}
-                    onMouseLeave={e => { if (!active) (e.currentTarget as HTMLDivElement).style.background='transparent' }}
-                  >
-                    <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:2 }}>
-                      <span style={{ fontSize:13 }}>🎛️</span>
-                      <div style={{ fontSize:10, fontWeight:700, color:active?s.color:TXT, lineHeight:1.2 }}>{s.name}</div>
-                    </div>
-                    <div style={{ display:'flex', alignItems:'center', gap:3 }}>
-                      {mx.sourceNames.map(n => (
-                        <span key={n} style={{ fontSize:8, padding:'0 4px', borderRadius:4, background:`${s.color}22`, color:s.color, fontWeight:700 }}>{n}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div title="Supprimer" onClick={() => { setMixedSalons(prev => prev.filter(m => m.id !== mx.id)); if (salon.id===mx.id) setSalon(SALONS[0]) }} style={{ padding:'4px 6px', cursor:'pointer', fontSize:11, color:MUT, flexShrink:0, marginTop:4 }}>🗑</div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Bouton créer un salon Mix — toujours visible */}
-        <div style={{ padding:'10px 10px 0' }}>
-          <button
-            onClick={() => setShowVinylMix(true)}
-            style={{
-              width:'100%', padding:'10px', borderRadius:12, border:'none', cursor:'pointer',
-              background:'linear-gradient(135deg,#A78BDB,#E07A9A)',
-              color:'white', fontWeight:800, fontSize:12, fontFamily:font,
-              boxShadow:'0 4px 14px rgba(167,139,219,0.35)',
-            }}
-          >🎛️ Créer un salon Mix</button>
-        </div>
-
-        {isVisitor && (
-          <div style={{ padding:12, borderTop:`1.5px solid ${BDR}`, background:`${pink}08` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:TXT, marginBottom:4 }}>✨ Profil complet + matchs</div>
-            <div style={{ fontSize:10, color:MUT, marginBottom:8 }}>Inscris-toi pour accéder à tout Vibz</div>
-            <button onClick={() => setShowInscription(true)} style={{ width:'100%', padding:'9px', borderRadius:12, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:12, fontFamily:font }}>
-              Rejoindre Vibz →
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* ── ZONE CHAT ── */}
-      <div style={{ display:'flex', flexDirection:'column', height:'calc(100vh - 60px)', overflow:'hidden' }}>
-
-        {/* Header salon */}
-        <div style={{ padding:'12px 20px', borderBottom:`1.5px solid ${BDR}`, background:SURF, display:'flex', alignItems:'center', gap:10, boxShadow:'0 2px 8px rgba(107,184,232,0.06)' }}>
-          <span style={{ fontSize:26 }}>{salon.icon}</span>
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:16, fontWeight:800, color:TXT }}>{salon.name}</div>
-            <div style={{ fontSize:11, color:MUT }}>{salon.count} connectés · {salon.hasMod?'Modéré humain + IA':'Modéré par IA'} · {salon.cat}</div>
-          </div>
-          {isVisitor && (
-            <div style={{ padding:'5px 12px', borderRadius:20, background:`${blue}18`, border:`1px solid ${blue}44`, fontSize:11, fontWeight:700, color:blue }}>
-              👤 Visiteur · {10 - ((allMsgs[salon.id]||[]).filter(m=>m.author===myPseudo).length)} msg restants
-            </div>
-          )}
-          {salon.id==='12' && (
-            <button onClick={() => setTranslateOn(v=>!v)} style={{ padding:'5px 12px', borderRadius:20, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:font, border:`1.5px solid ${translateOn?green:'#EEF2FA'}`, background:translateOn?`${green}18`:SURF, color:translateOn?green:MUT }}>
-              🌍 Traduction {translateOn?'ON':'OFF'}
-            </button>
-          )}
-          <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 12px', background:`${green}18`, borderRadius:20, fontSize:11, fontWeight:700, color:green }}>
-            <div style={{ width:7, height:7, background:green, borderRadius:'50%' }}/> IA Guard
-          </div>
-        </div>
-
-        {/* Match suggestion */}
-        {matchSuggestion && !matchDismissed && (
-          <div style={{ margin:'12px 20px 0', padding:'14px 18px', borderRadius:16, background:`linear-gradient(135deg,${pink}18,${blue}18)`, border:`1.5px solid ${pink}33`, display:'flex', alignItems:'center', gap:14 }}>
-            <div style={{ fontSize:32 }}>{matchSuggestion.avatar}</div>
-            <div style={{ flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:TXT, marginBottom:2 }}>💘 Match potentiel : <span style={{ color:pink }}>{matchSuggestion.pseudo}</span></div>
-              <div style={{ fontSize:11, color:MUT }}>{matchSuggestion.instrument} · {matchSuggestion.city} · Cherche {matchSuggestion.looking}</div>
-            </div>
-            <div style={{ display:'flex', gap:6 }}>
-              {isVisitor ? (
-                <button onClick={() => setShowInscription(true)} style={{ padding:'8px 14px', borderRadius:12, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:12, fontFamily:font }}>❤️ S&apos;inscrire pour matcher</button>
-              ) : (
-                <button style={{ padding:'8px 14px', borderRadius:12, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:12, fontFamily:font }}>❤️ Liker</button>
-              )}
-              <button onClick={() => setMatchDismissed(true)} style={{ padding:'8px 12px', borderRadius:12, border:`1.5px solid ${BDR}`, background:SURF, cursor:'pointer', fontSize:12, color:MUT, fontFamily:font }}>✕</button>
-            </div>
-          </div>
-        )}
-
-        {/* Messages */}
-        <div
-          ref={msgAreaRef}
-          style={{ flex:1, minHeight:0, padding:'14px 20px', overflowY:'auto', display:'flex', flexDirection:'column', gap:8 }}
-        >
-          {messages.map(msg => {
-            const isMe  = msg.author === myPseudo
-            const isBot = !!msg.isBot
-
-            return (
-              <div key={msg.id} style={{ display:'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap:8, alignItems:'flex-end' }}>
-
-                {/* Avatar */}
-                <div style={{
-                  width:30, height:30, borderRadius:'50%', flexShrink:0,
-                  fontSize: isBot ? 16 : 13,
-                  background: isBot ? tk.modBg : isMe ? `${salon.color}33` : `${salon.color}18`,
-                  border: isBot ? `1.5px solid ${tk.modBorder}` : `1.5px solid ${salon.color}44`,
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                }}>
-                  {msg.avatar}
-                </div>
-
-                {/* Contenu */}
-                <div style={{ maxWidth:'62%', display:'flex', flexDirection:'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-
-                  {/* Auteur + badges + heure */}
-                  <div style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3, flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                    <span style={{ fontSize:11, fontWeight:700, color: isBot ? tk.modText : isMe ? salon.color : TXT }}>
-                      {msg.author}
-                    </span>
-                    {msg.isMod && <span style={{ fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:6, background:tk.modBg, color:tk.modText }}>MOD</span>}
-                    {isBot    && <span style={{ fontSize:8, fontWeight:700, padding:'1px 5px', borderRadius:6, background:tk.guardBg, color:tk.guardText }}>IA</span>}
-                    {msg.time && <span style={{ fontSize:10, color:MUT }}>{msg.time}</span>}
-                  </div>
-
-                  {/* Bulle */}
-                  <div style={{
-                    padding:'9px 13px',
-                    background: isMe
-                      ? `linear-gradient(135deg,${salon.color},${salon.color}CC)`
-                      : isBot ? tk.modBg : SURF,
-                    borderLeft: isBot && !isMe ? `3px solid ${tk.modBorder}` : undefined,
-                    borderRadius: isMe
-                      ? '14px 14px 4px 14px'
-                      : isBot ? '0 12px 12px 12px' : '4px 14px 14px 14px',
-                    border: isMe || isBot ? 'none' : `1px solid ${BDR}`,
-                    fontSize:13, lineHeight:1.55,
-                    color: isMe ? '#fff' : isBot ? tk.modText : TXT,
-                    boxShadow: isMe ? `0 3px 10px ${salon.color}44` : '0 1px 3px rgba(0,0,0,0.06)',
-                    wordBreak:'break-word',
-                  }}>
-                    {msg.content}
-                    {!isBot && extractMusicUrl(msg.content) && <MusicCard url={extractMusicUrl(msg.content)!} compact />}
-                  </div>
-
-                  {/* Traduction salon international */}
-                  {salon.id==='12' && translateOn && msg.lang && msg.translated && (
-                    <div style={{ marginTop:4, padding:'5px 10px', background:`${blue}18`, borderRadius:'0 8px 8px 0', borderLeft:`3px solid ${blue}`, fontSize:11, color:tk.blueDark }}>
-                      <span style={{ fontSize:9, fontWeight:700, opacity:0.7 }}>{msg.lang} → 🌍 Traduit</span>
-                      <div style={{ fontWeight:700, marginTop:1 }}>{msg.translated}</div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-          <div ref={endRef}/>
-        </div>
-
-        {/* Zone saisie */}
-        <div style={{ padding:'12px 16px', borderTop:`1.5px solid ${BDR}`, background:SURF, display:'flex', flexDirection:'column', gap:8 }}>
-          {warning && (
-            <div style={{ padding:'10px 14px', background:tk.modBg, color:tk.modText, borderRadius:10, fontSize:13, fontWeight:600, borderLeft:`3px solid ${tk.modBorder}` }}>
-              🛡️ VibzGuard : {warning}
-            </div>
-          )}
-          {showSignupPrompt && (
-            <div style={{ padding:'12px 16px', background:`${pink}11`, borderRadius:12, border:`1.5px solid ${pink}33`, display:'flex', alignItems:'center', gap:12 }}>
-              <span style={{ fontSize:20 }}>⚡</span>
-              <div style={{ flex:1, fontSize:12, color:TXT, fontWeight:600 }}>Tu as atteint la limite visiteur (10 messages). Inscris-toi gratuitement pour continuer !</div>
-              <button onClick={() => setShowInscription(true)} style={{ padding:'8px 14px', borderRadius:12, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:12, fontFamily:font, whiteSpace:'nowrap' }}>S&apos;inscrire →</button>
-            </div>
-          )}
-          <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-            <div style={{ width:28, height:28, borderRadius:'50%', background:`${salon.color}18`, border:`1.5px solid ${salon.color}33`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, flexShrink:0 }}>{myAvatar}</div>
-            <input
-              style={{ flex:1, padding:'10px 16px', border:`1.5px solid ${BDR}`, borderRadius:24, fontSize:13, fontFamily:font, outline:'none', background:BG, color:TXT }}
-              value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&send()}
-              placeholder={`Écrire dans ${salon.name}... (en tant que ${myPseudo})`}
-            />
-            <button onClick={send} style={{ width:38, height:38, borderRadius:'50%', border:'none', cursor:'pointer', background:`linear-gradient(135deg,${salon.color},${blue})`, color:'white', fontSize:16, boxShadow:`0 4px 12px ${salon.color}44` }}>➤</button>
-          </div>
-        </div>
-      </div>
-
-      {/* Modal Vinyl Mix Creator */}
       {showVinylMix && (
         <VinylMixCreator
           onClose={() => setShowVinylMix(false)}
-          existingSalons={mixSalons}
-          onCreateSalon={handleCreateMixSalon}
-          onJoinSalon={handleJoinMixSalon}
+          existingSalons={community}
+          salonCounts={salonCounts}
+          onOpen={openMix}
         />
-      )}
-
-      {/* Modal inscription */}
-      {showInscription && (
-        <div style={{ position:'fixed', inset:0, zIndex:300, background:'rgba(26,30,46,0.55)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={() => setShowInscription(false)}>
-          <div onClick={e=>e.stopPropagation()} style={{ background:SURF, borderRadius:24, width:'100%', maxWidth:440, padding:32, boxShadow:`0 24px 64px ${pink}22`, border:`1.5px solid ${BDR}`, textAlign:'center' }}>
-            <div style={{ fontSize:48, marginBottom:12 }}>🦋</div>
-            <div style={{ fontSize:20, fontWeight:800, color:TXT, marginBottom:6 }}>Rejoins Vibz gratuitement</div>
-            <div style={{ fontSize:13, color:MUT, lineHeight:1.7, marginBottom:24 }}>Crée ton profil complet, accès illimité aux salons, messagerie privée, likes, matchs musicaux.</div>
-            <button onClick={() => window.location.href='/'} style={{ width:'100%', padding:'14px', borderRadius:14, border:'none', cursor:'pointer', background:`linear-gradient(135deg,${pink},${blue})`, color:'white', fontWeight:800, fontSize:15, fontFamily:font, boxShadow:`0 6px 20px ${pink}33` }}>
-              S&apos;inscrire gratuitement →
-            </button>
-            <div style={{ marginTop:12, fontSize:11, color:MUT }}>
-              Déjà inscrit ? <span style={{ color:pink, cursor:'pointer', fontWeight:700 }} onClick={() => window.location.href='/'}>Se connecter</span>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   )

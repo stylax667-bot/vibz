@@ -1,7 +1,9 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { supabase } from '../../lib/supabase'
+import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { useSalonPresence } from '../../lib/salons'
 import DiscoverPage from '../discover/DiscoverPage'
 import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
@@ -16,6 +18,25 @@ export default function AppLayout({ user }: Props) {
   const { theme: t, toggle } = useTheme()
   const [shareToast, setShareToast] = useState(false)
   const [showDon, setShowDon]       = useState(false)
+  const [showMenu, setShowMenu]     = useState(false)
+  // Profil avec qui ouvrir une conversation (depuis Découvrir)
+  const [chatWith, setChatWith]     = useState<Profile | null>(null)
+  // Salon à ouvrir (depuis Découvrir) et salon actuellement consulté
+  const [salonToOpen, setSalonToOpen]       = useState<string | null>(null)
+  const [currentSalonId, setCurrentSalonId] = useState<string | null>(null)
+  const isMobile = useIsMobile()
+
+  // Présence temps réel : nombre réel de membres connectés par salon
+  const salonCounts = useSalonPresence(user.id, tab === 'salons' ? currentSalonId : null)
+
+  const openSalon = (id: string) => { setSalonToOpen(id); setTab('salons') }
+
+  // Hauteur disponible pour le contenu des onglets — exposée aux pages via --vz-app-h
+  const NAV_H    = isMobile ? 56 : 60
+  const TABBAR_H = 62
+  const appHeight = isMobile
+    ? `calc(100dvh - ${NAV_H + TABBAR_H}px - env(safe-area-inset-bottom))`
+    : `calc(100vh - ${NAV_H}px)`
 
   const handleShare = async () => {
     const url  = SITE_URL
@@ -36,6 +57,13 @@ export default function AppLayout({ user }: Props) {
     { id: 'profile'   as Tab, icon: '👤', label: 'Profil'    },
   ]
 
+  const legalLinks = [
+    { label: 'Conditions d\'utilisation',      href: '/conditions'      },
+    { label: 'Politique de confidentialité',   href: '/confidentialite' },
+    { label: 'Mentions légales',              href: '/mentions-legales' },
+    { label: 'Contact',                        href: 'mailto:michael_chesne@outlook.fr' },
+  ]
+
   const initials = (user.email || 'U').slice(0, 2).toUpperCase()
   const f = 'Nunito, sans-serif'
 
@@ -50,12 +78,12 @@ export default function AppLayout({ user }: Props) {
   })
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: t.bg2, fontFamily: f }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: t.bg2, fontFamily: f, ['--vz-app-h' as string]: appHeight }}>
 
       {/* ── Navbar ── */}
       <nav style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 24px', height: 60,
+        padding: isMobile ? '0 12px' : '0 24px', height: NAV_H, gap: 8,
         background: t.navBg,
         borderBottom: `1px solid ${t.border}`,
         position: 'sticky', top: 0, zIndex: 100,
@@ -65,37 +93,39 @@ export default function AppLayout({ user }: Props) {
 
         {/* Logo */}
         <div onClick={() => setTab('discover')} title="Retour à l'accueil"
-          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 22, fontWeight: 800, letterSpacing: -1, color: t.text, cursor: 'pointer', userSelect: 'none' }}>
+          style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: isMobile ? 20 : 22, fontWeight: 800, letterSpacing: -1, color: t.text, cursor: 'pointer', userSelect: 'none', flexShrink: 0 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, fontSize: 20,
             background: `linear-gradient(135deg,${t.pinkLight},${t.blueLight},${t.greenLight})`,
             border: `1.5px solid ${t.pink}33`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>🦋</div>
-          Vib<span style={{ color: t.pink }}>z</span>
+          <span>Vib<span style={{ color: t.pink }}>z</span></span>
         </div>
 
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4 }}>
-          {tabs.map(tb => (
-            <button key={tb.id} style={tabBtn(tab === tb.id)} onClick={() => setTab(tb.id)}>
-              {tb.icon} {tb.label}
-            </button>
-          ))}
-        </div>
+        {/* Tabs (desktop) — sur mobile ils passent dans la barre du bas */}
+        {!isMobile && (
+          <div style={{ display: 'flex', gap: 4 }}>
+            {tabs.map(tb => (
+              <button key={tb.id} style={tabBtn(tab === tb.id)} onClick={() => setTab(tb.id)}>
+                {tb.icon} {tb.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Toast "lien copié" */}
         {shareToast && (
-          <div style={{ position:'fixed', top:72, left:'50%', transform:'translateX(-50%)', background:t.green, color:'white', padding:'10px 20px', borderRadius:12, fontWeight:700, fontSize:13, zIndex:200, boxShadow:`0 4px 16px ${t.green}55`, fontFamily:f }}>
+          <div style={{ position:'fixed', top:NAV_H + 12, left:'50%', transform:'translateX(-50%)', background:t.green, color:'white', padding:'10px 20px', borderRadius:12, fontWeight:700, fontSize:13, zIndex:200, boxShadow:`0 4px 16px ${t.green}55`, fontFamily:f }}>
             🔗 Lien copié !
           </div>
         )}
 
         {/* Modal donation */}
         {showDon && (
-          <div style={{ position:'fixed', inset:0, zIndex:500, background:t.overlay, backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          <div style={{ position:'fixed', inset:0, zIndex:500, background:t.overlay, backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:isMobile ? 16 : 20 }}
             onClick={() => setShowDon(false)}>
-            <div onClick={e=>e.stopPropagation()} style={{ background:t.surface, borderRadius:28, maxWidth:420, width:'100%', padding:28, border:`1px solid ${t.border}`, boxShadow:`0 32px 80px ${t.shadow}` }}>
+            <div onClick={e=>e.stopPropagation()} style={{ background:t.surface, borderRadius:28, maxWidth:420, width:'100%', padding:isMobile ? 22 : 28, border:`1px solid ${t.border}`, boxShadow:`0 32px 80px ${t.shadow}` }}>
               <div style={{ fontSize:20, fontWeight:800, color:t.text, marginBottom:4 }}>☕ Soutenir Vibz</div>
               <div style={{ fontSize:13, color:t.textMuted, marginBottom:20, lineHeight:1.6 }}>
                 Vibz est gratuit pour toujours. Si tu aimes la plateforme, un petit don aide à couvrir les coûts serveur et à développer de nouvelles fonctionnalités 🙏
@@ -122,42 +152,46 @@ export default function AppLayout({ user }: Props) {
         )}
 
         {/* Actions droite */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 10 }}>
 
-          {/* Partager l'app */}
-          <button
-            onClick={handleShare}
-            title="Partager Vibz"
-            style={{
-              padding: '6px 14px', borderRadius: 20, border: `1px solid ${t.border}`,
-              background: t.blueLight, color: t.blueDark,
-              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: f,
-              transition: 'all 0.15s',
-            }}
-          >🚀 Partager</button>
+          {!isMobile && (
+            <>
+              {/* Partager l'app */}
+              <button
+                onClick={handleShare}
+                title="Partager Vibz"
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: `1px solid ${t.border}`,
+                  background: t.blueLight, color: t.blueDark,
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: f,
+                  transition: 'all 0.15s',
+                }}
+              >🚀 Partager</button>
 
-          {/* Don */}
-          <button
-            onClick={() => setShowDon(true)}
-            title="Soutenir Vibz"
-            style={{
-              padding: '6px 14px', borderRadius: 20, border: `1px solid ${t.border}`,
-              background: t.isDark ? 'rgba(232,160,106,0.12)' : '#FBF3EA',
-              color: t.isDark ? '#E8B87A' : '#A05A10',
-              fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: f,
-              transition: 'all 0.15s',
-            }}
-          >☕ Soutenir</button>
+              {/* Don */}
+              <button
+                onClick={() => setShowDon(true)}
+                title="Soutenir Vibz"
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: `1px solid ${t.border}`,
+                  background: t.isDark ? 'rgba(232,160,106,0.12)' : '#FBF3EA',
+                  color: t.isDark ? '#E8B87A' : '#A05A10',
+                  fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: f,
+                  transition: 'all 0.15s',
+                }}
+              >☕ Soutenir</button>
 
-          {/* IA Guard badge */}
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-            background: t.guardBg, color: t.guardText,
-          }}>
-            <div style={{ width: 7, height: 7, background: t.green, borderRadius: '50%' }} />
-            IA Guard
-          </div>
+              {/* IA Guard badge */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 5,
+                padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                background: t.guardBg, color: t.guardText,
+              }}>
+                <div style={{ width: 7, height: 7, background: t.green, borderRadius: '50%' }} />
+                IA Guard
+              </div>
+            </>
+          )}
 
           {/* Toggle dark mode */}
           <button
@@ -211,7 +245,7 @@ export default function AppLayout({ user }: Props) {
           <div
             onClick={() => setTab('profile')}
             style={{
-              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer',
+              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', flexShrink: 0,
               background: t.pinkLight, color: t.pinkDark,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               fontSize: 13, fontWeight: 800,
@@ -219,67 +253,123 @@ export default function AppLayout({ user }: Props) {
             }}
           >{initials}</div>
 
-          {/* Déconnexion */}
-          <button
-            onClick={() => supabase.auth.signOut()}
-            style={{
-              padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
-              border: `1px solid ${t.border}`,
-              background: 'transparent', fontSize: 12, fontFamily: f,
-              fontWeight: 700, color: t.textMuted,
-              transition: 'all 0.15s',
-            }}
-          >Déconnexion</button>
+          {isMobile ? (
+            /* Menu (mobile) : Partager, Soutenir, Déconnexion, liens légaux */
+            <button onClick={() => setShowMenu(true)} aria-label="Menu"
+              style={{ width: 38, height: 38, borderRadius: 12, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, flexShrink: 0 }}>
+              ☰
+            </button>
+          ) : (
+            /* Déconnexion */
+            <button
+              onClick={() => supabase.auth.signOut()}
+              style={{
+                padding: '6px 12px', borderRadius: 20, cursor: 'pointer',
+                border: `1px solid ${t.border}`,
+                background: 'transparent', fontSize: 12, fontFamily: f,
+                fontWeight: 700, color: t.textMuted,
+                transition: 'all 0.15s',
+              }}
+            >Déconnexion</button>
+          )}
         </div>
       </nav>
 
+      {/* ── Menu mobile (feuille du bas) ── */}
+      {isMobile && showMenu && (
+        <div onClick={() => setShowMenu(false)}
+          style={{ position:'fixed', inset:0, zIndex:450, background:t.overlay, display:'flex', alignItems:'flex-end' }}>
+          <div onClick={e => e.stopPropagation()} className="animate-slide-up"
+            style={{ width:'100%', background:t.surface, borderRadius:'22px 22px 0 0', padding:'10px 16px calc(16px + env(safe-area-inset-bottom))', border:`1px solid ${t.border}`, fontFamily:f }}>
+            <div style={{ width:40, height:4, borderRadius:2, background:t.border, margin:'0 auto 14px' }}/>
+            <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:t.guardText, background:t.guardBg, padding:'6px 12px', borderRadius:20, width:'fit-content', marginBottom:8 }}>
+              <span style={{ width:7, height:7, background:t.green, borderRadius:'50%' }}/> IA Guard actif
+            </div>
+            {[
+              { label:'🚀 Partager Vibz', onClick: () => { setShowMenu(false); handleShare() }, danger: false },
+              { label:'☕ Soutenir Vibz', onClick: () => { setShowMenu(false); setShowDon(true) }, danger: false },
+              { label:'🚪 Déconnexion',   onClick: () => supabase.auth.signOut(), danger: true },
+            ].map(item => (
+              <button key={item.label} onClick={item.onClick}
+                style={{ display:'block', width:'100%', textAlign:'left', padding:'14px 12px', borderRadius:14, border:'none', background:'transparent', color: item.danger ? t.pink : t.text, fontSize:15, fontWeight:700, fontFamily:f, cursor:'pointer' }}>
+                {item.label}
+              </button>
+            ))}
+            <div style={{ height:1, background:t.border, margin:'8px 0 12px' }}/>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:'10px 16px', padding:'0 12px' }}>
+              {legalLinks.map(l => (
+                <a key={l.href} href={l.href} style={{ fontSize:12, color:t.textMuted, fontWeight:700, textDecoration:'none' }}>{l.label}</a>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Contenu ── */}
-      <div style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-        {tab === 'discover'  && <DiscoverPage user={user} onMessage={() => setTab('messenger')} />}
-        {tab === 'messenger' && <MessengerPage user={user} />}
-        {tab === 'salons'    && <SalonsPage user={user} />}
+      <div style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', minWidth: 0 }}>
+        {tab === 'discover'  && <DiscoverPage user={user} onMessage={p => { setChatWith(p); setTab('messenger') }} onOpenSalon={openSalon} salonCounts={salonCounts} />}
+        {tab === 'messenger' && <MessengerPage user={user} initialContact={chatWith} onContactOpened={() => setChatWith(null)} />}
+        {tab === 'salons'    && <SalonsPage user={user} initialSalonId={salonToOpen} onInitialSalonOpened={() => setSalonToOpen(null)} onSalonChange={setCurrentSalonId} salonCounts={salonCounts} />}
         {tab === 'profile'   && <ProfilePage user={user} />}
       </div>
 
-      {/* ── Footer légal ── */}
-      <footer style={{
-        borderTop: `1px solid ${t.border}`,
-        background: t.navBg,
-        padding: '10px 24px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        gap: 20, flexWrap: 'wrap',
-        transition: 'background 0.25s',
-      }}>
-        <span style={{ fontSize: 11, color: t.textMuted, fontFamily: f }}>
-          🦋 Vibz — {new Date().getFullYear()}
-        </span>
-        {[
-          { label: '🛡️ Sécurité & Règles',          href: '/securite'        },
-          { label: 'Conditions d\'utilisation',      href: '/conditions'      },
-          { label: 'Politique de confidentialité',   href: '/confidentialite' },
-          { label: 'Mentions légales',              href: '/mentions-legales' },
-          { label: 'Contact',                        href: 'mailto:michael_chesne@outlook.fr' },
-        ].map(l => (
-          <a key={l.href} href={l.href}
-            target={l.href.startsWith('mailto') ? '_blank' : undefined}
-            rel="noopener noreferrer"
-            style={{ fontSize: 11, color: t.textMuted, fontFamily: f, textDecoration: 'none', fontWeight: 700, transition: 'color 0.15s' }}
-            onMouseEnter={e => (e.currentTarget.style.color = t.pink)}
-            onMouseLeave={e => (e.currentTarget.style.color = t.textMuted)}
-          >{l.label}</a>
-        ))}
-        <button
-          onClick={() => setShowDon(true)}
-          style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:11, color:t.textMuted, fontFamily:f, fontWeight:700, padding:0, transition:'color 0.15s' }}
-          onMouseEnter={e=>(e.currentTarget.style.color=t.pink)}
-          onMouseLeave={e=>(e.currentTarget.style.color=t.textMuted)}
-        >☕ Soutenir Vibz</button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: t.textMuted, fontWeight: 700 }}>
-          <span style={{ display: 'inline-block', width: 6, height: 6, background: t.green, borderRadius: '50%' }}/>
-          RGPD · VibzGuard actif
-        </div>
-      </footer>
+      {isMobile ? (
+        <>
+          {/* ── Barre d'onglets (mobile) ── */}
+          <div style={{ height:`calc(${TABBAR_H}px + env(safe-area-inset-bottom))`, flexShrink:0 }}/>
+          <nav className="vz-safe-bottom" style={{
+            position:'fixed', left:0, right:0, bottom:0, zIndex:120,
+            background:t.navBg, borderTop:`1px solid ${t.border}`,
+            boxShadow:`0 -2px 12px ${t.shadow}`,
+            display:'grid', gridTemplateColumns:`repeat(${tabs.length}, 1fr)`,
+          }}>
+            {tabs.map(tb => {
+              const active = tab === tb.id
+              return (
+                <button key={tb.id} onClick={() => setTab(tb.id)} aria-current={active ? 'page' : undefined}
+                  style={{ height:TABBAR_H, border:'none', background:'transparent', cursor:'pointer', fontFamily:f, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:2, color: active ? t.pink : t.textMuted, padding:0 }}>
+                  <span style={{ fontSize:21, lineHeight:1, filter: active ? 'none' : 'grayscale(0.6)', opacity: active ? 1 : 0.75 }}>{tb.icon}</span>
+                  <span style={{ fontSize:11, fontWeight:800 }}>{tb.label}</span>
+                  <span style={{ width:18, height:3, borderRadius:2, background: active ? t.pink : 'transparent', marginTop:1 }}/>
+                </button>
+              )
+            })}
+          </nav>
+        </>
+      ) : (
+        /* ── Footer légal (desktop) ── */
+        <footer style={{
+          borderTop: `1px solid ${t.border}`,
+          background: t.navBg,
+          padding: '10px 24px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          gap: 20, flexWrap: 'wrap',
+          transition: 'background 0.25s',
+        }}>
+          <span style={{ fontSize: 11, color: t.textMuted, fontFamily: f }}>
+            🦋 Vibz — {new Date().getFullYear()}
+          </span>
+          {legalLinks.map(l => (
+            <a key={l.href} href={l.href}
+              target={l.href.startsWith('mailto') ? '_blank' : undefined}
+              rel="noopener noreferrer"
+              style={{ fontSize: 11, color: t.textMuted, fontFamily: f, textDecoration: 'none', fontWeight: 700, transition: 'color 0.15s' }}
+              onMouseEnter={e => (e.currentTarget.style.color = t.pink)}
+              onMouseLeave={e => (e.currentTarget.style.color = t.textMuted)}
+            >{l.label}</a>
+          ))}
+          <button
+            onClick={() => setShowDon(true)}
+            style={{ background:'transparent', border:'none', cursor:'pointer', fontSize:11, color:t.textMuted, fontFamily:f, fontWeight:700, padding:0, transition:'color 0.15s' }}
+            onMouseEnter={e=>(e.currentTarget.style.color=t.pink)}
+            onMouseLeave={e=>(e.currentTarget.style.color=t.textMuted)}
+          >☕ Soutenir Vibz</button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: t.textMuted, fontWeight: 700 }}>
+            <span style={{ display: 'inline-block', width: 6, height: 6, background: t.green, borderRadius: '50%' }}/>
+            RGPD · VibzGuard actif
+          </div>
+        </footer>
+      )}
     </div>
   )
 }
-

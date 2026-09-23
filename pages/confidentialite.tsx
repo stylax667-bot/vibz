@@ -115,7 +115,7 @@ export default function Confidentialite() {
       <div style={{ minHeight: '100vh', background: tk.bg2, fontFamily: font }}>
 
         {/* ── Header ── */}
-        <div style={{
+        <div className="vz-pad-sm" style={{
           background: tk.navBg,
           borderBottom: `1.5px solid ${tk.border}`,
           padding: '15px 32px',
@@ -130,10 +130,10 @@ export default function Confidentialite() {
               Vib<span style={{ color: pink }}>z</span>
             </span>
           </a>
-          <div style={{ width: 1, height: 22, background: '#EEF2FA' }} />
+          <div className="vz-hide-sm" style={{ width: 1, height: 22, background: '#EEF2FA' }} />
           <div style={{ fontSize: 13, fontWeight: 700, color: '#9BA8C0' }}>Politique de Confidentialité</div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 11, color: '#9BA8C0', fontWeight: 600 }}>v1.0 — Mai 2026</span>
+            <span className="vz-hide-sm" style={{ fontSize: 11, color: '#9BA8C0', fontWeight: 600 }}>v1.0 — Mai 2026</span>
             <a href="/conditions" style={{
               padding: '6px 14px', borderRadius: 20, border: `1.5px solid ${pink}44`,
               background: `${pink}10`, color: pink, fontSize: 11, fontWeight: 800,
@@ -142,10 +142,10 @@ export default function Confidentialite() {
           </div>
         </div>
 
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px', display: 'grid', gridTemplateColumns: '250px 1fr', gap: 32, alignItems: 'start' }}>
+        <div className="vz-stack" style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px', display: 'grid', gridTemplateColumns: '250px 1fr', gap: 32, alignItems: 'start' }}>
 
           {/* ── Sommaire ── */}
-          <nav style={{
+          <nav className="vz-hide-sm" style={{
             position: 'sticky', top: 78,
             background: 'white', border: '1.5px solid #EEF2FA',
             borderRadius: 20, padding: 18,
@@ -234,7 +234,7 @@ export default function Confidentialite() {
             {/* Art. 2 — Responsable */}
             {art('responsable', '🏛️', 'Article 2 — Responsable de Traitement',
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
                   {[
                     { label: 'Entité', value: 'Vibz (structure en cours d\'immatriculation)' },
                     { label: 'Siège social', value: 'France' },
@@ -365,7 +365,7 @@ export default function Confidentialite() {
                   'Ces engagements sont absolus, permanents et non modifiables par une quelconque mise à jour future des CGU ou de cette politique, sauf obligation légale contraire expressément identifiée.'
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {[
                     { icon: '💰', title: 'Zéro revente', desc: 'Nous ne vendons jamais vos données personnelles à des entreprises tierces, annonceurs ou courtiers en données.' },
                     { icon: '📢', title: 'Zéro ciblage publicitaire', desc: 'Vibz ne montre aucune publicité ciblée. Aucun profil publicitaire n\'est constitué à partir de votre comportement.' },
@@ -481,7 +481,7 @@ export default function Confidentialite() {
                     { name: 'Vercel Inc.', role: 'Hébergement application, CDN, déploiement', location: '🇪🇺 UE (edge network)', garantie: 'Contrat DPA RGPD signé' },
                     { name: 'Google Fonts', role: 'Polices typographiques (Nunito)', location: '🇺🇸 USA — SCC UE-USA', garantie: 'Clauses Contractuelles Types' },
                   ].map(s => (
-                    <div key={s.name} style={{ display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: 12, padding: '12px 16px', background: '#F8FBFF', borderRadius: 12, border: '1.5px solid #EEF2FA', alignItems: 'center' }}>
+                    <div key={s.name} className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: 12, padding: '12px 16px', background: '#F8FBFF', borderRadius: 12, border: '1.5px solid #EEF2FA', alignItems: 'center' }}>
                       <div style={{ fontWeight: 800, fontSize: 13 }}>{s.name}</div>
                       <div style={{ fontSize: 12, color: '#6B7A9A' }}>{s.role}</div>
                       <div style={{ textAlign: 'right' }}>
@@ -514,7 +514,7 @@ export default function Confidentialite() {
                   'La sécurité de vos données est une priorité technique de premier rang chez Vibz. Nous appliquons l\'état de l\'art en matière de sécurité informatique.'
                 )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   {[
                     { icon: '🔒', title: 'Chiffrement en transit', desc: 'Toutes les communications entre votre navigateur et nos serveurs utilisent TLS 1.3 (HTTPS obligatoire, HSTS activé).' },
                     { icon: '🗄️', title: 'Chiffrement au repos', desc: 'Les données stockées en base de données sont chiffrées par AES-256 au niveau du stockage Supabase.' },
@@ -590,7 +590,7 @@ export default function Confidentialite() {
                 </div>
 
                 <h3 style={h3}>Comment exercer vos droits</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
                   {[
                     { icon: '⚙️', label: 'Via les paramètres', desc: 'Profil → Confidentialité → Mes données' },
                     { icon: '📧', label: 'Par email', desc: 'michael_chesne@outlook.fr — réponse sous 30j' },
@@ -692,7 +692,7 @@ export default function Confidentialite() {
             {/* Art. 14 — Contact */}
             {art('contact', '📧', 'Article 14 — Contact, DPO & Réclamations',
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 18 }}>
                   {[
                     { icon: '🔒', label: 'Données & vie privée', email: 'michael_chesne@outlook.fr', delai: '30 jours max' },
                     { icon: '🛡️', label: 'DPO (Délégué Protection Données)', email: 'michael_chesne@outlook.fr', delai: '30 jours max' },

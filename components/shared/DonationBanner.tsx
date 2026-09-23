@@ -7,7 +7,7 @@ interface Props {
   onDismiss?: () => void
 }
 
-const KOFI_URL = 'https://ko-fi.com/vibz'
+const KOFI_URL = 'https://ko-fi.com/vibzapp'
 
 export default function DonationBanner({ variant = 'inline', onDismiss }: Props) {
   const [dismissed, setDismissed] = useState(false)
@@ -41,7 +41,7 @@ export default function DonationBanner({ variant = 'inline', onDismiss }: Props)
   // ── Variante match : popup émotionnel après un match ──────────────────────
   if (variant === 'match') {
     return (
-      <div style={{
+      <div className="vz-above-tabbar" style={{
         position:'fixed', bottom:24, right:24, zIndex:300,
         background:'linear-gradient(135deg,#1C2233,#2A1020)',
         border:'1.5px solid rgba(224,122,154,0.3)',

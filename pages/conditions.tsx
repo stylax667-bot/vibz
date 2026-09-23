@@ -96,7 +96,7 @@ export default function Conditions() {
       <div style={{ minHeight: '100vh', background: tk.bg2, fontFamily: font }}>
 
         {/* ── Header ── */}
-        <div style={{
+        <div className="vz-pad-sm" style={{
           background: tk.navBg,
           borderBottom: `1.5px solid ${tk.border}`,
           padding: '16px 32px',
@@ -114,17 +114,17 @@ export default function Conditions() {
               Vib<span style={{ color: pink }}>z</span>
             </span>
           </a>
-          <div style={{ width: 1, height: 24, background: tk.border }} />
+          <div className="vz-hide-sm" style={{ width: 1, height: 24, background: tk.border }} />
           <div style={{ fontSize: 13, fontWeight: 700, color: tk.textMuted }}>Conditions Générales d&apos;Utilisation</div>
-          <div style={{ marginLeft: 'auto', fontSize: 11, color: tk.textMuted, fontWeight: 600 }}>
+          <div className="vz-hide-sm" style={{ marginLeft: 'auto', fontSize: 11, color: tk.textMuted, fontWeight: 600 }}>
             Version 1.0 — Mai 2026
           </div>
         </div>
 
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: 32, alignItems: 'start' }}>
+        <div className="vz-stack" style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px', display: 'grid', gridTemplateColumns: '240px 1fr', gap: 32, alignItems: 'start' }}>
 
           {/* ── Sommaire sticky ── */}
-          <nav style={{ position: 'sticky', top: 80, background: tk.surface, border: `1.5px solid ${tk.border}`, borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <nav className="vz-hide-sm" style={{ position: 'sticky', top: 80, background: tk.surface, border: `1.5px solid ${tk.border}`, borderRadius: 20, padding: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: tk.textMuted, letterSpacing: 1, marginBottom: 10, textTransform: 'uppercase' }}>Sommaire</div>
             {SECTIONS.map(sec => (
               <button
@@ -496,7 +496,7 @@ export default function Conditions() {
                 ])}
 
                 <h3 style={h3Style}>11.3 Ressources d&apos;aide</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {[
                     { label: '🆘 3114', desc: 'Prévention suicide — 24h/24' },
                     { label: '📞 3919', desc: 'Violences conjugales — 24h/24' },
