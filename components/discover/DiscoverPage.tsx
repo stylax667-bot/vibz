@@ -9,6 +9,7 @@ import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
 import VinylGalaxy from './VinylGalaxy'
+import Avatar from '../shared/Avatar'
 
 interface Props {
   user: User
@@ -220,8 +221,8 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts
             return (
               <div key={p.id} style={{ background: SURF, border: `0.5px solid ${BDR}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ height: 56, background: BANNER_BG[inst] || (tk.isDark ? '#2A1E3E' : '#EEEDFE'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, position: 'relative' }}>
-                  {p.avatar_url
-                    ? <img src={p.avatar_url} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', border: '2px solid white' }} />
+                  {p.avatar_url || p.avatar_emoji
+                    ? <Avatar p={p} size={44} ring="white" online={false} />
                     : (EMOJI_MAP[inst] || '🎵')}
                   <button onClick={e => { e.stopPropagation(); setConfirmBlock(p) }} title="Bloquer ce membre"
                     style={{ position: 'absolute', top: 6, right: 6, background: tk.isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.85)', border: 'none', borderRadius: 8, padding: '4px 8px', fontSize: 11, fontWeight: 800, color: MUT, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>

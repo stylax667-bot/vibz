@@ -9,24 +9,27 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/auth-helpers-nextjs": "^0.10.0",
+    "@supabase/supabase-js": "^2.44.0",
+    "@tensorflow/tfjs": "^4.22.0",
+    "date-fns": "^3.6.0",
+    "framer-motion": "^11.3.0",
+    "jpeg-js": "^0.4.4",
     "next": "14.2.5",
+    "nsfwjs": "^4.4.0",
     "react": "^18",
     "react-dom": "^18",
-    "@supabase/supabase-js": "^2.44.0",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "framer-motion": "^11.3.0",
-    "date-fns": "^3.6.0",
     "zustand": "^4.5.4"
   },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.5",
-    "typescript": "^5",
-    "autoprefixer": "^10.0.1",
     "postcss": "^8",
-    "tailwindcss": "^3.4.1"
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
   }
 }

@@ -5,6 +5,7 @@ import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { detectPlatform, getEmbedUrl, MUSIC_PLATFORMS, type MusicLink } from '../../lib/musicPlatforms'
 import AvatarUpload from '../shared/AvatarUpload'
+import type { AvatarFields } from '../../lib/avatar'
 import NotificationSettings from '../shared/NotificationSettings'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
@@ -118,7 +119,7 @@ export default function ProfilePage({ user }: Props) {
   const toggleEmbed = (id: string) => setMusicLinks(prev => prev.map(l => l.id===id ? {...l,showEmbed:!l.showEmbed} : l))
 
   const [saved, setSaved] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatar, setAvatar] = useState<AvatarFields>({})
   const [notifMatch, setNotifMatch] = useState(true)
   const [notifMessage, setNotifMessage] = useState(true)
   const [shareCtx, setShareCtx] = useState<ShareContext | null>(null)
@@ -157,7 +158,7 @@ export default function ProfilePage({ user }: Props) {
           ...p, ...data,
           social_visibility: { ...DEFAULT_VISIBILITY, ...(data.social_visibility || {}) },
         }))
-        if (data.avatar_url) setAvatarUrl(data.avatar_url)
+        setAvatar({ avatar_url: data.avatar_url, avatar_emoji: data.avatar_emoji, avatar_locked_until: data.avatar_locked_until })
         if (typeof data.notif_new_match === 'boolean') setNotifMatch(data.notif_new_match)
         if (typeof data.notif_new_message === 'boolean') setNotifMessage(data.notif_new_message)
       }
@@ -199,7 +200,8 @@ export default function ProfilePage({ user }: Props) {
   }
 
   const save = async () => {
-    await supabase.from('profiles').upsert({ id: user.id, ...profile, avatar_url: avatarUrl, updated_at: new Date().toISOString() })
+    // L'avatar n'est pas envoyé ici : seule l'API /api/avatar peut le modifier
+    await supabase.from('profiles').upsert({ id: user.id, ...profile, updated_at: new Date().toISOString() })
     await supabase.from('music_profiles').upsert({
       user_id: user.id,
       instruments: profile.instruments,
@@ -238,10 +240,9 @@ export default function ProfilePage({ user }: Props) {
       <div style={{ display:'flex', gap:isMobile ? 14 : 20, alignItems:'flex-start', flexWrap:'wrap' }}>
         {/* Avatar avec upload */}
         <AvatarUpload
-          userId={user.id}
-          currentUrl={avatarUrl}
-          displayName={profile.display_name}
-          onUpload={url => setAvatarUrl(url)}
+          profile={{ ...avatar, display_name: profile.display_name }}
+          size={isMobile ? 84 : 96}
+          onChange={f => setAvatar(a => ({ ...a, ...f }))}
         />
         <div style={{ flex:'1 1 220px', minWidth:0 }}>
           <div style={{ fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>

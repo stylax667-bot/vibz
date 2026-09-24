@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
@@ -9,6 +9,8 @@ import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
 import ProfilePage from '../profile/ProfilePage'
 import { SITE_URL } from '../../lib/site'
+import Avatar from '../shared/Avatar'
+import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
 interface Props { user: User }
@@ -25,6 +27,16 @@ export default function AppLayout({ user }: Props) {
   const [salonToOpen, setSalonToOpen]       = useState<string | null>(null)
   const [currentSalonId, setCurrentSalonId] = useState<string | null>(null)
   const isMobile = useIsMobile()
+  const [myAvatar, setMyAvatar] = useState<AvatarFields & { display_name?: string }>({ display_name: user.email || 'U' })
+
+  // Avatar du membre connecté, mis à jour dès qu'il le change depuis son profil
+  useEffect(() => {
+    supabase.from('profiles').select('display_name, avatar_url, avatar_emoji').eq('id', user.id).maybeSingle()
+      .then(({ data }) => { if (data) setMyAvatar(a => ({ ...a, ...data, display_name: data.display_name || a.display_name })) })
+    const onChange = (e: Event) => setMyAvatar(a => ({ ...a, ...(e as CustomEvent<Partial<AvatarFields>>).detail }))
+    window.addEventListener(AVATAR_EVENT, onChange)
+    return () => window.removeEventListener(AVATAR_EVENT, onChange)
+  }, [user.id])
 
   // Présence temps réel : nombre réel de membres connectés par salon
   const salonCounts = useSalonPresence(user.id, tab === 'salons' ? currentSalonId : null)
@@ -64,7 +76,6 @@ export default function AppLayout({ user }: Props) {
     { label: 'Contact',                        href: 'mailto:michael_chesne@outlook.fr' },
   ]
 
-  const initials = (user.email || 'U').slice(0, 2).toUpperCase()
   const f = 'Nunito, sans-serif'
 
   const tabBtn = (active: boolean): React.CSSProperties => ({
@@ -241,17 +252,8 @@ export default function AppLayout({ user }: Props) {
             </div>
           </button>
 
-          {/* Avatar initiales */}
-          <div
-            onClick={() => setTab('profile')}
-            style={{
-              width: 34, height: 34, borderRadius: '50%', cursor: 'pointer', flexShrink: 0,
-              background: t.pinkLight, color: t.pinkDark,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 800,
-              border: `2px solid ${t.pink}44`,
-            }}
-          >{initials}</div>
+          {/* Avatar du membre */}
+          <Avatar p={myAvatar} size={34} ring={`${t.pink}66`} online={false} onClick={() => setTab('profile')} title="Mon profil" />
 
           {isMobile ? (
             /* Menu (mobile) : Partager, Soutenir, Déconnexion, liens légaux */

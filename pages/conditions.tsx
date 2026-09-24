@@ -226,7 +226,8 @@ export default function Conditions() {
                 {ul([
                   'Le pseudo et les informations de profil doivent être personnels et non trompeurs.',
                   'L\'usurpation d\'identité (se faire passer pour un autre membre, une célébrité, un modérateur Vibz) est un motif d\'exclusion définitive et peut faire l\'objet d\'un signalement aux autorités compétentes.',
-                  'Les photos de profil doivent représenter la personne réelle (pas de robots, d\'avatars trompeurs ou de photos de tiers sans consentement).',
+                  'L\'avatar est une petite image carrée librement choisie par le membre. Il ne doit pas être trompeur (se faire passer pour quelqu\'un d\'autre) ni montrer un tiers sans son consentement.',
+                  'Les avatars à caractère sexuel ou pornographique sont interdits. Chaque image est vérifiée automatiquement avant publication : une image explicite n\'est jamais publiée, et l\'avatar du membre est alors fixé sur un emoji d\'instrument pendant 6 mois, sans possibilité de le modifier.',
                 ])}
               </>
             )}

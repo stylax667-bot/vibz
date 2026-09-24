@@ -89,6 +89,18 @@ Vercel te donne une URL du type : `https://vibz-xxxx.vercel.app`
 
 ---
 
+## ÉTAPE 5 bis — Avatars carrés contrôlés (2 min)
+
+1. Supabase → **SQL Editor** → colle `supabase/migrations/20260924_avatars.sql` → **Run**
+   (si un message indique qu'une règle n'a pas pu être supprimée, supprime-la dans **Storage** → **Policies**)
+2. Supabase → **Settings** → **API** → copie la clé **service_role** (secrète : ne jamais la partager)
+3. Vercel → ton projet → **Settings** → **Environment Variables** → ajoute
+   `SUPABASE_SERVICE_ROLE_KEY` = la clé service_role, puis **Redeploy**
+
+Sans cette clé, le bouton 📷 affiche « Le changement d'avatar n'est pas encore disponible ».
+
+---
+
 ## ÉTAPE 6 — Ton domaine personnalisé (optionnel, ~10€/an)
 
 1. Achète un domaine sur **OVH** ou **Namecheap** (ex: vibzmusic.fr ~10€/an)

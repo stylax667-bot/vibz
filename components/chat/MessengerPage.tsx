@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../../lib/supabase'
+import SquareAvatar from '../shared/Avatar'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
@@ -271,20 +272,7 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
   }
 
   // ── Composants ──
-  const Avatar = ({ p, size = 36 }: { p: Profile | null; size?: number }) => (
-    <div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
-      {p?.avatar_url
-        ? <img src={p.avatar_url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', border: `2px solid ${BDR}` }} />
-        : <div style={{
-            width: size, height: size, borderRadius: '50%', fontSize: size * 0.36, fontWeight: 800,
-            background: tk.isDark ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
-            color: tk.pinkDark, border: `2px solid ${BDR}`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>{(p?.display_name || p?.username || '?').slice(0, 2).toUpperCase()}</div>}
-      {p?.is_online && (
-        <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: green, border: `2px solid ${SURF}` }} />
-      )}
-    </div>
-  )
+  const Avatar = ({ p, size = 36 }: { p: Profile | null; size?: number }) => <SquareAvatar p={p} size={size} ring={BDR} />
 
   const headerBtn = (color: string): React.CSSProperties => ({
     padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 20, border: `1.5px solid ${color}55`,

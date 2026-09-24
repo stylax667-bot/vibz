@@ -3,6 +3,8 @@ import type { User } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
 import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
 import { useTheme } from '../../lib/theme'
+import Avatar from '../shared/Avatar'
+import type { AvatarFields } from '../../lib/avatar'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { CATALOG_BY_ID, searchCatalog, norm } from '../../lib/musicCatalog'
 import { openMixSalon, openOfficialSalon, closeSalon, comboKey, type SalonRow } from '../../lib/salons'
@@ -135,6 +137,7 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
   const [confirmClose, setConfirmClose] = useState(false)
   const [myName, setMyName]           = useState(user.email?.split('@')[0] || 'Moi')
   const namesRef   = useRef<Record<string, string>>({})
+  const avatarsRef = useRef<Record<string, AvatarFields>>({})
   const msgAreaRef = useRef<HTMLDivElement>(null)
   // Correspondance salon officiel (id catalogue) → ligne en base
   const officialRows = useRef<Record<string, SalonRow>>({})
@@ -142,8 +145,11 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
   const flash = (m: string) => { setNotice(m); setTimeout(() => setNotice(''), 4000) }
 
   useEffect(() => {
-    supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle()
-      .then(({ data }) => { if (data?.display_name) setMyName(data.display_name) })
+    supabase.from('profiles').select('display_name, avatar_url, avatar_emoji').eq('id', user.id).maybeSingle()
+      .then(({ data }) => {
+        if (data?.display_name) setMyName(data.display_name)
+        if (data) avatarsRef.current[user.id] = { avatar_url: data.avatar_url, avatar_emoji: data.avatar_emoji }
+      })
   }, [user.id])
 
   // ── Salons de la communauté (temps réel) ──
@@ -219,8 +225,11 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
   const resolveNames = useCallback(async (ids: string[]) => {
     const missing = Array.from(new Set(ids)).filter(id => !namesRef.current[id])
     if (!missing.length) return
-    const { data } = await supabase.from('profiles').select('id, display_name, username').in('id', missing)
-    ;(data || []).forEach(p => { namesRef.current[p.id] = p.display_name || p.username || 'Membre' })
+    const { data } = await supabase.from('profiles').select('id, display_name, username, avatar_url, avatar_emoji').in('id', missing)
+    ;(data || []).forEach(p => {
+      namesRef.current[p.id] = p.display_name || p.username || 'Membre'
+      avatarsRef.current[p.id] = { avatar_url: p.avatar_url, avatar_emoji: p.avatar_emoji }
+    })
   }, [])
 
   const loadMsgs = useCallback(async (salonId: string) => {
@@ -500,9 +509,7 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
           const author = isMe ? myName : (msg.author || 'Membre')
           return (
             <div key={msg.id} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
-              <div style={{ width: 30, height: 30, borderRadius: '50%', flexShrink: 0, fontSize: 11, fontWeight: 800, background: isMe ? `${current.color}33` : `${current.color}18`, border: `1.5px solid ${current.color}44`, color: current.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                {author.slice(0, 2).toUpperCase()}
-              </div>
+              <Avatar p={{ display_name: author, ...avatarsRef.current[msg.sender_id] }} size={30} ring={`${current.color}66`} />
               <div style={{ maxWidth: isMobile ? '78%' : '62%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 3, flexDirection: isMe ? 'row-reverse' : 'row' }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: isMe ? current.color : TXT }}>{author}</span>

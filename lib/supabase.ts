@@ -16,7 +16,9 @@ export type Profile = {
   looking_for?: string[]
   instruments?: string[]
   music_genres?: string[]
-  avatar_url?: string
+  avatar_url?: string | null
+  avatar_emoji?: string | null        // emoji d'instrument quand l'avatar est fixé
+  avatar_locked_until?: string | null // fin du verrou après une image explicite
   is_online?: boolean
   social_soundcloud?: string
   social_instagram?: string
