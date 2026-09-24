@@ -27,24 +27,24 @@ serve(async (req) => {
            <h2 style="color:#C4547A">🎉 Tu as un nouveau match !</h2>
            <p>Bonjour <strong>${profile.display_name}</strong>,</p>
            <p><strong>${fromName}</strong> et toi avez matché sur Vibz 🎶💑</p>
-           <a href="https://vibz-zeta.vercel.app" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#C4547A;color:white;border-radius:24px;text-decoration:none;font-weight:700">
+           <a href="https://www.vibzmusic.fr" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#C4547A;color:white;border-radius:24px;text-decoration:none;font-weight:700">
              Voir le match →
            </a>
            <p style="margin-top:24px;font-size:12px;color:#9ca3af">
              Tu reçois cet email car tu as activé les notifications Vibz.<br>
-             <a href="https://vibz-zeta.vercel.app" style="color:#9ca3af">Gérer mes préférences</a>
+             <a href="https://www.vibzmusic.fr" style="color:#9ca3af">Gérer mes préférences</a>
            </p>
          </div>`
       : `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
            <h2 style="color:#7F77DD">💬 Nouveau message</h2>
            <p>Bonjour <strong>${profile.display_name}</strong>,</p>
            <p><strong>${fromName}</strong> t'a envoyé un message sur Vibz.</p>
-           <a href="https://vibz-zeta.vercel.app" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#7F77DD;color:white;border-radius:24px;text-decoration:none;font-weight:700">
+           <a href="https://www.vibzmusic.fr" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#7F77DD;color:white;border-radius:24px;text-decoration:none;font-weight:700">
              Lire le message →
            </a>
            <p style="margin-top:24px;font-size:12px;color:#9ca3af">
              Tu reçois cet email car tu as activé les notifications Vibz.<br>
-             <a href="https://vibz-zeta.vercel.app" style="color:#9ca3af">Gérer mes préférences</a>
+             <a href="https://www.vibzmusic.fr" style="color:#9ca3af">Gérer mes préférences</a>
            </p>
          </div>`
 

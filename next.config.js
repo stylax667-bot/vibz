@@ -10,6 +10,17 @@ const nextConfig = {
       'cdn.discordapp.com',
     ],
   },
+  // Les anciens liens partagés (vibz-zeta.vercel.app) renvoient vers le domaine officiel
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'vibz-zeta.vercel.app' }],
+        destination: 'https://www.vibzmusic.fr/:path*',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

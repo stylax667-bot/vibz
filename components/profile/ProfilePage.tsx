@@ -10,6 +10,7 @@ import NotificationSettings from '../shared/NotificationSettings'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
+import { SITE_URL } from '../../lib/site'
 
 interface Props { user: User }
 
@@ -291,7 +292,7 @@ export default function ProfilePage({ user }: Props) {
               {profile.show_socials ? `${visibleCount} visible${visibleCount>1?'s':''} sur ${filledSocials.length}` : 'Mode caché actif'}
             </span>
             <button
-              onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/profil/${user.id}`); setSaved(true); setTimeout(()=>setSaved(false),2000) }}
+              onClick={() => { navigator.clipboard.writeText(`${SITE_URL}/profil/${user.id}`); setSaved(true); setTimeout(()=>setSaved(false),2000) }}
               title="Copier le lien de mon profil"
               style={{ padding:'5px 12px', borderRadius:20, border:`1px solid ${tk.blue}4D`, background:tk.blueLight, color:tk.blueDark, fontSize:11, fontWeight:700, cursor:'pointer', fontFamily:'Nunito,sans-serif' }}
             >🔗 Copier mon profil</button>
