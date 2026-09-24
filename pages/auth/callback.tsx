@@ -9,20 +9,32 @@ export default function AuthCallback() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
+    // Au retour de Google / Discord, Supabase renvoie soit ?code=… (flux PKCE),
+    // soit #access_token=… (flux implicite, celui du site). Ne rien effacer de
+    // l'adresse avant que la session soit enregistrée.
+    const query = new URLSearchParams(window.location.search)
+    const hash  = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const refused = query.get('error_description') || hash.get('error_description')
+    if (refused) { setError(refused.replace(/\+/g, ' ')); return }
 
-    if (!code) {
-      router.replace('/')
-      return
-    }
+    const code = query.get('code')
+    if (!code && !hash.get('access_token')) { router.replace('/'); return }
 
-    supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) {
-        setError(error.message)
-      } else {
-        router.replace('/')
+    const finish = async () => {
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        // Le client a pu échanger le code tout seul : on vérifie la session avant d'afficher l'erreur
+        if (error) {
+          const { data } = await supabase.auth.getSession()
+          if (!data.session) { setError(error.message); return }
+        }
       }
-    })
+      // getSession() attend que le client ait lu le jeton présent dans l'adresse
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) router.replace('/')
+      else setError('La connexion n’a pas abouti. Réessaie, ou utilise ton e-mail.')
+    }
+    finish()
   }, [router])
 
   const font = 'Nunito, sans-serif'
