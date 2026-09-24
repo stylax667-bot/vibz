@@ -55,13 +55,13 @@ export default function PublicProfilePage({ p }: { p: PublicProfile }) {
     <>
       <Head>
         <title>{title}</title>
-        <meta name="description" content={desc} />
+        <meta key="description" name="description" content={desc} />
         <meta name="robots" content="noindex" />
         <link rel="canonical" href={url} />
-        <meta property="og:title" content={title} />
-        <meta property="og:description" content={desc} />
-        <meta property="og:url" content={url} />
-        <meta property="og:type" content="profile" />
+        <meta key="og:title" property="og:title" content={title} />
+        <meta key="og:description" property="og:description" content={desc} />
+        <meta key="og:url" property="og:url" content={url} />
+        <meta key="og:type" property="og:type" content="profile" />
         {p.avatar_url && <meta property="og:image" content={p.avatar_url} />}
       </Head>
       <main style={{ minHeight: '100vh', background: tk.bg2, color: tk.text, fontFamily: 'Nunito, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>

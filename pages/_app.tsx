@@ -13,14 +13,14 @@ export default function App({ Component, pageProps }: AppProps) {
       <FinanceWidget />
       <Head>
         <title>Vibz — Rencontres entre musiciens et musiciennes, chat rétro années 90</title>
-        <meta name="description" content="Vibz permet aux musiciens et musiciennes de se rencontrer et de discuter dans un cadre rétro des années 90 : messagerie nostalgique, salons à thèmes, rencontres authentiques." />
+        <meta key="description" name="description" content="Vibz permet aux musiciens et musiciennes de se rencontrer et de discuter dans un cadre rétro des années 90 : messagerie nostalgique, salons à thèmes, rencontres authentiques." />
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)" />
-        <meta property="og:title" content="Vibz — Musiciens & musiciennes, chat rétro années 90" />
-        <meta property="og:description" content="Discute avec d'autres musiciens et musiciennes dans un cadre rétro des années 90. Salons à thèmes, rencontres authentiques, modération IA." />
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={SITE_URL} />
+        <meta key="og:title" property="og:title" content="Vibz — Musiciens & musiciennes, chat rétro années 90" />
+        <meta key="og:description" property="og:description" content="Discute avec d'autres musiciens et musiciennes dans un cadre rétro des années 90. Salons à thèmes, rencontres authentiques, modération IA." />
+        <meta key="og:type" property="og:type" content="website" />
+        <meta key="og:url" property="og:url" content={SITE_URL} />
         <meta property="og:locale" content="fr_FR" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
