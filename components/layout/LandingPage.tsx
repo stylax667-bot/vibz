@@ -102,6 +102,29 @@ export default function LandingPage() {
 
   const [oauthLoading, setOauthLoading] = useState<string | null>(null)
 
+  // Retour arrière depuis Google / Facebook / Microsoft / Discord : le navigateur
+  // restaure la page telle qu'elle était (boutons grisés). On les réactive.
+  useEffect(() => {
+    const reset = () => setOauthLoading(null)
+    const onShow = (e: PageTransitionEvent) => { if (e.persisted) reset() }
+    const onVisible = () => { if (document.visibilityState === 'visible') reset() }
+    window.addEventListener('pageshow', onShow)
+    window.addEventListener('focus', reset)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.removeEventListener('pageshow', onShow)
+      window.removeEventListener('focus', reset)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [])
+
+  // Filet de sécurité : si la redirection n'a pas eu lieu après 8 s, les boutons redeviennent actifs
+  useEffect(() => {
+    if (!oauthLoading) return
+    const t = setTimeout(() => setOauthLoading(null), 8000)
+    return () => clearTimeout(t)
+  }, [oauthLoading])
+
   const handleOAuth = async (provider: 'google' | 'discord' | 'facebook' | 'azure') => {
     setOauthLoading(provider)
     setMessage(''); setIsError(false)
