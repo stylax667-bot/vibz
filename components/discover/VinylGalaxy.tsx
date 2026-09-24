@@ -327,7 +327,7 @@ export default function VinylGalaxy({ onCreateSalon, onFilterChange, isDark = tr
             )}
             <button onClick={handleCreate} disabled={creating}
               style={{ padding: '8px 14px', borderRadius: 10, border: 'none', background: 'linear-gradient(135deg,#E07A9A,#A78BDB)', color: 'white', fontSize: 12, fontWeight: 800, cursor: creating ? 'wait' : 'pointer', fontFamily: font, opacity: creating ? 0.7 : 1 }}>
-              {creating ? '…' : '🎛️ Ouvrir le salon →'}
+              {creating ? '…' : '🎛️ Rejoindre ou créer →'}
             </button>
           </div>
         </div>

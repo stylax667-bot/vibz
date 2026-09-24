@@ -101,6 +101,18 @@ Sans cette clé, le bouton 📷 affiche « Le changement d'avatar n'est pas enco
 
 ---
 
+## ÉTAPE 5 ter — Salons privés et assistant IA (5 min)
+
+1. Supabase → **SQL Editor** → colle `supabase/migrations/20260925_salons_prives.sql` → **Run**
+   (ferme les anciens salons officiels et installe les salons créés par les membres)
+2. Assistant IA : crée une clé sur **console.anthropic.com** → **API Keys**, puis dans Vercel → **Settings** →
+   **Environment Variables** ajoute `ANTHROPIC_API_KEY` = la clé, et **Redeploy**.
+   Sans cette clé, l'assistant répond « pas encore activé ».
+3. Faire évoluer l'assistant : `lib/assistant/config.ts` (ton, règles, modèle, limites),
+   `lib/assistant/knowledge.ts` (ce qu'il sait du site), `lib/assistant/tools.ts` (ce qu'il peut consulter).
+
+---
+
 ## ÉTAPE 6 — Ton domaine personnalisé (optionnel, ~10€/an)
 
 1. Achète un domaine sur **OVH** ou **Namecheap** (ex: vibzmusic.fr ~10€/an)

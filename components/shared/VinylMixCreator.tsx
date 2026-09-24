@@ -1,26 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import { CATALOG_BY_ID, searchCatalog, type CatalogItem } from '../../lib/musicCatalog'
-import { comboKey, defaultSalonName, type SalonRow } from '../../lib/salons'
+import { matchSalons, type SalonInfo } from '../../lib/salons'
 import { useIsMobile } from '../../lib/useIsMobile'
 
 interface Props {
   onClose: () => void
-  existingSalons: SalonRow[]
-  salonCounts: Record<string, number>
-  // Crée (ou rejoint) le salon de la combinaison — renvoie un message d'erreur éventuel
-  onOpen: (ids: string[], name?: string) => Promise<string | null>
+  salons: SalonInfo[]                 // salons ouverts (réels)
+  initialSelected?: string[]
+  // Passe le mélange à l'étape suivante (rejoindre / créer)
+  onOpen: (ids: string[]) => void
 }
 
-export default function VinylMixCreator({ onClose, existingSalons, salonCounts, onOpen }: Props) {
+export default function VinylMixCreator({ onClose, salons, initialSelected, onOpen }: Props) {
   const isMobile = useIsMobile()
-  const [selected, setSelected]   = useState<string[]>([])
+  const [selected, setSelected]   = useState<string[]>(initialSelected || [])
   const [search, setSearch]       = useState('')
   const [tab, setTab]             = useState<'Tous' | 'Styles' | 'Instruments'>('Tous')
-  const [salonName, setSalonName] = useState('')
   const [angle, setAngle]         = useState(0)
   const [dragOver, setDragOver]   = useState(false)
-  const [busy, setBusy]           = useState(false)
-  const [error, setError]         = useState('')
 
   // Rotation vinyle
   useEffect(() => {
@@ -41,15 +38,10 @@ export default function VinylMixCreator({ onClose, existingSalons, salonCounts, 
     return searchCatalog(search, kind)
   }, [search, tab])
 
-  // Un salon existe déjà pour cette combinaison exacte → on le rejoint
-  const duplicate = useMemo(() => {
-    if (selected.length === 0) return null
-    const k = comboKey(selected)
-    return existingSalons.find(s => s.combo_key === k) || null
-  }, [selected, existingSalons])
+  // Salons déjà ouverts avec ces ingrédients (ou une partie)
+  const matches = useMemo(() => (selected.length ? matchSalons(selected, salons) : { exact: [], close: [] }), [selected, salons])
 
   const toggle = (id: string) => {
-    setError('')
     setSelected(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id])
   }
 
@@ -60,14 +52,7 @@ export default function VinylMixCreator({ onClose, existingSalons, salonCounts, 
     if (id && !selected.includes(id)) setSelected(p => [...p, id])
   }
 
-  const handleCreate = async () => {
-    if (selected.length === 0 || busy) return
-    setBusy(true); setError('')
-    const err = await onOpen(selected, duplicate ? undefined : salonName)
-    setBusy(false)
-    if (err) setError(err)
-    else onClose()
-  }
+  const handleNext = () => { if (selected.length) onOpen(selected) }
 
   const selectedItems = selected.map(id => CATALOG_BY_ID[id]).filter(Boolean)
   const firstColor = selectedItems[0]?.color || '#5A6A8A'
@@ -189,12 +174,14 @@ export default function VinylMixCreator({ onClose, existingSalons, salonCounts, 
           </div>
 
           <div style={{ overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? '12px 16px' : '12px 16px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {duplicate && (
+            {(matches.exact.length > 0 || matches.close.length > 0) && (
               <div style={{ padding: '12px 16px', borderRadius: 14, background: 'rgba(107,184,232,0.12)', border: '1.5px solid rgba(107,184,232,0.3)' }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#6BB8E8', marginBottom: 4 }}>🔀 Ce mix existe déjà</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#6BB8E8', marginBottom: 4 }}>
+                  {matches.exact.length > 0 ? '🔀 Ce mélange a déjà son salon' : `🔎 ${matches.close.length} salon${matches.close.length > 1 ? 's' : ''} proche${matches.close.length > 1 ? 's' : ''}`}
+                </div>
                 <div style={{ fontSize: 11, color: '#9BA8C0' }}>
-                  <strong style={{ color: '#E2E8F8' }}>{duplicate.name}</strong>
-                  {' · '}{(salonCounts[duplicate.id] || 0) > 0 ? `${salonCounts[duplicate.id]} connecté${salonCounts[duplicate.id] > 1 ? 's' : ''}` : 'personne en ce moment'}
+                  {[...matches.exact, ...matches.close].slice(0, 3).map(x => `${x.name} (${x.member_count}/${x.max_members})`).join(' · ')}
+                  {' '}— tu pourras le rejoindre ou créer le tien à l’étape suivante.
                 </div>
               </div>
             )}
@@ -208,30 +195,24 @@ export default function VinylMixCreator({ onClose, existingSalons, salonCounts, 
 
         {/* ── Pied ── */}
         <div style={{ padding: isMobile ? '12px 16px calc(12px + env(safe-area-inset-bottom))' : '16px 24px', borderTop: '1.5px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {selected.length > 0 && !duplicate && (
-            <input value={salonName} onChange={e => setSalonName(e.target.value)} maxLength={80}
-              placeholder={`Nom du salon (optionnel) · ${defaultSalonName(selected)}`}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1.5px solid ${firstColor}44`, background: 'rgba(255,255,255,0.04)', color: '#E2E8F8', fontSize: 13, fontFamily: font, outline: 'none', boxSizing: 'border-box' }} />
-          )}
-          {error && <div style={{ fontSize: 12, color: '#E07A7A', fontWeight: 700 }}>⚠️ {error}</div>}
           <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
             {!isMobile && (
               <div style={{ flex: 1, fontSize: 10, color: '#7A8AAA', lineHeight: 1.5 }}>
-                🛡️ Salon protégé par <strong style={{ color: '#52C07A' }}>VibzGuard</strong>. Tu pourras le fermer quand tu veux.
+                🛡️ Salons protégés par <strong style={{ color: '#52C07A' }}>VibzGuard</strong>. 16 membres maximum, messages visibles des seuls membres.
               </div>
             )}
             <button onClick={onClose} style={{ padding: '11px 18px', borderRadius: 14, border: '1.5px solid rgba(255,255,255,0.1)', background: 'transparent', color: '#9BA8C0', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: font, whiteSpace: 'nowrap' }}>
               Annuler
             </button>
-            <button onClick={handleCreate} disabled={selected.length === 0 || busy}
+            <button onClick={handleNext} disabled={selected.length === 0}
               style={{
                 flex: isMobile ? 1 : undefined, padding: '11px 22px', borderRadius: 14, border: 'none',
-                background: selected.length === 0 ? 'rgba(255,255,255,0.05)' : duplicate ? 'linear-gradient(135deg,#6BB8E8,#52C07A)' : `linear-gradient(135deg,${firstColor},#A78BDB)`,
+                background: selected.length === 0 ? 'rgba(255,255,255,0.05)' : `linear-gradient(135deg,${firstColor},#A78BDB)`,
                 color: selected.length === 0 ? '#5A6A8A' : 'white', fontWeight: 800, fontSize: 13,
-                cursor: selected.length === 0 ? 'not-allowed' : busy ? 'wait' : 'pointer', fontFamily: font,
+                cursor: selected.length === 0 ? 'not-allowed' : 'pointer', fontFamily: font,
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
-              {busy ? '…' : selected.length === 0 ? 'Sélectionne des éléments' : duplicate ? '🔀 Rejoindre ce salon' : '🎛️ Créer le salon'}
+              {selected.length === 0 ? 'Sélectionne des éléments' : 'Voir les salons correspondants →'}
             </button>
           </div>
         </div>

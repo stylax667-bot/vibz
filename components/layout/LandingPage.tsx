@@ -398,7 +398,7 @@ export default function LandingPage() {
 
         <div style={{ overflowY:'auto', padding:isMobile ? '14px 18px 16px' : '16px 28px 20px', flex:1, fontSize:13, lineHeight:1.7, color:'#2D1A25' }}>
           <Section title="🤖 Traduction IA instantanée">
-            Dans le salon <strong>International</strong>, chaque message est automatiquement détecté et traduit dans votre langue. Un musicien japonais peut parler à un artiste brésilien sans barrière — la conversation se déroule naturellement pour les deux.
+            Dans les salons, chaque message est automatiquement détecté et traduit dans votre langue. Un musicien japonais peut parler à un artiste brésilien sans barrière — la conversation se déroule naturellement pour les deux.
           </Section>
           <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : '1fr 1fr', gap:10, marginBottom:12 }}>
             {[
@@ -419,7 +419,7 @@ export default function LandingPage() {
         </div>
         <div style={{ padding:isMobile ? '12px 18px calc(12px + env(safe-area-inset-bottom))' : '16px 28px', borderTop:'1px solid rgba(196,84,122,0.1)', flexShrink:0 }}>
           <button onClick={() => { setFeatureModal(null); setMode('signup') }} style={s.btnPrimary}>
-            Rejoindre le salon International →
+            Rejoindre Vibz →
           </button>
         </div>
       </div>

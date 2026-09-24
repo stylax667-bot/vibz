@@ -3,7 +3,9 @@ import type { User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
-import { useSalonPresence } from '../../lib/salons'
+import { useSalonHeartbeat, keepSalonAlive, closeSalon } from '../../lib/salons'
+import { AssistantChat } from '../shared/AssistantBox'
+import { ASSISTANT_ENABLED } from '../../lib/assistant/config'
 import DiscoverPage from '../discover/DiscoverPage'
 import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
@@ -25,7 +27,7 @@ export default function AppLayout({ user }: Props) {
   const [chatWith, setChatWith]     = useState<Profile | null>(null)
   // Salon à ouvrir (depuis Découvrir) et salon actuellement consulté
   const [salonToOpen, setSalonToOpen]       = useState<string | null>(null)
-  const [currentSalonId, setCurrentSalonId] = useState<string | null>(null)
+  const [mixToOpen, setMixToOpen]           = useState<{ tags: string[]; name?: string } | null>(null)
   const isMobile = useIsMobile()
   const [myAvatar, setMyAvatar] = useState<AvatarFields & { display_name?: string }>({ display_name: user.email || 'U' })
 
@@ -38,10 +40,20 @@ export default function AppLayout({ user }: Props) {
     return () => window.removeEventListener(AVATAR_EVENT, onChange)
   }, [user.id])
 
-  // Présence temps réel : nombre réel de membres connectés par salon
-  const salonCounts = useSalonPresence(user.id, tab === 'salons' ? currentSalonId : null)
+  // Signe de vie dans mes salons + rappel à l'admin toutes les 45 min
+  const { checks, dismiss } = useSalonHeartbeat(user.id)
+  const [checkBusy, setCheckBusy] = useState(false)
+  const adminCheck = checks[0]
+  const answerCheck = async (keep: boolean) => {
+    if (!adminCheck) return
+    setCheckBusy(true)
+    await (keep ? keepSalonAlive(adminCheck.id) : closeSalon(adminCheck.id))
+    setCheckBusy(false)
+    dismiss(adminCheck.id)
+  }
 
   const openSalon = (id: string) => { setSalonToOpen(id); setTab('salons') }
+  const openMix = (tags: string[], name?: string) => { setMixToOpen({ tags, name }); setTab('salons') }
 
   // Hauteur disponible pour le contenu des onglets — exposée aux pages via --vz-app-h
   const NAV_H    = isMobile ? 56 : 60
@@ -309,11 +321,33 @@ export default function AppLayout({ user }: Props) {
 
       {/* ── Contenu ── */}
       <div style={{ flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto', minWidth: 0 }}>
-        {tab === 'discover'  && <DiscoverPage user={user} onMessage={p => { setChatWith(p); setTab('messenger') }} onOpenSalon={openSalon} salonCounts={salonCounts} />}
+        {tab === 'discover'  && <DiscoverPage user={user} onMessage={p => { setChatWith(p); setTab('messenger') }} onOpenSalon={openSalon} onMix={openMix} />}
         {tab === 'messenger' && <MessengerPage user={user} initialContact={chatWith} onContactOpened={() => setChatWith(null)} />}
-        {tab === 'salons'    && <SalonsPage user={user} initialSalonId={salonToOpen} onInitialSalonOpened={() => setSalonToOpen(null)} onSalonChange={setCurrentSalonId} salonCounts={salonCounts} />}
+        {tab === 'salons'    && <SalonsPage user={user} initialSalonId={salonToOpen} onInitialSalonOpened={() => setSalonToOpen(null)} initialMix={mixToOpen} onInitialMixUsed={() => setMixToOpen(null)} />}
         {tab === 'profile'   && <ProfilePage user={user} />}
       </div>
+
+      {/* Assistant IA, disponible sur tous les onglets */}
+      {ASSISTANT_ENABLED && <AssistantChat onOpenSalon={openSalon} onMix={tags => openMix(tags)}
+        bottomOffset={isMobile ? TABBAR_H + 14 : 64} />}
+
+      {/* L'admin confirme toutes les 45 min que son salon continue */}
+      {adminCheck && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 700, background: t.overlay, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, fontFamily: f }}>
+          <div role="alertdialog" aria-label="Le salon continue ?" style={{ background: t.surface, color: t.text, borderRadius: 20, padding: 22, maxWidth: 400, width: '100%', border: `1px solid ${t.border}`, textAlign: 'center' }}>
+            <div style={{ fontSize: 34, marginBottom: 6 }}>{adminCheck.icon || '🎛️'}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>« {adminCheck.name} » tient toujours ?</div>
+            <div style={{ fontSize: 13, color: t.textSub, lineHeight: 1.55, marginBottom: 18 }}>
+              Tu es l’admin de ce salon ({adminCheck.member_count} membre{adminCheck.member_count > 1 ? 's' : ''}). Vibz te le demande toutes les 45 minutes :
+              on continue, ou on le ferme ? S’il est fermé, ses messages sont effacés.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button disabled={checkBusy} onClick={() => answerCheck(false)} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>🔒 Fermer le salon</button>
+              <button disabled={checkBusy} onClick={() => answerCheck(true)} style={{ flex: 1, padding: 12, borderRadius: 12, border: 'none', background: t.green, color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>✅ On continue</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isMobile ? (
         <>

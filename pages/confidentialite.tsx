@@ -225,7 +225,6 @@ export default function Confidentialite() {
                 </p>
                 {ul(
                   'Tous les membres inscrits sur Vibz (comptes actifs ou supprimés).',
-                  'Les visiteurs accédant aux salons en mode non connecté.',
                   'Toute interaction avec nos services : site web, API, messagerie, salons, profil.'
                 )}
               </>
@@ -277,7 +276,8 @@ export default function Confidentialite() {
                       {dataRow('Ville / Région (optionnel)', 'Suggestions de matchs géolocalisés', 'Consentement', 'Durée du compte')}
                       {dataRow('Bio, instruments, genres musicaux', 'Personnalisation, matching musical', 'Consentement', 'Durée du compte')}
                       {dataRow('Liens réseaux sociaux (optionnel)', 'Affichage profil public si activé', 'Consentement', 'Jusqu\'à suppression par l\'utilisateur')}
-                      {dataRow('Messages dans les salons', 'Service de salon, modération IA', 'Contrat + Intérêt légitime', '1 an glissant')}
+                      {dataRow('Messages dans les salons', 'Service de salon, modération IA', 'Contrat + Intérêt légitime', 'Jusqu’à la fermeture du salon (effacés ensuite)')}
+                      {dataRow('Questions posées à l’assistant IA', 'Réponse de l’assistant (non conservées par Vibz)', 'Consentement (usage volontaire)', 'Non conservées par Vibz')}
                       {dataRow('Messages privés', 'Service de messagerie', 'Contrat', '2 ans glissants')}
                       {dataRow('Likes, matchs', 'Fonctionnalité cœur du service', 'Contrat', 'Durée du compte')}
                       {dataRow('Logs de connexion (IP, heure, device)', 'Sécurité, détection fraude, anti-multi-comptes', 'Intérêt légitime', '90 jours')}
@@ -395,7 +395,7 @@ export default function Confidentialite() {
 
                 <h3 style={h3}>6.1 Ce que VibzGuard analyse</h3>
                 {ul(
-                  'Le contenu textuel de chaque message (salons publics et messagerie privée).',
+                  'Le contenu textuel de chaque message (salons et messagerie privée).',
                   'La fréquence d\'envoi (détection spam/flood).',
                   'Les patterns comportementaux répétés (harcèlement en série).',
                 )}
@@ -444,7 +444,7 @@ export default function Confidentialite() {
                       {[
                         ['Compte actif (profil, préférences)', 'Durée du compte', 'Service en cours'],
                         ['Messages privés', '2 ans glissants', 'Service + modération'],
-                        ['Messages dans les salons', '1 an glissant', 'Historique communauté'],
+                        ['Messages dans les salons', 'Jusqu’à la fermeture du salon', 'Service en cours'],
                         ['Logs de connexion (IP, device)', '90 jours', 'Sécurité, fraude'],
                         ['Signalements & décisions de modération', '3 ans', 'Obligation légale, récidive'],
                         ['Messages bloqués par VibzGuard', '30 jours', 'Recours possible'],
@@ -480,6 +480,7 @@ export default function Confidentialite() {
                     { name: 'Supabase Inc.', role: 'Base de données, authentification, stockage fichiers', location: '🇩🇪 Frankfurt (UE)', garantie: 'Contrat DPA RGPD signé' },
                     { name: 'Vercel Inc.', role: 'Hébergement application, CDN, déploiement', location: '🇪🇺 UE (edge network)', garantie: 'Contrat DPA RGPD signé' },
                     { name: 'Google Fonts', role: 'Polices typographiques (Nunito)', location: '🇺🇸 USA — SCC UE-USA', garantie: 'Clauses Contractuelles Types' },
+                    { name: 'Anthropic PBC', role: 'Assistant IA (modèle Claude), uniquement lorsqu’il est activé : reçoit les questions posées à l’assistant et les informations publiques utiles à la réponse', location: '🇺🇸 USA — SCC UE-USA', garantie: 'Clauses Contractuelles Types' },
                   ].map(s => (
                     <div key={s.name} className="vz-stack" style={{ display: 'grid', gridTemplateColumns: '160px 1fr auto', gap: 12, padding: '12px 16px', background: '#F8FBFF', borderRadius: 12, border: '1.5px solid #EEF2FA', alignItems: 'center' }}>
                       <div style={{ fontWeight: 800, fontSize: 13 }}>{s.name}</div>

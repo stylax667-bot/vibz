@@ -16,6 +16,17 @@ export interface MusicPlatform {
   placeholder: string
 }
 
+// ── YouTube ──────────────────────────────────────────────────────────────────
+// Identifiant (11 caractères) d'une vidéo : watch?v=, youtu.be/, shorts/, live/, embed/
+export function youtubeId(url: string): string | null {
+  const m = url.match(/(?:youtube\.com\/(?:watch\?(?:[^#\s]*&)?v=|shorts\/|live\/|embed\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/)
+  return m ? m[1] : null
+}
+// Lecteur sans cookies publicitaires tant que la vidéo n'est pas lancée
+export const youtubeEmbedUrl = (id: string, autoplay = false) =>
+  `https://www.youtube-nocookie.com/embed/${id}?rel=0&modestbranding=1${autoplay ? '&autoplay=1' : ''}`
+export const youtubeThumb = (id: string) => `https://i.ytimg.com/vi/${id}/hqdefault.jpg`
+
 export const MUSIC_PLATFORMS: MusicPlatform[] = [
   {
     id: 'spotify',
@@ -68,11 +79,10 @@ export const MUSIC_PLATFORMS: MusicPlatform[] = [
     color: '#FF0000',
     bg: 'rgba(255,0,0,0.08)',
     placeholder: 'https://youtu.be/... ou https://www.youtube.com/watch?v=...',
-    patterns: [/youtube\.com\/watch/, /youtu\.be\//],
+    patterns: [/(?:^|\/\/)(?:www\.|m\.)?youtube\.com\/(?:watch|shorts\/|live\/|embed\/)/, /youtu\.be\//],
     embedFn: (url) => {
-      const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([A-Za-z0-9_-]{11})/)
-      if (!m) return null
-      return `https://www.youtube.com/embed/${m[1]}?rel=0`
+      const id = youtubeId(url)
+      return id ? youtubeEmbedUrl(id) : null
     },
   },
   {
@@ -84,9 +94,8 @@ export const MUSIC_PLATFORMS: MusicPlatform[] = [
     placeholder: 'https://music.youtube.com/watch?v=...',
     patterns: [/music\.youtube\.com/],
     embedFn: (url) => {
-      const m = url.match(/music\.youtube\.com\/watch\?v=([A-Za-z0-9_-]{11})/)
-      if (!m) return null
-      return `https://www.youtube.com/embed/${m[1]}?rel=0`
+      const id = youtubeId(url)
+      return id ? youtubeEmbedUrl(id) : null
     },
   },
   {

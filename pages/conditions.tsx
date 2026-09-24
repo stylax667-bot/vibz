@@ -211,7 +211,7 @@ export default function Conditions() {
                 {ul([
                   <>L&apos;inscription est réservée aux personnes <strong>âgées d&apos;au moins 18 ans</strong>.</>,
                   <>Toute fausse déclaration concernant l&apos;âge entraîne la <strong>suspension immédiate et définitive</strong> du compte.</>,
-                  'Un visiteur peut accéder aux salons en mode limité (10 messages par salon) sans inscription.',
+                  'Les salons sont créés par les membres inscrits. Leur liste est visible des membres connectés ; leurs messages ne sont lisibles que par les membres du salon et sont effacés à sa fermeture (départ du dernier membre, fermeture par l\'admin ou 15 minutes sans membre connecté).',
                   'L\'accès complet (messagerie privée, matchs, profil) nécessite une inscription avec email valide ou OAuth (Google, Discord, Facebook, Microsoft).',
                 ])}
 

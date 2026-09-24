@@ -4,7 +4,7 @@ import { supabase, type Profile } from '../../lib/supabase'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { CATALOG_BY_ID, matchTerms, norm } from '../../lib/musicCatalog'
-import { openMixSalon, type SalonRow } from '../../lib/salons'
+import { useSalonList, tagLabels } from '../../lib/salons'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
@@ -15,14 +15,14 @@ interface Props {
   user: User
   onMessage: (p: Profile) => void
   onOpenSalon: (salonId: string) => void
-  salonCounts: Record<string, number>
+  onMix: (tags: string[], name?: string) => void   // mélange du vinyle → rejoindre / créer (onglet Salons)
 }
 
 const EMOJI_MAP: Record<string, string> = { Guitare:'🎸', Piano:'🎹', Basse:'🎸', Batterie:'🥁', Chant:'🎤', Saxo:'🎷', Violon:'🎻', DJ:'🎧', Ukulélé:'🪕', Flûte:'🪈' }
 
 type MobileView = 'profils' | 'salon' | 'communaute'
 
-export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts }: Props) {
+export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Props) {
   const { theme: tk } = useTheme()
   const isMobile = useIsMobile()
   const isNarrow = useIsMobile(1100)
@@ -48,7 +48,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts
   const [showDonation, setShowDonation] = useState(false)
   const [matchProfile, setMatchProfile] = useState<Profile | null>(null)
   const [confirmBlock, setConfirmBlock] = useState<Profile | null>(null)
-  const [communitySalons, setCommunitySalons] = useState<SalonRow[]>([])
+  const { salons: communitySalons } = useSalonList()
   const [mobileView, setMobileView]     = useState<MobileView>('profils')
 
   const showNotif = (msg: string, color = '#D4537E', undo?: () => void) => {
@@ -79,22 +79,6 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts
   }, [user.id])
 
   useEffect(() => { loadData() }, [loadData])
-
-  // ── Salons ouverts par la communauté (réels, mis à jour en direct) ──
-  const loadSalons = useCallback(async () => {
-    const { data } = await supabase.from('salons').select('*')
-      .eq('is_active', true).eq('is_official', false)
-      .order('created_at', { ascending: false }).limit(30)
-    setCommunitySalons((data as SalonRow[]) || [])
-  }, [])
-
-  useEffect(() => {
-    loadSalons()
-    const ch = supabase.channel('discover-salons')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'salons' }, () => loadSalons())
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [loadSalons])
 
   const handleLike = async (targetId: string, name: string) => {
     if (likedIds.has(targetId)) return
@@ -134,14 +118,11 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts
     showNotif(`🚫 ${p.display_name || 'Membre'} bloqué`, '#6b7280', () => unblock(p))
   }
 
-  // Création / ouverture d'un salon depuis le vinyle
+  // Mélange du vinyle : Vibz propose de rejoindre un salon existant ou d'en créer un (onglet Salons)
   const handleCreateSalon = useCallback(async (ids: string[], name: string) => {
-    const { salon, error } = await openMixSalon(ids, name)
-    if (error || !salon) return 'La création du salon a échoué. Réessaie dans un instant.'
-    showNotif(`🎛️ Salon « ${salon.name} » ouvert`, '#A78BDB')
-    onOpenSalon(salon.id)
+    onMix(ids, name)
     return null
-  }, [onOpenSalon])
+  }, [onMix])
 
   // Filtrage profils — recherche texte + sélection du vinyle
   const filteredProfiles = profiles.filter(p => {
@@ -308,23 +289,21 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, salonCounts
       <InviteWidget userId={user.id} compact />
 
       <div style={{ height: 1, background: BDR }} />
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>Salons de la communauté</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>Salons ouverts par les membres</div>
       {communitySalons.length === 0 ? (
         <div style={{ fontSize: 12, color: MUT, lineHeight: 1.5 }}>Aucun salon ouvert pour l&apos;instant. Crée le premier avec le vinyle 🎛️</div>
-      ) : communitySalons.map(s => {
-        const n = salonCounts[s.id] || 0
-        return (
-          <button key={s.id} onClick={() => onOpenSalon(s.id)}
-            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 10, border: `0.5px solid ${BDR}`, cursor: 'pointer', background: BG, textAlign: 'left', fontFamily: 'Nunito,sans-serif' }}>
-            <span style={{ fontSize: 18 }}>{s.icon || '🎛️'}</span>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}</div>
-              <div style={{ fontSize: 11, color: MUT }}>{n > 0 ? `${n} connecté${n > 1 ? 's' : ''}` : 'Personne pour le moment'}</div>
-            </div>
-            {n > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: '#1D9E75' }}>LIVE</span>}
-          </button>
-        )
-      })}
+      ) : communitySalons.slice(0, 20).map(s => (
+        <button key={s.id} onClick={() => onOpenSalon(s.id)}
+          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 10, border: `0.5px solid ${BDR}`, cursor: 'pointer', background: BG, textAlign: 'left', fontFamily: 'Nunito,sans-serif' }}>
+          <span style={{ fontSize: 18 }}>{s.parent_id ? '🌿' : s.icon || '🎛️'}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.name}{s.is_locked ? ' 🔒' : ''}</div>
+            <div style={{ fontSize: 10.5, color: MUT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{tagLabels(s.tags).join(' · ')}</div>
+            <div style={{ fontSize: 11, color: MUT }}>{s.member_count}/{s.max_members} membres · {s.online_count > 0 ? `${s.online_count} en ligne` : 'personne en ligne'}</div>
+          </div>
+          {s.online_count > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: '#1D9E75' }}>LIVE</span>}
+        </button>
+      ))}
     </aside>
   )
 
