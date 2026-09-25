@@ -338,11 +338,13 @@ export default function AppLayout({ user }: Props) {
             <div style={{ fontSize: 34, marginBottom: 6 }}>{adminCheck.icon || '🎛️'}</div>
             <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>« {adminCheck.name} » tient toujours ?</div>
             <div style={{ fontSize: 13, color: t.textSub, lineHeight: 1.55, marginBottom: 18 }}>
-              Tu es l’admin de ce salon ({adminCheck.member_count} membre{adminCheck.member_count > 1 ? 's' : ''}). Vibz te le demande toutes les 45 minutes :
-              on continue, ou on le ferme ? S’il est fermé, ses messages sont effacés.
+              Tu es l’admin de ce salon ({adminCheck.member_count} membre{adminCheck.member_count > 1 ? 's' : ''}). Vibz te le demande toutes les 45 minutes :{' '}
+              {adminCheck.member_count <= 2
+                ? 'on continue, ou on le ferme ? S’il est fermé, ses messages sont effacés.'
+                : 'on continue ? (Seuls les deux derniers membres peuvent fermer un salon.)'}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button disabled={checkBusy} onClick={() => answerCheck(false)} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>🔒 Fermer le salon</button>
+              {adminCheck.member_count <= 2 && <button disabled={checkBusy} onClick={() => answerCheck(false)} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>🔒 Fermer le salon</button>}
               <button disabled={checkBusy} onClick={() => answerCheck(true)} style={{ flex: 1, padding: 12, borderRadius: 12, border: 'none', background: t.green, color: 'white', fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>✅ On continue</button>
             </div>
           </div>

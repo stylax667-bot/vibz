@@ -519,7 +519,7 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
           </div>
         </div>
         <button onClick={() => setShowMembers(true)} style={btn('ghost')} aria-label="Membres du salon">👥{isMobile ? '' : ' Membres'}</button>
-        {current.is_admin && <button onClick={() => setConfirm('close')} style={btn('soft', pink)}>🔒{isMobile ? '' : ' Fermer'}</button>}
+        {(current.member_count || 0) <= 2 && <button onClick={() => setConfirm('close')} style={btn('soft', pink)} title="Les deux derniers membres peuvent fermer le salon">🔒{isMobile ? '' : ' Fermer'}</button>}
         <button onClick={() => setConfirm('leave')} style={btn('ghost')}>🚪{isMobile ? '' : ' Quitter'}</button>
       </div>
 
