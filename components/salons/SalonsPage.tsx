@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../../lib/supabase'
-import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
+import { isGuardBlocked, guardBlockMessage, guardWarnMessage } from '../../lib/moderation'
 import { useTheme } from '../../lib/theme'
 import Avatar from '../shared/Avatar'
 import type { AvatarFields } from '../../lib/avatar'
@@ -174,15 +174,15 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
   const send = async () => {
     const content = input.trim()
     if (!content || !current?.id) return
-    const result = moderateMessage(content)
-    if (result.isBlocked) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000); return }
+    const showWarning = (msg: string) => { setWarning(msg); setTimeout(() => setWarning(''), 6000) }
     setInput('')
     const { data, error } = await supabase.from('salon_messages')
       .insert({ salon_id: current.id, sender_id: user.id, content })
-      .select('id, sender_id, content, created_at').single()
+      .select('id, sender_id, content, created_at, flag_reason').single()
+    if (isGuardBlocked(error)) { setInput(content); showWarning(await guardBlockMessage(user.id)); return }
     if (error) { setInput(content); flash('Message non envoyé : vérifie ta connexion ou ton accès au salon.'); ping(current.id); return }
     setMsgs(prev => prev.some(x => x.id === (data as Msg).id) ? prev : [...prev, data as Msg])
-    if (result.isWarning) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000) }
+    if (data.flag_reason) showWarning(guardWarnMessage(data.flag_reason))
   }
 
   // ── Actions ──

@@ -4,7 +4,7 @@ import { supabase, type Profile } from '../../lib/supabase'
 import SquareAvatar from '../shared/Avatar'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
-import { moderateMessage, getIAGuardMessage } from '../../lib/moderation'
+import { isGuardBlocked, guardBlockMessage, guardWarnMessage } from '../../lib/moderation'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
 
 interface Props {
@@ -219,18 +219,16 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
   const sendMsg = async (content = input, type: 'text' | 'emoji' | 'wizz' = 'text') => {
     const text = content.trim()
     if (!text || !selected || !canWrite.ok) return
-    if (type === 'text') {
-      const result = moderateMessage(text)
-      if (result.isBlocked) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000); return }
-      if (result.isWarning) { setWarning(getIAGuardMessage(result)); setTimeout(() => setWarning(''), 5000) }
-    }
+    const showWarning = (msg: string) => { setWarning(msg); setTimeout(() => setWarning(''), 6000) }
     const convId = selected.conversationId || await ensureConversation(selected.profile.id)
     if (!convId) { flash('Impossible de démarrer la conversation.'); return }
     if (type === 'text') setInput('')
     const { data, error } = await supabase.from('messages')
       .insert({ conversation_id: convId, sender_id: user.id, content: text, message_type: type })
       .select('*').single()
+    if (isGuardBlocked(error)) { if (type === 'text') setInput(text); showWarning(await guardBlockMessage(user.id)); return }
     if (error || !data) { if (type === 'text') setInput(text); flash('Message non envoyé.'); return }
+    if (data.flag_reason) showWarning(guardWarnMessage(data.flag_reason))
     const now = new Date().toISOString()
     supabase.from('conversations').update({ last_message_at: now }).eq('id', convId).then(() => {})
     setMessages(prev => prev.some(x => x.id === data.id) ? prev : [...prev, data as ChatMsg])
