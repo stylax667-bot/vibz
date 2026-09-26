@@ -204,14 +204,14 @@ export default function AppLayout({ user }: Props) {
                 }}
               >☕ Soutenir</button>
 
-              {/* IA Guard badge */}
+              {/* VibzGuard badge */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
                 background: t.guardBg, color: t.guardText,
               }}>
                 <div style={{ width: 7, height: 7, background: t.green, borderRadius: '50%' }} />
-                IA Guard
+                VibzGuard
               </div>
             </>
           )}
@@ -297,7 +297,7 @@ export default function AppLayout({ user }: Props) {
             style={{ width:'100%', background:t.surface, borderRadius:'22px 22px 0 0', padding:'10px 16px calc(16px + env(safe-area-inset-bottom))', border:`1px solid ${t.border}`, fontFamily:f }}>
             <div style={{ width:40, height:4, borderRadius:2, background:t.border, margin:'0 auto 14px' }}/>
             <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:12, fontWeight:700, color:t.guardText, background:t.guardBg, padding:'6px 12px', borderRadius:20, width:'fit-content', marginBottom:8 }}>
-              <span style={{ width:7, height:7, background:t.green, borderRadius:'50%' }}/> IA Guard actif
+              <span style={{ width:7, height:7, background:t.green, borderRadius:'50%' }}/> VibzGuard actif
             </div>
             {[
               { label:'🚀 Partager Vibz', onClick: () => { setShowMenu(false); handleShare() }, danger: false },

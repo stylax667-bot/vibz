@@ -28,6 +28,17 @@ create table if not exists public.vibzguard_log (
 );
 create index if not exists vibzguard_log_user_idx on public.vibzguard_log (user_id, created_at desc);
 create index if not exists vibzguard_log_review_idx on public.vibzguard_log (reviewed, created_at desc);
+create index if not exists vibzguard_log_date_idx on public.vibzguard_log (created_at);
+
+-- Conservation (politique de confidentialité, art. 6.4) : le texte des
+-- messages est effacé après 30 jours ; la trace (catégorie, date) après 1 an.
+create or replace function public.vibzguard_purge()
+returns void language sql security definer set search_path = public as $$
+  update public.vibzguard_log set content = null
+   where content is not null and created_at < now() - interval '30 days';
+  delete from public.vibzguard_log where created_at < now() - interval '1 year';
+$$;
+revoke execute on function public.vibzguard_purge() from public, anon, authenticated;
 
 alter table public.vibzguard_log enable row level security;
 -- Chacun peut relire ses propres verdicts (pour afficher la raison d'un blocage).
@@ -212,6 +223,7 @@ declare
 begin
   -- Messages sans expéditeur (système) : hors périmètre
   if new.sender_id is null then return new; end if;
+  if random() < 0.01 then perform public.vibzguard_purge(); end if;   -- ménage du journal, ~1 message sur 100
   v_target := (to_jsonb(new) ->> case when v_ctx = 'dm' then 'conversation_id' else 'salon_id' end)::uuid;
 
   -- Suspension : 3 blocages graves dans les dernières 24 h

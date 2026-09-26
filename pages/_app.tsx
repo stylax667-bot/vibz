@@ -18,7 +18,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#111520" media="(prefers-color-scheme: dark)" />
         <meta key="og:title" property="og:title" content="Vibz — Musiciens & musiciennes, chat rétro années 90" />
-        <meta key="og:description" property="og:description" content="Discute avec d'autres musiciens et musiciennes dans un cadre rétro des années 90. Salons à thèmes, rencontres authentiques, modération IA." />
+        <meta key="og:description" property="og:description" content="Discute avec d'autres musiciens et musiciennes dans un cadre rétro des années 90. Salons à thèmes, rencontres authentiques, modération automatique." />
         <meta key="og:type" property="og:type" content="website" />
         <meta key="og:url" property="og:url" content={SITE_URL} />
         <meta property="og:locale" content="fr_FR" />

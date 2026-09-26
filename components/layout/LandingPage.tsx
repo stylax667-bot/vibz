@@ -270,7 +270,7 @@ export default function LandingPage() {
             Vibz est un espace bienveillant. Tout membre s&apos;engage à traiter les autres avec respect, sans discrimination de genre, d&apos;origine, d&apos;orientation ou de pratique musicale. Le harcèlement, les insultes et les comportements intimidants sont strictement interdits et entraînent une exclusion immédiate.
           </Section>
           <Section title="🚫 2. Contenus interdits">
-            Il est interdit de publier ou partager : contenus sexuels explicites, images non consenties, incitations à la haine, spam commercial, liens malveillants, coordonnées personnelles de tiers sans leur accord. L&apos;IA Guard surveille les échanges en temps réel.
+            Il est interdit de publier ou partager : contenus sexuels explicites, images non consenties, incitations à la haine, spam commercial, liens malveillants, coordonnées personnelles de tiers sans leur accord. VibzGuard contrôle chaque message avant son envoi.
           </Section>
           <Section title="🔒 3. Vos données personnelles">
             Vos données sont hébergées en Europe, chiffrées et ne sont <strong>jamais vendues</strong> à des tiers. Nous collectons uniquement ce qui est nécessaire au fonctionnement du service : pseudo, email (jamais affiché publiquement), et les informations de profil que vous choisissez de partager. Vos coordonnées (email public, réseaux sociaux) ne sont visibles que si vous l&apos;activez explicitement dans vos paramètres de confidentialité.
@@ -284,8 +284,8 @@ export default function LandingPage() {
           <Section title="🗑️ 6. Droit à l'oubli">
             Vous pouvez supprimer définitivement votre compte et toutes vos données depuis les paramètres de votre profil. La suppression est immédiate et irréversible. Nous ne conservons aucune donnée au-delà de ce délai légal minimal.
           </Section>
-          <Section title="🛡️ 7. Modération IA">
-            Notre système d&apos;IA Guard analyse les messages pour détecter les comportements toxiques et protéger les membres. Les messages signalés ou détectés comme problématiques sont examinés par notre équipe. Aucune analyse n&apos;est utilisée à des fins publicitaires.
+          <Section title="🛡️ 7. Modération automatique">
+            VibzGuard, notre système de modération automatique, contrôle chaque message avant son enregistrement : menaces, harcèlement, propos haineux, arnaques et données sensibles sont bloqués. Les messages bloqués ou signalés sont conservés 30 jours pour être examinés par notre équipe et permettre un recours. Aucune analyse n&apos;est utilisée à des fins publicitaires.
           </Section>
           <Section title="🔄 8. Modifications">
             Vibz se réserve le droit de modifier ces conditions. En cas de changement important, vous serez notifié par email et devrez accepter les nouvelles conditions pour continuer à utiliser le service.
@@ -344,8 +344,8 @@ export default function LandingPage() {
           <Section title="🔐 Non-divulgation des données personnelles">
             Vibz applique une politique stricte : votre adresse email n&apos;est <strong>jamais affichée</strong> publiquement. Votre ville, vos réseaux sociaux et vos coordonnées ne sont visibles que si vous les activez explicitement dans vos paramètres de confidentialité. Aucune donnée n&apos;est transmise à un tiers sans votre consentement explicite.
           </Section>
-          <Section title="🤖 IA Guard — Protection en temps réel">
-            Notre IA surveille les conversations en continu pour détecter le harcèlement, les tentatives d&apos;extorsion d&apos;informations personnelles et les contenus toxiques. Les messages bloqués ne sont <strong>jamais transmis</strong> au destinataire et sont examinés par notre équipe de modération sous 24h.
+          <Section title="🛡️ VibzGuard — Chaque message contrôlé">
+            VibzGuard contrôle chaque message, en salon comme en privé, avant qu&apos;il n&apos;arrive : harcèlement, menaces, sollicitations sexuelles, arnaques, tentatives d&apos;obtenir vos informations personnelles. Il reconnaît les contournements (lettres espacées, chiffres à la place des lettres). Les messages bloqués ne sont <strong>jamais transmis</strong> au destinataire et restent consultables par notre équipe de modération pendant 30 jours.
           </Section>
           <Section title="🚩 Signalement — Vous décidez">
             Lorsqu&apos;un comportement inapproprié est détecté ou signalé, une notification s&apos;affiche chez la victime. Elle choisit librement de <strong>bloquer définitivement</strong> l&apos;auteur ou de <strong>continuer la discussion</strong>. Aucune action n&apos;est imposée sans votre accord.
@@ -495,7 +495,7 @@ export default function LandingPage() {
                 <div>
                   <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>Signalement reçu</div>
                   <div style={{ fontSize:12, color:'#9B7A8A', lineHeight:1.6 }}>
-                    <strong>pseudo_exemple</strong> a été signalé pour comportement inapproprié par notre IA Guard.<br/>
+                    <strong>pseudo_exemple</strong> a été signalé pour comportement inapproprié par VibzGuard.<br/>
                     Que souhaitez-vous faire ?
                   </div>
                 </div>
@@ -516,11 +516,11 @@ export default function LandingPage() {
           <Section title="🛡️ Ce qui se passe après un signalement">
             <ul style={{ paddingLeft:16, margin:'6px 0' }}>
               {[
-                'L\'IA Guard détecte ou reçoit un signalement',
-                'Une notification ponctuelle s\'affiche chez la victime',
-                'La victime choisit : bloquer définitivement ou continuer',
+                'VibzGuard bloque le message avant qu\'il n\'arrive, ou vous utilisez le bouton « Signaler »',
+                'Vous pouvez bloquer le membre à tout moment depuis la conversation',
                 'Si bloqué : le membre harceleur ne peut plus vous contacter',
-                'La modération Vibz examine le cas sous 24h',
+                'L\'équipe de modération examine les signalements et les messages bloqués',
+                '3 messages graves bloqués en 24 h : envoi de messages suspendu 24 h',
                 'En cas de récidive : exclusion permanente de la plateforme',
               ].map(item => (
                 <li key={item} style={{ marginBottom:4 }}>{item}</li>
@@ -849,7 +849,7 @@ export default function LandingPage() {
             { icon:'💬', label:'Messagerie rétro', sub:'Wizz & émoticônes',      action: () => setMode('login'),                accent: pink,  bg:'#FFF5F8' },
             { icon:'🎸', label:'Salons à thèmes',  sub:'Collabs & instruments',  action: () => setMode('signup'),               accent: green, bg:'#F4FBF6' },
             { icon:'❤️', label:'Rencontres',      sub:'Amour & collabs',        action: () => setMode('signup'),               accent: blue,  bg:'#F2F8FD' },
-            { icon:'🛡️', label:'IA Guard',        sub:'Anti-harcèlement',       action: () => setFeatureModal('security'),     accent: pink,  bg:'#FFF5F8' },
+            { icon:'🛡️', label:'VibzGuard',       sub:'Anti-harcèlement',       action: () => setFeatureModal('security'),     accent: pink,  bg:'#FFF5F8' },
             { icon:'🌍', label:'International',   sub:'Sans frontières',        action: () => setFeatureModal('international'),accent: green, bg:'#F4FBF6' },
             { icon:'🆓', label:'100% gratuit',    sub:'Pour toujours',          action: () => setFeatureModal('gratuit'),      accent: blue,  bg:'#F2F8FD' },
           ] as const).map(f => (

@@ -13,7 +13,7 @@ const SECTIONS = [
   { id:'collecte',     label:'Données collectées',              icon:'📥' },
   { id:'finalites',    label:'Finalités & bases légales',       icon:'⚖️' },
   { id:'non_collecte', label:'Ce que nous ne faisons jamais',   icon:'🚫' },
-  { id:'vibzguard',    label:'VibzGuard & analyse IA',          icon:'🛡️' },
+  { id:'vibzguard',    label:'VibzGuard & modération',          icon:'🛡️' },
   { id:'conservation', label:'Durée de conservation',           icon:'⏱️' },
   { id:'partage',      label:'Partage des données',             icon:'🔗' },
   { id:'securite',     label:'Sécurité technique',              icon:'🔐' },
@@ -276,7 +276,7 @@ export default function Confidentialite() {
                       {dataRow('Ville / Région (optionnel)', 'Suggestions de matchs géolocalisés', 'Consentement', 'Durée du compte')}
                       {dataRow('Bio, instruments, genres musicaux', 'Personnalisation, matching musical', 'Consentement', 'Durée du compte')}
                       {dataRow('Liens réseaux sociaux (optionnel)', 'Affichage profil public si activé', 'Consentement', 'Jusqu\'à suppression par l\'utilisateur')}
-                      {dataRow('Messages dans les salons', 'Service de salon, modération IA', 'Contrat + Intérêt légitime', 'Jusqu’à la fermeture du salon (effacés ensuite)')}
+                      {dataRow('Messages dans les salons', 'Service de salon, modération automatique', 'Contrat + Intérêt légitime', 'Jusqu’à la fermeture du salon (effacés ensuite)')}
                       {dataRow('Questions posées à l’assistant IA', 'Réponse de l’assistant (non conservées par Vibz)', 'Consentement (usage volontaire)', 'Non conservées par Vibz')}
                       {dataRow('Messages privés', 'Service de messagerie', 'Contrat', '2 ans glissants')}
                       {dataRow('Likes, matchs', 'Fonctionnalité cœur du service', 'Contrat', 'Durée du compte')}
@@ -332,7 +332,7 @@ export default function Confidentialite() {
                   {
                     base: '🔐 Intérêt légitime', color: '#A78BDB', items: [
                       'Analyse des logs de connexion pour détecter les fraudes et multi-comptes.',
-                      'Amélioration continue de VibzGuard (modération IA).',
+                      'Amélioration continue de VibzGuard (modération automatique des messages).',
                       'Statistiques d\'utilisation anonymisées pour améliorer le service.',
                     ]
                   },
@@ -387,10 +387,10 @@ export default function Confidentialite() {
             )}
 
             {/* Art. 6 — VibzGuard */}
-            {art('vibzguard', '🛡️', 'Article 6 — VibzGuard & Analyse IA des Messages',
+            {art('vibzguard', '🛡️', 'Article 6 — VibzGuard & Modération Automatique des Messages',
               <>
-                {notice(`${green}12`, `${green}44`, '#2A7A4A', '🤖',
-                  'VibzGuard est le système d\'intelligence artificielle de modération de Vibz. Son traitement des messages est encadré par le RGPD et repose sur l\'intérêt légitime de protection de la communauté.'
+                {notice(`${green}12`, `${green}44`, '#2A7A4A', '🛡️',
+                  'VibzGuard est le système de modération automatique de Vibz : des règles de détection exécutées directement dans la base de données de Vibz, sans intelligence artificielle et sans transmission des messages à un tiers. Ce traitement est encadré par le RGPD et repose sur l\'intérêt légitime de protection de la communauté.'
                 )}
 
                 <h3 style={h3}>6.1 Ce que VibzGuard analyse</h3>
@@ -417,8 +417,8 @@ export default function Confidentialite() {
 
                 <h3 style={h3}>6.4 Conservation des données de modération</h3>
                 {ul(
-                  'Les messages bloqués sont conservés 30 jours (pour recours), puis supprimés.',
-                  'Les flags de compte sont conservés 1 an pour détecter les récidives.',
+                  'Les messages bloqués ou ayant déclenché un avertissement sont conservés 30 jours (examen par l\'équipe, recours), puis leur texte est effacé.',
+                  'La trace de ces événements (catégorie et date, sans le texte) est conservée 1 an pour détecter les récidives.',
                   'Les signalements traités sont conservés 3 ans (obligation légale).',
                 )}
               </>
@@ -447,7 +447,7 @@ export default function Confidentialite() {
                         ['Messages dans les salons', 'Jusqu’à la fermeture du salon', 'Service en cours'],
                         ['Logs de connexion (IP, device)', '90 jours', 'Sécurité, fraude'],
                         ['Signalements & décisions de modération', '3 ans', 'Obligation légale, récidive'],
-                        ['Messages bloqués par VibzGuard', '30 jours', 'Recours possible'],
+                        ['Messages bloqués ou signalés par VibzGuard', '30 jours (texte), 1 an (trace sans texte)', 'Recours possible, récidive'],
                         ['Données après suppression du compte', '30 jours (délai de grâce)', 'Réactivation possible'],
                         ['Données archivées post-suppression', '1 an (anonymisées)', 'Obligation comptable / légale'],
                         ['Comptes suspendus pour faute grave', '5 ans (identifiants techniques)', 'Prévention multi-comptes'],

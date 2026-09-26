@@ -11,7 +11,7 @@ const SECTIONS = [
   { id:'preambule',     label:'Préambule',                     icon:'📜' },
   { id:'acces',         label:'Accès & inscription',           icon:'🔑' },
   { id:'charte',        label:'Charte comportementale',        icon:'🤝' },
-  { id:'ia_guard',      label:'IA Guard — Modération',         icon:'🛡️' },
+  { id:'ia_guard',      label:'VibzGuard — Modération',        icon:'🛡️' },
   { id:'donnees',       label:'Données & vie privée',          icon:'🔒' },
   { id:'contenu',       label:'Contenu publié',                icon:'✍️' },
   { id:'sanctions',     label:'Sanctions & exclusions',        icon:'⚖️' },
@@ -90,7 +90,7 @@ export default function Conditions() {
     <>
       <Head>
         <title>Conditions d&apos;Utilisation — Vibz</title>
-        <meta name="description" content="Conditions Générales d'Utilisation de la plateforme Vibz. Charte comportementale, IA Guard, protection des données et des mineurs." />
+        <meta name="description" content="Conditions Générales d'Utilisation de la plateforme Vibz. Charte comportementale, VibzGuard, protection des données et des mineurs." />
       </Head>
 
       <div style={{ minHeight: '100vh', background: tk.bg2, fontFamily: font }}>
@@ -179,7 +179,7 @@ export default function Conditions() {
                 Ces conditions définissent les règles de vie de la communauté Vibz.
                 Elles sont <strong style={{ color: tk.text }}>contractuelles</strong> et s&apos;appliquent à chaque membre,
                 visiteur et tout contenu publié sur la plateforme.
-                L&apos;IA Guard veille à leur application <strong style={{ color: tk.text }}>24h/24, 7j/7, sans exception.</strong>
+                VibzGuard contrôle chaque message <strong style={{ color: tk.text }}>24h/24, 7j/7, sans exception.</strong>
               </div>
             </div>
 
@@ -193,9 +193,9 @@ export default function Conditions() {
                 </p>
                 <p>
                   Vibz repose sur un principe fondamental : <strong>la sécurité de chaque membre prime sur tout autre
-                  intérêt</strong>. La modération est assurée en première ligne par <strong>VibzGuard</strong>, une intelligence
-                  artificielle dédiée, intransigeante et non négociable. VibzGuard n&apos;est pas une option — c&apos;est
-                  le gardien permanent de la communauté.
+                  intérêt</strong>. La modération est assurée en première ligne par <strong>VibzGuard</strong>, un système de modération
+                  automatique qui contrôle chaque message avant son envoi, épaulé par l&apos;équipe de modération.
+                  VibzGuard n&apos;est pas une option — c&apos;est le gardien permanent de la communauté.
                 </p>
                 <div style={box(`${blue}12`, `${blue}44`, '#2A6090')}>
                   📌 L&apos;utilisation de Vibz, sous quelque forme que ce soit (navigation, inscription, publication, messagerie),
@@ -263,40 +263,41 @@ export default function Conditions() {
               </>
             )}
 
-            {/* ── Art. 4 — IA Guard ── */}
-            {art('ia_guard', '🛡️', 'Article 4 — VibzGuard : Modération par Intelligence Artificielle',
+            {/* ── Art. 4 — VibzGuard ── */}
+            {art('ia_guard', '🛡️', 'Article 4 — VibzGuard : Modération Automatique',
               <>
                 <div style={box(`${green}12`, `${green}44`, '#2A7A4A')}>
-                  VibzGuard est le modérateur principal de Vibz. Son fonctionnement est automatique, continu et sans
-                  appel possible dans les cas de harcèlement avéré ou de divulgation de données personnelles.
+                  VibzGuard est le modérateur de première ligne de Vibz. Il fonctionne sur les serveurs de Vibz, sans
+                  intelligence artificielle ni transmission à un tiers : chaque message, en salon comme en messagerie
+                  privée, est contrôlé avant d&apos;être enregistré. Aucun message ne peut contourner ce contrôle.
                 </div>
 
-                <h3 style={h3Style}>4.1 Fonctionnement de VibzGuard</h3>
+                <h3 style={h3Style}>4.1 Ce que VibzGuard détecte</h3>
                 <p>
-                  VibzGuard analyse en temps réel l&apos;intégralité des messages envoyés dans les salons et en messagerie privée.
-                  Il détecte et traite automatiquement :
+                  VibzGuard applique des règles de détection qui reconnaissent aussi les contournements courants
+                  (accents retirés, lettres espacées ou répétées, chiffres à la place des lettres).
                 </p>
                 {ul([
-                  <><strong>Niveau 1 — Données personnelles</strong> : numéros de téléphone, adresses email, adresses postales, IBAN, numéros de sécurité sociale, tokens ou mots de passe → <strong>Blocage immédiat + notification modération</strong></>,
-                  <><strong>Niveau 2 — Harcèlement & cyberviolence</strong> : insultes graves, menaces, body shaming, sexualisation non consentie, incitation au suicide → <strong>Blocage immédiat + notification modération + flag du compte</strong></>,
-                  <><strong>Niveau 3 — Tentative d&apos;isolement</strong> : incitation à quitter la plateforme, redirection vers d&apos;autres canaux (WhatsApp, Telegram…) à des fins de contournement de la modération → <strong>Blocage + avertissement</strong></>,
-                  <><strong>Niveau 4 — Spam & contenu promotionnel</strong> : liens en masse, contenus promotionnels, escroqueries → <strong>Blocage immédiat</strong></>,
-                  <><strong>Niveau 5 — Ton agressif</strong> : insultes légères, majuscules excessives, langage offensant → <strong>Avertissement visible, message autorisé</strong></>,
+                  <><strong>Niveau 1 — Violences graves</strong> : menaces, incitation au suicide, propos haineux ou discriminatoires, sollicitations sexuelles non consenties, tentatives d&apos;emprise (« c&apos;est notre secret », « ne dis rien à tes parents »), insultes graves, body shaming → <strong>Blocage + inscription au journal de modération</strong></>,
+                  <><strong>Niveau 2 — Arnaques & données sensibles</strong> : liens raccourcis, promesses d&apos;argent facile, coupons prépayés, numéros de carte bancaire, IBAN, numéros de sécurité sociale, mots de passe → <strong>Blocage</strong></>,
+                  <><strong>Niveau 3 — Coordonnées personnelles</strong> : téléphone, email, adresse, identifiant Snapchat → <strong>Blocage dans les salons ; avertissement de l&apos;auteur en messagerie privée</strong></>,
+                  <><strong>Niveau 4 — Signaux de prudence</strong> : invitation à quitter Vibz (WhatsApp, Telegram…), questions sur l&apos;école ou l&apos;absence des parents → <strong>Message autorisé, avertissement de l&apos;auteur, inscription au journal</strong></>,
+                  <><strong>Niveau 5 — Ton agressif</strong> : insultes légères, messages entièrement en majuscules → <strong>Message autorisé, avertissement de l&apos;auteur</strong></>,
+                  <><strong>Spam & flood</strong> : plus de 8 messages en 10 secondes, même message répété, liens en masse, rafales de Wizz → <strong>Blocage</strong></>,
                 ])}
 
                 <h3 style={h3Style}>4.2 Actions automatiques de VibzGuard</h3>
                 {ul([
-                  <><strong>Blocage de message</strong> : le message n&apos;est jamais envoyé ni stocké. L&apos;auteur reçoit une explication détaillée.</>,
-                  <><strong>Avertissement</strong> : le message est envoyé mais accompagné d&apos;un avertissement public de VibzGuard visible par tous les participants du salon.</>,
-                  <><strong>Flag de compte</strong> : le compte est marqué pour revue humaine accélérée. Trois flags = suspension préventive automatique.</>,
-                  <><strong>Suspension préventive</strong> : accès à la messagerie et aux salons coupé dans l&apos;attente d&apos;une revue humaine (délai max 48h).</>,
-                  <><strong>Notification modération</strong> : les cas graves sont transmis en temps réel à l&apos;équipe de modération Vibz.</>,
+                  <><strong>Blocage de message</strong> : le message n&apos;est jamais transmis au destinataire. L&apos;auteur voit immédiatement la raison du blocage.</>,
+                  <><strong>Avertissement</strong> : le message est envoyé ; seul son auteur voit l&apos;avertissement de VibzGuard.</>,
+                  <><strong>Journal de modération</strong> : chaque blocage et avertissement est inscrit dans un journal consulté par l&apos;équipe de modération.</>,
+                  <><strong>Suspension automatique</strong> : après 3 messages bloqués pour violences graves ou arnaque en 24 heures, l&apos;envoi de messages est suspendu pendant 24 heures.</>,
                 ])}
 
                 <h3 style={h3Style}>4.3 Limites & recours</h3>
                 {ul([
-                  'VibzGuard peut produire des faux positifs. En cas de blocage injustifié, le membre peut contacter la modération via le formulaire de signalement.',
-                  'Les décisions de VibzGuard concernant le harcèlement avéré ne sont pas négociables et ne font pas l\'objet d\'appel immédiat.',
+                  'VibzGuard repose sur des règles : il peut produire des faux positifs, et un message malveillant formulé autrement peut lui échapper. Le bouton « Signaler » reste indispensable.',
+                  'En cas de blocage ou de suspension injustifiés, le membre peut demander une revue humaine via michael_chesne@outlook.fr.',
                   'Vibz se réserve le droit d\'améliorer VibzGuard à tout moment pour renforcer la protection des membres.',
                 ])}
               </>
@@ -388,22 +389,22 @@ export default function Conditions() {
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr style={{ background: tk.bg2 }}>
-                        {['Infraction', 'Sanction automatique (IA)', 'Sanction humaine possible'].map(h => (
+                        {['Infraction', 'Réaction automatique (VibzGuard)', 'Sanction possible par l\'équipe'].map(h => (
                           <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 800, color: tk.textMuted, fontSize: 11, letterSpacing: 0.5, borderBottom: `1.5px solid ${tk.border}` }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {[
-                        ['Ton agressif (1ʳᵉ fois)', 'Avertissement public', '—'],
-                        ['Insulte légère répétée', 'Avertissement + flag', 'Suspension 24h'],
-                        ['Spam / contenu promo', 'Blocage du message', 'Suspension 7j'],
-                        ['Partage données perso d\'un tiers', 'Blocage + flag + notification', 'Suspension 30j'],
-                        ['Harcèlement avéré', 'Blocage + flag + suspension préventive', 'Exclusion définitive'],
-                        ['Menaces / violence', 'Blocage immédiat + suspension', 'Exclusion + signalement forces de l\'ordre'],
-                        ['Contenu pédopornographique', 'Blocage immédiat + suspension totale', 'Exclusion définitive + signalement PHAROS obligatoire'],
-                        ['Usurpation d\'identité', 'Suspension préventive', 'Exclusion définitive'],
-                        ['Multi-compte après exclusion', 'Détection + blocage', 'Exclusion définitive de tous les comptes'],
+                        ['Ton agressif (1ʳᵉ fois)', 'Avertissement de l\'auteur', '—'],
+                        ['Insulte légère répétée', 'Avertissement de l\'auteur', 'Suspension 24h'],
+                        ['Spam / arnaque / flood', 'Blocage du message', 'Suspension 7j'],
+                        ['Coordonnées en salon, données bancaires', 'Blocage du message', 'Suspension 30j (données d\'un tiers)'],
+                        ['Harcèlement avéré', 'Blocage + journal ; 3 blocages en 24h = messages suspendus 24h', 'Exclusion définitive'],
+                        ['Menaces / violence', 'Blocage + journal ; 3 blocages en 24h = messages suspendus 24h', 'Exclusion + signalement forces de l\'ordre'],
+                        ['Emprise sur mineur, contenu pédopornographique', 'Blocage des messages d\'emprise détectés + journal', 'Exclusion définitive + signalement PHAROS obligatoire'],
+                        ['Usurpation d\'identité', '— (sur signalement)', 'Exclusion définitive'],
+                        ['Multi-compte après exclusion', '— (sur signalement)', 'Exclusion définitive de tous les comptes'],
                       ].map(([inf, ia, hum], i) => (
                         <tr key={i} style={{ background: i % 2 === 0 ? tk.surface : tk.bg2 }}>
                           <td style={{ padding: '10px 14px', borderBottom: `1px solid ${tk.border}`, fontWeight: 600, color: tk.text }}>{inf}</td>
