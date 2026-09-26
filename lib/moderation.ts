@@ -28,3 +28,7 @@ export async function guardBlockMessage(userId: string): Promise<string> {
 // Avertissement porté par un message accepté (colonne flag_reason).
 export const guardWarnMessage = (flagReason?: string | null) =>
   flagReason ? `⚠️ VibzGuard | ${flagReason}` : ''
+
+// Émis quand un blocage est fait hors de la messagerie (alerte VibzGuard) :
+// la messagerie recharge alors sa liste de contacts.
+export const BLOCKS_EVENT = 'vibz:blocks'

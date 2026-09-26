@@ -223,6 +223,12 @@ declare
 begin
   -- Messages sans expéditeur (système) : hors périmètre
   if new.sender_id is null then return new; end if;
+  -- Ce contrôle passe AVANT les règles d'accès (RLS) : sans cette ligne, un
+  -- membre pourrait envoyer des insultes au nom d'un autre pour le faire
+  -- inscrire au journal, puis suspendre. On écarte ces tentatives sans trace.
+  if coalesce(auth.role(), '') in ('authenticated', 'anon') and new.sender_id is distinct from auth.uid() then
+    return null;
+  end if;
   if random() < 0.01 then perform public.vibzguard_purge(); end if;   -- ménage du journal, ~1 message sur 100
   v_target := (to_jsonb(new) ->> case when v_ctx = 'dm' then 'conversation_id' else 'salon_id' end)::uuid;
 

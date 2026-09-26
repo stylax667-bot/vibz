@@ -12,6 +12,7 @@ import SalonsPage from '../salons/SalonsPage'
 import ProfilePage from '../profile/ProfilePage'
 import { SITE_URL } from '../../lib/site'
 import Avatar from '../shared/Avatar'
+import GuardAlert from '../shared/GuardAlert'
 import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
@@ -330,6 +331,9 @@ export default function AppLayout({ user }: Props) {
       {/* Assistant IA, disponible sur tous les onglets */}
       {ASSISTANT_ENABLED && <AssistantChat onOpenSalon={openSalon} onMix={tags => openMix(tags)}
         bottomOffset={isMobile ? TABBAR_H + 14 : 64} />}
+
+      {/* VibzGuard a bloqué un message grave qui m'était destiné : bloquer ou continuer */}
+      <GuardAlert user={user} />
 
       {/* L'admin confirme toutes les 45 min que son salon continue */}
       {adminCheck && (

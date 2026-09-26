@@ -4,7 +4,7 @@ import { supabase, type Profile } from '../../lib/supabase'
 import SquareAvatar from '../shared/Avatar'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
-import { isGuardBlocked, guardBlockMessage, guardWarnMessage } from '../../lib/moderation'
+import { isGuardBlocked, guardBlockMessage, guardWarnMessage, BLOCKS_EVENT } from '../../lib/moderation'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
 
 interface Props {
@@ -128,6 +128,12 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
   }, [user.id])
 
   useEffect(() => { loadAll() }, [loadAll])
+  // Blocage décidé depuis une alerte VibzGuard : la liste de contacts change
+  useEffect(() => {
+    const onBlocks = () => { loadAll() }
+    window.addEventListener(BLOCKS_EVENT, onBlocks)
+    return () => window.removeEventListener(BLOCKS_EVENT, onBlocks)
+  }, [loadAll])
 
   // Conversation demandée depuis Découvrir : on l'ajoute si besoin puis on l'ouvre
   useEffect(() => {

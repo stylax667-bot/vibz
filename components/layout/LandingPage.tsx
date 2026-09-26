@@ -495,7 +495,7 @@ export default function LandingPage() {
                 <div>
                   <div style={{ fontWeight:800, fontSize:15, marginBottom:4 }}>Signalement reçu</div>
                   <div style={{ fontSize:12, color:'#9B7A8A', lineHeight:1.6 }}>
-                    <strong>pseudo_exemple</strong> a été signalé pour comportement inapproprié par VibzGuard.<br/>
+                    <strong>pseudo_exemple</strong> a tenté de vous envoyer des insultes. VibzGuard l&apos;a bloqué : vous ne l&apos;avez pas reçu.<br/>
                     Que souhaitez-vous faire ?
                   </div>
                 </div>
@@ -516,8 +516,9 @@ export default function LandingPage() {
           <Section title="🛡️ Ce qui se passe après un signalement">
             <ul style={{ paddingLeft:16, margin:'6px 0' }}>
               {[
-                'VibzGuard bloque le message avant qu\'il n\'arrive, ou vous utilisez le bouton « Signaler »',
-                'Vous pouvez bloquer le membre à tout moment depuis la conversation',
+                'VibzGuard bloque le message avant qu\'il ne vous arrive, ou vous utilisez le bouton « Signaler »',
+                'Une alerte ponctuelle s\'affiche chez vous, sans le contenu du message',
+                'Vous choisissez : bloquer définitivement ou continuer',
                 'Si bloqué : le membre harceleur ne peut plus vous contacter',
                 'L\'équipe de modération examine les signalements et les messages bloqués',
                 '3 messages graves bloqués en 24 h : envoi de messages suspendu 24 h',

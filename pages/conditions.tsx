@@ -290,6 +290,7 @@ export default function Conditions() {
                 {ul([
                   <><strong>Blocage de message</strong> : le message n&apos;est jamais transmis au destinataire. L&apos;auteur voit immédiatement la raison du blocage.</>,
                   <><strong>Avertissement</strong> : le message est envoyé ; seul son auteur voit l&apos;avertissement de VibzGuard.</>,
+                  <><strong>Alerte du destinataire</strong> : en messagerie privée, quand un message grave lui était destiné, le destinataire est prévenu (sans voir le message) et choisit de bloquer définitivement l&apos;auteur ou de continuer la discussion.</>,
                   <><strong>Journal de modération</strong> : chaque blocage et avertissement est inscrit dans un journal consulté par l&apos;équipe de modération.</>,
                   <><strong>Suspension automatique</strong> : après 3 messages bloqués pour violences graves ou arnaque en 24 heures, l&apos;envoi de messages est suspendu pendant 24 heures.</>,
                 ])}
