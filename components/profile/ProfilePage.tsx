@@ -7,6 +7,7 @@ import { detectPlatform, getEmbedUrl, MUSIC_PLATFORMS, type MusicLink } from '..
 import AvatarUpload from '../shared/AvatarUpload'
 import type { AvatarFields } from '../../lib/avatar'
 import NotificationSettings from '../shared/NotificationSettings'
+import DeleteAccount from '../shared/DeleteAccount'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
@@ -733,6 +734,8 @@ export default function ProfilePage({ user }: Props) {
       }}>
         {saved ? '✅ Profil sauvegardé !' : 'Sauvegarder mon profil'}
       </button>
+
+      <DeleteAccount />
     </div>
   )
 }

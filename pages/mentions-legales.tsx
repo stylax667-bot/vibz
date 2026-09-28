@@ -76,6 +76,14 @@ export default function MentionsLegales() {
             </p>
           </article>
 
+          <article style={card}>
+            <h2 style={h2}>Crédits</h2>
+            <p style={{ margin: 0 }}>
+              Icône de l&apos;application : papillon <a href="https://github.com/jdecked/twemoji" style={{ color: tk.text, fontWeight: 700 }}>Twemoji</a> © Twitter/X
+              et contributeurs, sous licence <a href="https://creativecommons.org/licenses/by/4.0/" style={{ color: tk.text, fontWeight: 700 }}>CC-BY 4.0</a>.
+            </p>
+          </article>
+
           <p style={{ fontFamily: font, fontSize: 12, color: tk.textMuted, textAlign: 'center' }}>Dernière mise à jour : {new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</p>
         </div>
       </div>

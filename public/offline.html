@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vibz — Hors connexion</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+         font-family: Nunito, "Segoe UI", Roboto, sans-serif; background: #f9f8f7; color: #1A1E2E; text-align: center; padding: 16px; box-sizing: border-box; }
+  @media (prefers-color-scheme: dark) { body { background: #111520; color: #E8EAF2; } }
+  img { width: 96px; height: 96px; }
+  h1 { font-size: 22px; margin: 16px 0 8px; }
+  p { margin: 0 0 20px; opacity: .75; }
+  button { padding: 12px 24px; border-radius: 24px; border: none; background: #E07A9A; color: #fff; font-size: 15px; font-weight: 700; cursor: pointer; }
+</style>
+</head>
+<body>
+  <div>
+    <img src="/icons/icon-192.png" alt="">
+    <h1>Pas de connexion</h1>
+    <p>Vibz a besoin d'internet pour tes messages et tes salons.</p>
+    <button onclick="location.reload()">Réessayer</button>
+  </div>
+</body>
+</html>

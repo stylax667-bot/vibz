@@ -35,3 +35,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Clés de signature Android : ne jamais les publier
+*.keystore
+*.jks
+android/signing-key-info.txt

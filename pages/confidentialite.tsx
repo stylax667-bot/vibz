@@ -448,7 +448,7 @@ export default function Confidentialite() {
                         ['Logs de connexion (IP, device)', '90 jours', 'Sécurité, fraude'],
                         ['Signalements & décisions de modération', '3 ans', 'Obligation légale, récidive'],
                         ['Messages bloqués ou signalés par VibzGuard', '30 jours (texte), 1 an (trace sans texte)', 'Recours possible, récidive'],
-                        ['Données après suppression du compte', '30 jours (délai de grâce)', 'Réactivation possible'],
+                        ['Données après suppression du compte', 'Effacées immédiatement', 'Suppression définitive (voir /suppression-compte)'],
                         ['Données archivées post-suppression', '1 an (anonymisées)', 'Obligation comptable / légale'],
                         ['Comptes suspendus pour faute grave', '5 ans (identifiants techniques)', 'Prévention multi-comptes'],
                         ['Cookies de session', '30 jours', 'Maintien de connexion'],

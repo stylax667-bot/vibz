@@ -86,6 +86,7 @@ export default function AppLayout({ user }: Props) {
     { label: 'Conditions d\'utilisation',      href: '/conditions'      },
     { label: 'Politique de confidentialité',   href: '/confidentialite' },
     { label: 'Mentions légales',              href: '/mentions-legales' },
+    { label: 'Supprimer mon compte',          href: '/suppression-compte' },
     { label: 'Contact',                        href: 'mailto:michael_chesne@outlook.fr' },
   ]
 
