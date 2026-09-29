@@ -280,6 +280,7 @@ export default function Confidentialite() {
                       {dataRow('Questions posées à l’assistant IA', 'Réponse de l’assistant (non conservées par Vibz)', 'Consentement (usage volontaire)', 'Non conservées par Vibz')}
                       {dataRow('Messages privés', 'Service de messagerie', 'Contrat', '2 ans glissants')}
                       {dataRow('Likes, matchs', 'Fonctionnalité cœur du service', 'Contrat', 'Durée du compte')}
+                      {dataRow('Invitations et connexions (six degrés)', 'Relier les membres : qui a invité qui, connexions acceptées des deux côtés. Visibles par les autres membres dans les chaînes (jamais les likes, matchs ni messages)', 'Consentement (désactivable dans le profil)', 'Durée du compte')}
                       {dataRow('Logs de connexion (IP, heure, device)', 'Sécurité, détection fraude, anti-multi-comptes', 'Intérêt légitime', '90 jours')}
                       {dataRow('Données OAuth (Google, Discord, etc.)', 'Connexion simplifiée (token only, pas de mot de passe)', 'Contrat', 'Durée de la session')}
                       {dataRow('Signalements émis ou reçus', 'Modération, protection communauté', 'Obligation légale', '3 ans')}

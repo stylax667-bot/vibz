@@ -8,6 +8,7 @@ import AvatarUpload from '../shared/AvatarUpload'
 import type { AvatarFields } from '../../lib/avatar'
 import NotificationSettings from '../shared/NotificationSettings'
 import DeleteAccount from '../shared/DeleteAccount'
+import SixDegresNetwork from './SixDegresNetwork'
 import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
@@ -716,6 +717,9 @@ export default function ProfilePage({ user }: Props) {
           />
         </div>
       </div>
+
+      {/* Six degrés : portée du réseau, connexions */}
+      <SixDegresNetwork userId={user.id} />
 
       {/* Inviter des amis */}
       <InviteWidget userId={user.id} />

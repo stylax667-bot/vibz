@@ -13,6 +13,7 @@ import ProfilePage from '../profile/ProfilePage'
 import { SITE_URL } from '../../lib/site'
 import Avatar from '../shared/Avatar'
 import GuardAlert from '../shared/GuardAlert'
+import { claimStoredInvite } from '../../lib/sixDegres'
 import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
@@ -39,6 +40,16 @@ export default function AppLayout({ user }: Props) {
     const onChange = (e: Event) => setMyAvatar(a => ({ ...a, ...(e as CustomEvent<Partial<AvatarFields>>).detail }))
     window.addEventListener(AVATAR_EVENT, onChange)
     return () => window.removeEventListener(AVATAR_EVENT, onChange)
+  }, [user.id])
+
+  // Inscrit via un lien d'invitation : on relie le compte à celui qui a invité
+  const [invitedBy, setInvitedBy] = useState<string | null>(null)
+  useEffect(() => {
+    claimStoredInvite().then(name => {
+      if (!name) return
+      setInvitedBy(name)
+      setTimeout(() => setInvitedBy(null), 6000)
+    })
   }, [user.id])
 
   // Signe de vie dans mes salons + rappel à l'admin toutes les 45 min
@@ -140,6 +151,11 @@ export default function AppLayout({ user }: Props) {
         )}
 
         {/* Toast "lien copié" */}
+        {invitedBy && (
+          <div style={{ position:'fixed', top:NAV_H + 12, left:'50%', transform:'translateX(-50%)', width:'max-content', maxWidth:'calc(100vw - 24px)', background:t.pink, color:'white', padding:'10px 20px', borderRadius:12, fontWeight:700, fontSize:13, zIndex:200, boxShadow:`0 4px 16px ${t.pink}55`, fontFamily:f }}>
+            🌱 Te voilà relié à {invitedBy}, qui t&apos;a invité sur Vibz !
+          </div>
+        )}
         {shareToast && (
           <div style={{ position:'fixed', top:NAV_H + 12, left:'50%', transform:'translateX(-50%)', background:t.green, color:'white', padding:'10px 20px', borderRadius:12, fontWeight:700, fontSize:13, zIndex:200, boxShadow:`0 4px 16px ${t.green}55`, fontFamily:f }}>
             🔗 Lien copié !

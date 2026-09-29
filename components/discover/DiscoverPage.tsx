@@ -10,6 +10,11 @@ import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
 import VinylGalaxy from './VinylGalaxy'
 import Avatar from '../shared/Avatar'
+import SixDegresChain from '../shared/SixDegresChain'
+import {
+  fetchDegrees, fetchConnections, requestConnection, connState, degreeLabel,
+  type Degree, type ConnectionRow,
+} from '../../lib/sixDegres'
 
 interface Props {
   user: User
@@ -50,6 +55,11 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
   const [confirmBlock, setConfirmBlock] = useState<Profile | null>(null)
   const { salons: communitySalons } = useSalonList()
   const [mobileView, setMobileView]     = useState<MobileView>('profils')
+  // Six degrés
+  const [degrees, setDegrees]           = useState<Map<string, Degree>>(new Map())
+  const [conns, setConns]               = useState<ConnectionRow[]>([])
+  const [chainWith, setChainWith]       = useState<Profile | null>(null)
+  const [networkOnly, setNetworkOnly]   = useState(false)
 
   const showNotif = (msg: string, color = '#D4537E', undo?: () => void) => {
     setNotif({ msg, color, undo })
@@ -76,7 +86,22 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
     const { data } = await q.order('is_online', { ascending: false }).order('updated_at', { ascending: false }).limit(100)
     setProfiles(data || [])
     setLoading(false)
+    const [deg, cs] = await Promise.all([fetchDegrees((data || []).map(p => p.id)), fetchConnections(user.id)])
+    setDegrees(deg)
+    setConns(cs)
   }, [user.id])
+
+  const handleConnect = async (p: Profile) => {
+    const name = p.display_name || 'ce membre'
+    const r = await requestConnection(p.id)
+    if (r === 'pending') showNotif(`🤝 Demande de connexion envoyée à ${name}`, '#6BB8E8')
+    else if (r === 'accepted') showNotif(`🔗 Connecté à ${name} !`, '#52C07A')
+    else if (r === 'limite') showNotif('⏳ Beaucoup de demandes aujourd’hui, réessaie demain', '#6b7280')
+    else showNotif('Connexion impossible avec ce membre', '#ef4444')
+    const [deg, cs] = await Promise.all([fetchDegrees(profiles.map(x => x.id)), fetchConnections(user.id)])
+    setDegrees(deg)
+    setConns(cs)
+  }
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -126,6 +151,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
 
   // Filtrage profils — recherche texte + sélection du vinyle
   const filteredProfiles = profiles.filter(p => {
+    if (networkOnly && !degrees.has(p.id)) return false
     if (searchProfiles) {
       const q = norm(searchProfiles)
       const ok = norm(p.display_name || '').includes(q)
@@ -143,6 +169,8 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
       return fields.some(f => terms.some(t => norm(f).includes(t)))
     })
   })
+  // « Mon réseau » : les plus proches d'abord
+  if (networkOnly) filteredProfiles.sort((a, b) => (degrees.get(a.id)?.degree ?? 9) - (degrees.get(b.id)?.degree ?? 9))
 
   const onlineProfiles = profiles.filter(p => p.is_online).slice(0, 6)
 
@@ -180,6 +208,11 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             🎛️ {galaxyFilters.length}
           </button>
         )}
+        <button onClick={() => setNetworkOnly(v => !v)} title="Membres reliés à toi en 6 degrés ou moins, les plus proches d'abord"
+          style={{ padding: '7px 10px', borderRadius: 10, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap', cursor: 'pointer', fontFamily: 'Nunito,sans-serif',
+            background: networkOnly ? tk.pinkLight : 'transparent', border: `1px solid ${networkOnly ? tk.pink : BDR}`, color: networkOnly ? tk.pinkDark : MUT }}>
+          🕸️ Mon réseau
+        </button>
         <div style={{ fontSize: 11, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {filteredProfiles.length} profil{filteredProfiles.length > 1 ? 's' : ''}
         </div>
@@ -189,7 +222,9 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
         <div style={{ textAlign: 'center', padding: 48, color: MUT, fontSize: 14 }}>Chargement des profils...</div>
       ) : filteredProfiles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 16px', color: MUT, fontSize: 13, lineHeight: 1.6 }}>
-          {galaxyFilters.length > 0 || searchProfiles
+          {networkOnly && !searchProfiles && galaxyFilters.length === 0
+            ? <>Personne n&apos;est encore relié à toi.<br/>Connecte-toi avec des membres 🤝 ou invite tes amis musiciens 🌱</>
+            : galaxyFilters.length > 0 || searchProfiles
             ? 'Aucun membre ne correspond à cette recherche pour le moment.'
             : <>Aucun autre membre inscrit pour l&apos;instant.<br/>Invite tes amis musiciens à rejoindre Vibz 🎵</>}
         </div>
@@ -199,6 +234,8 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             const inst = p.instruments?.[0] || ''
             const liked = likedIds.has(p.id)
             const socials = getSocials(p)
+            const deg = degrees.get(p.id)
+            const cs = connState(conns, user.id, p.id)
             return (
               <div key={p.id} style={{ background: SURF, border: `0.5px solid ${BDR}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ height: 56, background: BANNER_BG[inst] || (tk.isDark ? '#2A1E3E' : '#EEEDFE'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, position: 'relative' }}>
@@ -218,6 +255,13 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
                   <div style={{ fontSize: 12, color: MUT, marginBottom: 8 }}>
                     {[p.show_location !== false ? p.city : null, p.country].filter(Boolean).join(' · ') || ' '}
                   </div>
+                  {deg && (
+                    <button onClick={() => setChainWith(p)} title="Voir la chaîne qui vous relie"
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, maxWidth: '100%', marginBottom: 8, padding: '3px 9px', borderRadius: 12, border: `1px solid ${tk.pink}55`, background: tk.pinkLight, color: tk.pinkDark, fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>
+                      <span style={{ flexShrink: 0 }}>🕸️ {degreeLabel(deg.degree)}</span>
+                      {deg.degree > 1 && deg.via_name && <span style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>· via {deg.via_name}</span>}
+                    </button>
+                  )}
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 8 }}>
                     {(p.instruments || []).map(i => <span key={i} className="tag tag-music">{i}</span>)}
                     {(p.looking_for || []).includes('rencontre') && <span className="tag tag-love">💑</span>}
@@ -237,6 +281,11 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
                     </button>
                     <button onClick={() => handleWizzz(p.id, p.display_name || '')} title="Wizzz" style={actionBtn(tk.blueLight, '#3C3489')}>⚡</button>
                     <button onClick={() => onMessage(p)} title="Envoyer un message" style={actionBtn(tk.greenLight, '#1D9E75')}>💬</button>
+                    <button onClick={() => cs === 'none' || cs === 'received' ? handleConnect(p) : setChainWith(p)}
+                      title={cs === 'connected' ? 'Connectés — voir la chaîne' : cs === 'sent' ? 'Demande de connexion envoyée' : cs === 'received' ? 'Accepter sa demande de connexion' : 'Se connecter (lien visible dans les chaînes)'}
+                      style={actionBtn(cs === 'connected' ? tk.blue : cs === 'received' ? tk.pink : tk.blueLight, cs === 'connected' || cs === 'received' ? 'white' : '#3C3489')}>
+                      {cs === 'connected' ? '🔗' : cs === 'sent' ? '⏳' : cs === 'received' ? '✅' : '🤝'}
+                    </button>
                     <button onClick={() => setShareCtx({ type:'collab', name:p.display_name||'', instrument:p.instruments?.[0]||'', city:p.city||'', genre:p.music_genres?.[0]||'' })} title="Partager"
                       style={{ ...actionBtn(SURF, MUT), flex: '0 0 auto', padding: '7px 10px', fontSize: 13 }}>🚀</button>
                   </div>
@@ -330,6 +379,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
       )}
       {showDonation && <DonationBanner variant="match" onDismiss={() => setShowDonation(false)} />}
       {shareCtx && <ShareModal context={shareCtx} onClose={() => setShareCtx(null)} />}
+      {chainWith && <SixDegresChain targetId={chainWith.id} targetName={chainWith.display_name || 'ce membre'} onClose={() => setChainWith(null)} />}
 
       {/* ── Confirmation de blocage ── */}
       {confirmBlock && (

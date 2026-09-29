@@ -6,9 +6,13 @@ import FinanceWidget from '../components/shared/FinanceWidget'
 import '../styles/globals.css'
 
 import { SITE_URL } from '../lib/site'
+import { rememberRef } from '../lib/sixDegres'
 
 export default function App({ Component, pageProps }: AppProps) {
   // Service worker : rend l'app installable (Android / Play Store) et affiche une page hors-ligne
+  // Lien d'invitation (?ref=) : mémorisé jusqu'à l'inscription
+  useEffect(() => { rememberRef() }, [])
+
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js').catch(() => {})
