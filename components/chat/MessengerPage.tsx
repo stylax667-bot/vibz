@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase, type Profile } from '../../lib/supabase'
 import SquareAvatar from '../shared/Avatar'
+import { usePresenceMap, withPresence, presenceOf, PRESENCE_COLOR, PRESENCE_LABEL } from '../../lib/presence'
 import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { isGuardBlocked, guardBlockMessage, guardWarnMessage, BLOCKS_EVENT } from '../../lib/moderation'
@@ -156,6 +157,9 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
   const selected = allContacts.find(c => c.profile.id === selectedId) || null
   const selectedBlocked = blocked.find(b => b.id === selectedId) || null
   const selectedProfile: Profile | null = selected?.profile || selectedBlocked
+  // Voyants de présence : relus chaque minute
+  const presence = usePresenceMap(allContacts.map(c => c.profile.id))
+  const selPresence = selectedProfile ? presenceOf(withPresence(selectedProfile, presence)) : 'offline'
   const conversationId = selected?.conversationId ?? null
   const conversationIdRef = useRef<string | null>(null)
   conversationIdRef.current = conversationId
@@ -276,7 +280,7 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
   }
 
   // ── Composants ──
-  const Avatar = ({ p, size = 36 }: { p: Profile | null; size?: number }) => <SquareAvatar p={p} size={size} ring={BDR} />
+  const Avatar = ({ p, size = 36 }: { p: Profile | null; size?: number }) => <SquareAvatar p={p ? withPresence(p, presence) : p} size={size} ring={BDR} />
 
   const headerBtn = (color: string): React.CSSProperties => ({
     padding: isMobile ? '7px 10px' : '7px 14px', borderRadius: 20, border: `1.5px solid ${color}55`,
@@ -367,15 +371,17 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
         <Avatar p={selectedProfile} size={isMobile ? 36 : 40} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedProfile.display_name || selectedProfile.username}</div>
-          <div style={{ fontSize: 12, color: selectedProfile.is_online ? green : MUT, fontWeight: 600 }}>
-            {selectedBlocked ? 'Bloqué·e' : selectedProfile.is_online ? 'En ligne' : 'Hors ligne'}
+          <div style={{ fontSize: 12, color: selectedBlocked ? MUT : PRESENCE_COLOR[selPresence], fontWeight: 700 }}>
+            {selectedBlocked ? 'Bloqué·e' : `● ${PRESENCE_LABEL[selPresence]}`}
           </div>
         </div>
 
         {/* Actions — le bouton Bloquer / Débloquer est toujours visible */}
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           {!selectedBlocked && canWrite.ok && (
-            <button onClick={sendWizz} title="Envoyer un Wizz" style={headerBtn(blue)}>⚡{isMobile ? '' : ' Wizz'}</button>
+            <button onClick={sendWizz} disabled={selPresence === 'dnd'}
+              title={selPresence === 'dnd' ? 'Ne pas déranger : pas de Wizz pour le moment' : 'Envoyer un Wizz'}
+              style={{ ...headerBtn(blue), opacity: selPresence === 'dnd' ? 0.4 : 1, cursor: selPresence === 'dnd' ? 'not-allowed' : 'pointer' }}>⚡{isMobile ? '' : ' Wizz'}</button>
           )}
           {!selectedBlocked && (
             <button onClick={() => setReportOpen(v => !v)} title="Signaler" style={headerBtn(tk.isDark ? '#E8B06A' : '#B87A2A')}>🚩{isMobile ? '' : ' Signaler'}</button>

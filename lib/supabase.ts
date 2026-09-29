@@ -20,6 +20,9 @@ export type Profile = {
   avatar_emoji?: string | null        // emoji d'instrument quand l'avatar est fixé
   avatar_locked_until?: string | null // fin du verrou après une image explicite
   is_online?: boolean
+  last_seen?: string | null
+  presence_mode?: 'auto' | 'dnd' | null
+  catalog_tags?: string[]
   social_soundcloud?: string
   social_instagram?: string
   social_youtube?: string

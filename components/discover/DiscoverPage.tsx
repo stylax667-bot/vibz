@@ -11,6 +11,8 @@ import InviteWidget from '../shared/InviteWidget'
 import VinylGalaxy from './VinylGalaxy'
 import Avatar from '../shared/Avatar'
 import SixDegresChain from '../shared/SixDegresChain'
+import { fetchAffinity, logMix, affinityReason, type Affinity } from '../../lib/affinity'
+import { usePresenceMap, withPresence, presenceOf } from '../../lib/presence'
 import {
   fetchDegrees, fetchConnections, requestConnection, connState, degreeLabel,
   type Degree, type ConnectionRow,
@@ -23,7 +25,6 @@ interface Props {
   onMix: (tags: string[], name?: string) => void   // mélange du vinyle → rejoindre / créer (onglet Salons)
 }
 
-const EMOJI_MAP: Record<string, string> = { Guitare:'🎸', Piano:'🎹', Basse:'🎸', Batterie:'🥁', Chant:'🎤', Saxo:'🎷', Violon:'🎻', DJ:'🎧', Ukulélé:'🪕', Flûte:'🪈' }
 
 type MobileView = 'profils' | 'salon' | 'communaute'
 
@@ -60,6 +61,8 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
   const [conns, setConns]               = useState<ConnectionRow[]>([])
   const [chainWith, setChainWith]       = useState<Profile | null>(null)
   const [networkOnly, setNetworkOnly]   = useState(false)
+  // Affinités musicales (historique des mélanges)
+  const [affinity, setAffinity]         = useState<Map<string, Affinity>>(new Map())
 
   const showNotif = (msg: string, color = '#D4537E', undo?: () => void) => {
     setNotif({ msg, color, undo })
@@ -83,13 +86,25 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
     ]
     let q = supabase.from('profiles').select('*').neq('id', user.id).eq('is_banned', false)
     if (hidden.length > 0) q = q.not('id', 'in', `(${hidden.join(',')})`)
-    const { data } = await q.order('is_online', { ascending: false }).order('updated_at', { ascending: false }).limit(100)
+    const { data } = await q.order('last_seen', { ascending: false, nullsFirst: false }).order('updated_at', { ascending: false }).limit(100)
     setProfiles(data || [])
     setLoading(false)
-    const [deg, cs] = await Promise.all([fetchDegrees((data || []).map(p => p.id)), fetchConnections(user.id)])
+    const ids = (data || []).map(p => p.id)
+    const [deg, cs, aff] = await Promise.all([fetchDegrees(ids), fetchConnections(user.id), fetchAffinity(ids)])
     setDegrees(deg)
     setConns(cs)
+    setAffinity(aff)
   }, [user.id])
+
+  // Présence fraîche (voyants) relue chaque minute
+  const presence = usePresenceMap(profiles.map(p => p.id))
+
+  // Chaque mélange essayé sur le vinyle enrichit l'historique (après 4 s sans changement)
+  useEffect(() => {
+    if (galaxyFilters.length === 0) return
+    const timer = setTimeout(() => logMix(galaxyFilters), 4000)
+    return () => clearTimeout(timer)
+  }, [galaxyFilters])
 
   const handleConnect = async (p: Profile) => {
     const name = p.display_name || 'ce membre'
@@ -124,7 +139,8 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
 
   const handleWizzz = async (targetId: string, name: string) => {
     const { error } = await supabase.from('wizzz').insert({ sender_id: user.id, receiver_id: targetId })
-    if (error?.message?.includes('rate_limit')) showNotif('⏳ Attends 30s avant de renvoyer un wizzz !', '#6b7280')
+    if (error?.message?.includes('dnd')) showNotif(`🟠 ${name} ne veut pas être dérangé·e pour le moment`, '#F59E0B')
+    else if (error?.message?.includes('rate_limit')) showNotif('⏳ Attends 30s avant de renvoyer un wizzz !', '#6b7280')
     else if (error) showNotif('Erreur lors du wizzz', '#ef4444')
     else showNotif(`⚡ Wizzz envoyé à ${name} !`, '#7F77DD')
   }
@@ -169,10 +185,17 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
       return fields.some(f => terms.some(t => norm(f).includes(t)))
     })
   })
-  // « Mon réseau » : les plus proches d'abord
-  if (networkOnly) filteredProfiles.sort((a, b) => (degrees.get(a.id)?.degree ?? 9) - (degrees.get(b.id)?.degree ?? 9))
+  // Ordre : « Mon réseau » → les plus proches d'abord ; sinon affinité musicale,
+  // avec un coup de pouce pour les membres proches dans le réseau et ceux en ligne.
+  const rank = (p: Profile) => {
+    const d = degrees.get(p.id)?.degree
+    const st = presenceOf(withPresence(p, presence))
+    return (affinity.get(p.id)?.score ?? 0) + (d ? (7 - d) * 2 : 0) + (st === 'online' ? 6 : st === 'dnd' ? 2 : 0)
+  }
+  if (networkOnly) filteredProfiles.sort((a, b) => (degrees.get(a.id)?.degree ?? 9) - (degrees.get(b.id)?.degree ?? 9) || rank(b) - rank(a))
+  else filteredProfiles.sort((a, b) => rank(b) - rank(a))
 
-  const onlineProfiles = profiles.filter(p => p.is_online).slice(0, 6)
+  const onlineProfiles = profiles.map(p => withPresence(p, presence)).filter(p => presenceOf(p) !== 'offline').slice(0, 6)
 
   const getSocials = (p: Profile) => {
     const r: { label: string; color: string }[] = []
@@ -235,13 +258,14 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             const liked = likedIds.has(p.id)
             const socials = getSocials(p)
             const deg = degrees.get(p.id)
+            const aff = affinity.get(p.id)
+            const why = aff && aff.score >= 15 ? affinityReason(aff) : null
+            const live = withPresence(p, presence)
             const cs = connState(conns, user.id, p.id)
             return (
               <div key={p.id} style={{ background: SURF, border: `0.5px solid ${BDR}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ height: 56, background: BANNER_BG[inst] || (tk.isDark ? '#2A1E3E' : '#EEEDFE'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, position: 'relative' }}>
-                  {p.avatar_url || p.avatar_emoji
-                    ? <Avatar p={p} size={44} ring="white" online={false} />
-                    : (EMOJI_MAP[inst] || '🎵')}
+                  <Avatar p={live} size={44} ring="white" />
                   <button onClick={e => { e.stopPropagation(); setConfirmBlock(p) }} title="Bloquer ce membre"
                     style={{ position: 'absolute', top: 6, right: 6, background: tk.isDark ? 'rgba(0,0,0,0.5)' : 'rgba(255,255,255,0.85)', border: 'none', borderRadius: 8, padding: '4px 8px', fontSize: 11, fontWeight: 800, color: MUT, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>
                     🚫 Bloquer
@@ -249,12 +273,18 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
                 </div>
                 <div style={{ padding: 14 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    {p.is_online && <span title="En ligne" style={{ width: 7, height: 7, background: '#1D9E75', borderRadius: '50%', display: 'inline-block', flexShrink: 0 }} />}
                     <span style={{ fontSize: 15, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.display_name || p.username}</span>
                   </div>
                   <div style={{ fontSize: 12, color: MUT, marginBottom: 8 }}>
                     {[p.show_location !== false ? p.city : null, p.country].filter(Boolean).join(' · ') || ' '}
                   </div>
+                  {aff && aff.score >= 15 && (
+                    <div title="Affinité calculée d'après vos mélanges de styles et d'instruments (vinyle, salons, likes)"
+                      style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 6, fontSize: 11, lineHeight: 1.4, color: MUT }}>
+                      <span style={{ flexShrink: 0, padding: '2px 8px', borderRadius: 10, background: tk.blueLight, color: tk.isDark ? '#C9DEF7' : '#2B4C7E', fontWeight: 800 }}>✨ {aff.score} %</span>
+                      {why && <span style={{ fontWeight: 700 }}>{why}</span>}
+                    </div>
+                  )}
                   {deg && (
                     <button onClick={() => setChainWith(p)} title="Voir la chaîne qui vous relie"
                       style={{ display: 'flex', alignItems: 'center', gap: 4, maxWidth: '100%', marginBottom: 8, padding: '3px 9px', borderRadius: 12, border: `1px solid ${tk.pink}55`, background: tk.pinkLight, color: tk.pinkDark, fontSize: 11, fontWeight: 800, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>
@@ -319,14 +349,12 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
   // ── Colonne communauté ──
   const sidebar = (
     <aside style={{ padding: isMobile ? '14px 12px' : '16px 12px', display: 'flex', flexDirection: 'column', gap: 12, background: SURF, overflowY: 'auto', minWidth: 0 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>En ligne</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: MUT }}>En ligne maintenant</div>
       {onlineProfiles.length === 0
         ? <div style={{ fontSize: 13, color: MUT }}>Personne en ligne</div>
         : onlineProfiles.map(p => (
           <button key={p.id} onClick={() => onMessage(p)} style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', fontFamily: 'Nunito,sans-serif' }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: tk.blueLight, color: '#3C3489', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
-              {(p.display_name || '').slice(0, 2).toUpperCase()}
-            </div>
+            <Avatar p={p} size={30} />
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: TXT }}>{p.display_name}</div>
               <div style={{ fontSize: 11, color: MUT }}>{[p.instruments?.[0], p.city].filter(Boolean).join(' · ')}</div>

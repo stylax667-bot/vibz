@@ -280,6 +280,8 @@ export default function Confidentialite() {
                       {dataRow('Questions posées à l’assistant IA', 'Réponse de l’assistant (non conservées par Vibz)', 'Consentement (usage volontaire)', 'Non conservées par Vibz')}
                       {dataRow('Messages privés', 'Service de messagerie', 'Contrat', '2 ans glissants')}
                       {dataRow('Likes, matchs', 'Fonctionnalité cœur du service', 'Contrat', 'Durée du compte')}
+                      {dataRow('Historique des mélanges (styles et instruments essayés sur le vinyle, salons rejoints ou créés, likes)', 'Suggérer les profils les plus compatibles (score d’affinité). Jamais montré aux autres membres, seuls les ingrédients en commun sont affichés', 'Intérêt légitime (personnalisation du service)', '1 an, avec un poids qui diminue au fil du temps')}
+                      {dataRow('Présence (dernière activité, mode « ne pas déranger »)', 'Voyant vert / orange / rouge visible par les autres membres', 'Contrat', 'Mise à jour en continu, remplacée à chaque connexion')}
                       {dataRow('Invitations et connexions (six degrés)', 'Relier les membres : qui a invité qui, connexions acceptées des deux côtés. Visibles par les autres membres dans les chaînes (jamais les likes, matchs ni messages)', 'Consentement (désactivable dans le profil)', 'Durée du compte')}
                       {dataRow('Logs de connexion (IP, heure, device)', 'Sécurité, détection fraude, anti-multi-comptes', 'Intérêt légitime', '90 jours')}
                       {dataRow('Données OAuth (Google, Discord, etc.)', 'Connexion simplifiée (token only, pas de mot de passe)', 'Contrat', 'Durée de la session')}

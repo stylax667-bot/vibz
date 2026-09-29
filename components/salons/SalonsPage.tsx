@@ -634,7 +634,7 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
             )}
             {members.map(m => (
               <div key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
-                <Avatar p={{ display_name: m.name, avatar_url: m.avatar_url, avatar_emoji: m.avatar_emoji }} size={34} online={m.online} />
+                <Avatar p={{ display_name: m.name, avatar_url: m.avatar_url, avatar_emoji: m.avatar_emoji }} size={34} status={m.online ? 'online' : 'offline'} />
                 <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {m.name}{m.user_id === user.id ? ' (moi)' : ''}
                 </span>
@@ -664,7 +664,7 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
                 <label key={m.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', cursor: me ? 'default' : 'pointer' }}>
                   <input type="checkbox" checked={on} disabled={me} style={{ accentColor: pink }}
                     onChange={() => setLockPick(p => p && (p.includes(m.user_id) ? p.filter(x => x !== m.user_id) : [...p, m.user_id]))} />
-                  <Avatar p={{ display_name: m.name, avatar_url: m.avatar_url, avatar_emoji: m.avatar_emoji }} size={30} online={m.online} />
+                  <Avatar p={{ display_name: m.name, avatar_url: m.avatar_url, avatar_emoji: m.avatar_emoji }} size={30} status={m.online ? 'online' : 'offline'} />
                   <span style={{ flex: 1, fontSize: 14, fontWeight: 700 }}>{m.name}{me ? ' (moi)' : ''}</span>
                   {m.wants_private && <span title="Veut privatiser">🔐</span>}
                 </label>

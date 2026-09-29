@@ -1,44 +1,58 @@
 import { useTheme } from '../../lib/theme'
 import type { AvatarFields } from '../../lib/avatar'
+import { artFor, type ArtFields } from '../../lib/avatarArt'
+import { presenceOf, PRESENCE_COLOR, PRESENCE_LABEL, type Presence, type PresenceFields } from '../../lib/presence'
 
 interface Props {
-  p: (AvatarFields & { display_name?: string | null; username?: string | null; is_online?: boolean }) | null | undefined
+  p: (AvatarFields & ArtFields & PresenceFields) | null | undefined
   size?: number
-  online?: boolean     // affiche la pastille verte de présence
-  ring?: string        // couleur de bordure (par défaut celle du thème)
+  online?: boolean           // false : pas de voyant de présence
+  status?: Presence | null   // présence imposée (ex. présence dans un salon)
+  ring?: string              // couleur de bordure (par défaut celle du thème)
   onClick?: () => void
   title?: string
 }
 
-// Avatar carré : photo du membre, sinon emoji d'instrument (avatar fixé), sinon initiales.
-export default function Avatar({ p, size = 36, online, ring, onClick, title }: Props) {
+// Avatar carré : photo du membre, sinon une image générée — un vinyle aux couleurs
+// de ses styles avec son instrument au centre (ou l'emoji fixé après une sanction).
+// Voyant : vert en ligne, orange ne pas déranger, rouge hors ligne.
+export default function Avatar({ p, size = 36, online, status, ring, onClick, title }: Props) {
   const { theme: tk } = useTheme()
   const radius = Math.max(4, Math.round(size * 0.18))
   const border = `${size >= 60 ? 2 : 1.5}px solid ${ring || tk.border}`
   const box: React.CSSProperties = {
     width: size, height: size, borderRadius: radius, border, boxSizing: 'border-box',
-    overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    overflow: 'hidden', display: 'block', position: 'relative',
   }
-  const initials = (p?.display_name || p?.username || '?').slice(0, 2).toUpperCase()
+
+  const knowsPresence = !!p && (p.last_seen !== undefined || p.presence_mode !== undefined || p.is_online !== undefined)
+  const dot: Presence | null = online === false ? null : status ?? (knowsPresence ? presenceOf(p) : null)
+
+  const art = p?.avatar_url ? null : artFor(p)
 
   return (
-    <div onClick={onClick} title={title}
+    <div onClick={onClick} title={title ?? (dot ? PRESENCE_LABEL[dot] : undefined)}
       style={{ position: 'relative', width: size, height: size, flexShrink: 0, cursor: onClick ? 'pointer' : undefined }}>
       {p?.avatar_url ? (
         <img src={p.avatar_url} alt="" width={size} height={size} loading="lazy"
-          style={{ ...box, objectFit: 'cover', display: 'block', background: tk.bg2 }} />
-      ) : p?.avatar_emoji ? (
-        <div style={{ ...box, fontSize: size * 0.58, lineHeight: 1, background: tk.isDark ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)' }}>
-          {p.avatar_emoji}
+          style={{ ...box, objectFit: 'cover', background: tk.bg2 }} />
+      ) : art && (
+        <div role="img" aria-label={p?.display_name || 'Avatar'}
+          style={{ ...box, background: `linear-gradient(${art.angle}deg, ${art.bg1}, ${art.bg2})` }}>
+          <svg viewBox="0 0 100 100" width="100%" height="100%" style={{ position: 'absolute', inset: 0 }} aria-hidden="true">
+            <circle cx="50" cy="50" r="41" fill="#15171F" />
+            {[37, 33, 29, 25].map(r => <circle key={r} cx="50" cy="50" r={r} fill="none" stroke="rgba(255,255,255,0.09)" strokeWidth="1" />)}
+            <path d="M 50 13 A 37 37 0 0 1 84 36" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="3" strokeLinecap="round"
+              transform={`rotate(${art.angle} 50 50)`} />
+            <circle cx="50" cy="50" r="19" fill={art.label} />
+            <circle cx="50" cy="50" r="19" fill="none" stroke="rgba(0,0,0,0.12)" strokeWidth="1" />
+          </svg>
+          <img src={art.icon} alt="" draggable={false}
+            style={{ position: 'absolute', left: '32%', top: '32%', width: '36%', height: '36%' }} />
         </div>
-      ) : (
-        <div style={{
-          ...box, fontSize: size * 0.36, fontWeight: 800, color: tk.pinkDark,
-          background: tk.isDark ? `linear-gradient(135deg,${tk.pinkLight},${tk.blueLight})` : 'linear-gradient(135deg,#FFF0F5,#F0F7FD)',
-        }}>{initials}</div>
       )}
-      {(online ?? p?.is_online) && (
-        <div style={{ position: 'absolute', bottom: -2, right: -2, width: Math.max(8, size * 0.26), height: Math.max(8, size * 0.26), borderRadius: '50%', background: '#22c55e', border: `2px solid ${tk.surface}` }} />
+      {dot && (
+        <div style={{ position: 'absolute', bottom: -2, right: -2, width: Math.max(9, size * 0.28), height: Math.max(9, size * 0.28), borderRadius: '50%', background: PRESENCE_COLOR[dot], border: `2px solid ${tk.surface}`, boxSizing: 'border-box' }} />
       )}
     </div>
   )

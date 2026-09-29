@@ -14,6 +14,7 @@ import { SITE_URL } from '../../lib/site'
 import Avatar from '../shared/Avatar'
 import GuardAlert from '../shared/GuardAlert'
 import { claimStoredInvite } from '../../lib/sixDegres'
+import { usePresenceHeartbeat, setPresenceMode, PRESENCE_COLOR, type PresenceMode } from '../../lib/presence'
 import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
 type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
@@ -31,12 +32,25 @@ export default function AppLayout({ user }: Props) {
   const [salonToOpen, setSalonToOpen]       = useState<string | null>(null)
   const [mixToOpen, setMixToOpen]           = useState<{ tags: string[]; name?: string } | null>(null)
   const isMobile = useIsMobile()
-  const [myAvatar, setMyAvatar] = useState<AvatarFields & { display_name?: string }>({ display_name: user.email || 'U' })
+  const [myAvatar, setMyAvatar] = useState<AvatarFields & { display_name?: string; music_genres?: string[] }>({ display_name: user.email || 'U' })
+
+  // Présence : signe de vie chaque minute + choix « en ligne » / « ne pas déranger »
+  usePresenceHeartbeat(user.id)
+  const [myMode, setMyMode] = useState<PresenceMode>('auto')
+  const toggleMode = () => {
+    const next: PresenceMode = myMode === 'dnd' ? 'auto' : 'dnd'
+    setMyMode(next)
+    setPresenceMode(next)
+  }
 
   // Avatar du membre connecté, mis à jour dès qu'il le change depuis son profil
   useEffect(() => {
-    supabase.from('profiles').select('display_name, avatar_url, avatar_emoji').eq('id', user.id).maybeSingle()
-      .then(({ data }) => { if (data) setMyAvatar(a => ({ ...a, ...data, display_name: data.display_name || a.display_name })) })
+    supabase.from('profiles').select('display_name, avatar_url, avatar_emoji, instruments, music_genres, presence_mode').eq('id', user.id).maybeSingle()
+      .then(({ data }) => {
+        if (!data) return
+        setMyAvatar(a => ({ ...a, ...data, display_name: data.display_name || a.display_name }))
+        setMyMode(data.presence_mode === 'dnd' ? 'dnd' : 'auto')
+      })
     const onChange = (e: Event) => setMyAvatar(a => ({ ...a, ...(e as CustomEvent<Partial<AvatarFields>>).detail }))
     window.addEventListener(AVATAR_EVENT, onChange)
     return () => window.removeEventListener(AVATAR_EVENT, onChange)
@@ -283,7 +297,13 @@ export default function AppLayout({ user }: Props) {
           </button>
 
           {/* Avatar du membre */}
-          <Avatar p={myAvatar} size={34} ring={`${t.pink}66`} online={false} onClick={() => setTab('profile')} title="Mon profil" />
+          <button onClick={toggleMode}
+            title={myMode === 'dnd' ? 'Ne pas déranger (plus de Wizz) — toucher pour repasser en ligne' : 'En ligne — toucher pour passer en « ne pas déranger »'}
+            style={{ display:'flex', alignItems:'center', gap:6, height:30, padding: isMobile ? '0 9px' : '0 11px', borderRadius:16, border:`1px solid ${t.border}`, background:'transparent', color:t.text, fontSize:12, fontWeight:700, fontFamily:f, cursor:'pointer', flexShrink:0 }}>
+            <span style={{ width:10, height:10, borderRadius:'50%', background: PRESENCE_COLOR[myMode === 'dnd' ? 'dnd' : 'online'], boxShadow:`0 0 0 3px ${PRESENCE_COLOR[myMode === 'dnd' ? 'dnd' : 'online']}33` }} />
+            {!isMobile && (myMode === 'dnd' ? 'Ne pas déranger' : 'En ligne')}
+          </button>
+          <Avatar p={myAvatar} size={34} ring={`${t.pink}66`} status={myMode === 'dnd' ? 'dnd' : 'online'} onClick={() => setTab('profile')} title="Mon profil" />
 
           {isMobile ? (
             /* Menu (mobile) : Partager, Soutenir, Déconnexion, liens légaux */
