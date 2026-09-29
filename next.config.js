@@ -10,6 +10,10 @@ const nextConfig = {
       'cdn.discordapp.com',
     ],
   },
+  // Lien app Android ↔ site (voir pages/api/assetlinks.ts)
+  async rewrites() {
+    return [{ source: '/.well-known/assetlinks.json', destination: '/api/assetlinks' }]
+  },
   // Les anciens liens partagés (vibz-zeta.vercel.app) renvoient vers le domaine officiel
   async redirects() {
     return [

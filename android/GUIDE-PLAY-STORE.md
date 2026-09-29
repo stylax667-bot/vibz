@@ -69,10 +69,10 @@ Fiche du Store (textes prêts dans `android/store/fiche-play-store.md`) :
 
 1. Play Console → *Test et publication → Configuration → Intégrité de l'application → Signature d'application* :
    copier l'**empreinte SHA-256 de la clé de signature d'application**.
-2. Ouvrir `public/.well-known/assetlinks.json` et mettre dans `sha256_cert_fingerprints` :
-   - l'empreinte copiée à l'étape 1,
-   - **et** celle du `assetlinks.json` fourni par PWABuilder (clé d'importation).
-3. Pousser sur `main`.
+2. Récupérer aussi l'empreinte SHA-256 dans le `assetlinks.json` fourni par PWABuilder (clé d'importation).
+3. Vercel → projet vibz → *Settings → Environment Variables* → ajouter
+   `ANDROID_SHA256_FINGERPRINTS` = les deux empreintes séparées par une virgule, puis *Redeploy*.
+4. Vérifier : https://www.vibzmusic.fr/.well-known/assetlinks.json doit afficher les deux empreintes.
 
 Si la barre d'adresse Chrome apparaît en haut de l'app, c'est que cette étape n'est pas faite ou pas encore déployée.
 
