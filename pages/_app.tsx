@@ -7,11 +7,12 @@ import '../styles/globals.css'
 
 import { SITE_URL } from '../lib/site'
 import { rememberRef } from '../lib/sixDegres'
+import { rememberMix } from '../lib/share'
 
 export default function App({ Component, pageProps }: AppProps) {
   // Service worker : rend l'app installable (Android / Play Store) et affiche une page hors-ligne
   // Lien d'invitation (?ref=) : mémorisé jusqu'à l'inscription
-  useEffect(() => { rememberRef() }, [])
+  useEffect(() => { rememberRef(); rememberMix() }, [])
 
   useEffect(() => {
     if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
@@ -34,6 +35,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <meta key="og:type" property="og:type" content="website" />
         <meta key="og:url" property="og:url" content={SITE_URL} />
         <meta property="og:locale" content="fr_FR" />
+        <meta key="og:site_name" property="og:site_name" content="Vibz" />
+        {/* Image d'aperçu par défaut — les pages profil / mélange la remplacent (même key) */}
+        <meta key="og:image" property="og:image" content={`${SITE_URL}/api/og?t=app`} />
+        <meta key="og:image:width" property="og:image:width" content="1200" />
+        <meta key="og:image:height" property="og:image:height" content="630" />
+        <meta key="og:image:alt" property="og:image:alt" content="Vibz — rencontres entre musiciens et musiciennes" />
+        <meta key="twitter:card" name="twitter:card" content="summary_large_image" />
+        <meta key="twitter:image" name="twitter:image" content={`${SITE_URL}/api/og?t=app`} />
         <link rel="icon" type="image/png" href="/icons/favicon-48.png" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.webmanifest" />

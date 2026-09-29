@@ -23,6 +23,7 @@ export type Profile = {
   last_seen?: string | null
   presence_mode?: 'auto' | 'dnd' | null
   catalog_tags?: string[]
+  tagline?: string | null
   social_soundcloud?: string
   social_instagram?: string
   social_youtube?: string

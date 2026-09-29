@@ -11,17 +11,18 @@ interface Props {
   ring?: string              // couleur de bordure (par défaut celle du thème)
   onClick?: () => void
   title?: string
+  fill?: boolean             // occupe toute la largeur disponible (carré), ex. vue Miniatures
 }
 
 // Avatar carré : photo du membre, sinon une image générée — un vinyle aux couleurs
 // de ses styles avec son instrument au centre (ou l'emoji fixé après une sanction).
 // Voyant : vert en ligne, orange ne pas déranger, rouge hors ligne.
-export default function Avatar({ p, size = 36, online, status, ring, onClick, title }: Props) {
+export default function Avatar({ p, size = 36, online, status, ring, onClick, title, fill }: Props) {
   const { theme: tk } = useTheme()
-  const radius = Math.max(4, Math.round(size * 0.18))
+  const radius = fill ? 14 : Math.max(4, Math.round(size * 0.18))
   const border = `${size >= 60 ? 2 : 1.5}px solid ${ring || tk.border}`
   const box: React.CSSProperties = {
-    width: size, height: size, borderRadius: radius, border, boxSizing: 'border-box',
+    width: fill ? '100%' : size, height: fill ? '100%' : size, borderRadius: radius, border, boxSizing: 'border-box',
     overflow: 'hidden', display: 'block', position: 'relative',
   }
 
@@ -32,9 +33,9 @@ export default function Avatar({ p, size = 36, online, status, ring, onClick, ti
 
   return (
     <div onClick={onClick} title={title ?? (dot ? PRESENCE_LABEL[dot] : undefined)}
-      style={{ position: 'relative', width: size, height: size, flexShrink: 0, cursor: onClick ? 'pointer' : undefined }}>
+      style={{ position: 'relative', width: fill ? '100%' : size, height: fill ? 'auto' : size, aspectRatio: fill ? '1' : undefined, flexShrink: 0, cursor: onClick ? 'pointer' : undefined }}>
       {p?.avatar_url ? (
-        <img src={p.avatar_url} alt="" width={size} height={size} loading="lazy"
+        <img src={p.avatar_url} alt="" width={fill ? 256 : size} height={fill ? 256 : size} loading="lazy"
           style={{ ...box, objectFit: 'cover', background: tk.bg2 }} />
       ) : art && (
         <div role="img" aria-label={p?.display_name || 'Avatar'}
@@ -52,7 +53,7 @@ export default function Avatar({ p, size = 36, online, status, ring, onClick, ti
         </div>
       )}
       {dot && (
-        <div style={{ position: 'absolute', bottom: -2, right: -2, width: Math.max(9, size * 0.28), height: Math.max(9, size * 0.28), borderRadius: '50%', background: PRESENCE_COLOR[dot], border: `2px solid ${tk.surface}`, boxSizing: 'border-box' }} />
+        <div style={{ position: 'absolute', bottom: fill ? 8 : -2, right: fill ? 8 : -2, width: fill ? 16 : Math.max(9, size * 0.28), height: fill ? 16 : Math.max(9, size * 0.28), borderRadius: '50%', background: PRESENCE_COLOR[dot], border: `2px solid ${tk.surface}`, boxSizing: 'border-box', zIndex: fill ? 2 : undefined }} />
       )}
     </div>
   )

@@ -14,6 +14,7 @@ import { SITE_URL } from '../../lib/site'
 import Avatar from '../shared/Avatar'
 import GuardAlert from '../shared/GuardAlert'
 import { claimStoredInvite } from '../../lib/sixDegres'
+import { takeStoredMix } from '../../lib/share'
 import { usePresenceHeartbeat, setPresenceMode, PRESENCE_COLOR, type PresenceMode } from '../../lib/presence'
 import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
@@ -80,6 +81,12 @@ export default function AppLayout({ user }: Props) {
 
   const openSalon = (id: string) => { setSalonToOpen(id); setTab('salons') }
   const openMix = (tags: string[], name?: string) => { setMixToOpen({ tags, name }); setTab('salons') }
+
+  // Arrivé par un lien de mélange partagé : on l'ouvre dans Salons
+  useEffect(() => {
+    const tags = takeStoredMix()
+    if (tags) { setMixToOpen({ tags }); setTab('salons') }
+  }, [])
 
   // Hauteur disponible pour le contenu des onglets — exposée aux pages via --vz-app-h
   const NAV_H    = isMobile ? 56 : 60

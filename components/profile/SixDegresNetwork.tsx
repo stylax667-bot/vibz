@@ -7,6 +7,7 @@ import {
   type Reach, type ConnectionRow,
 } from '../../lib/sixDegres'
 import Avatar from '../shared/Avatar'
+import ShareModal, { type ShareContext } from '../shared/ShareModal'
 
 type Mini = { id: string; display_name: string | null; avatar_url: string | null; avatar_emoji: string | null; instruments: string[] | null }
 
@@ -19,6 +20,7 @@ export default function SixDegresNetwork({ userId }: { userId: string }) {
   const [people, setPeople] = useState<Map<string, Mini>>(new Map())
   const [visible, setVisible] = useState(true)
   const [showAll, setShowAll] = useState(false)
+  const [shareCtx, setShareCtx] = useState<ShareContext | null>(null)
 
   const load = useCallback(async () => {
     const [r, c, { data: me }] = await Promise.all([
@@ -95,8 +97,9 @@ export default function SixDegresNetwork({ userId }: { userId: string }) {
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 6 }}>
             {badges(reach).map(b => (
-              <div key={b.id} title={b.hint}
-                style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 16, fontSize: 12, fontWeight: 800,
+              <div key={b.id} title={b.earned ? `${b.hint} — toucher pour partager` : b.hint}
+                onClick={b.earned ? () => setShareCtx({ type: 'badge', badge: b.id, icon: b.icon, name: b.name, reach: total }) : undefined}
+                style={{ cursor: b.earned ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 16, fontSize: 12, fontWeight: 800,
                   border: `1px solid ${b.earned ? t.pink : t.border}`, background: b.earned ? t.pinkLight : 'transparent',
                   color: b.earned ? t.pinkDark : t.textMuted, opacity: b.earned ? 1 : 0.6 }}>
                 <span style={{ filter: b.earned ? 'none' : 'grayscale(1)' }}>{b.icon}</span>{b.name}
@@ -142,6 +145,7 @@ export default function SixDegresNetwork({ userId }: { userId: string }) {
           Décoché, personne ne passe par toi et tu ne vois plus les chaînes.
         </span>
       </label>
+      {shareCtx && <ShareModal context={shareCtx} onClose={() => setShareCtx(null)} />}
     </div>
   )
 }

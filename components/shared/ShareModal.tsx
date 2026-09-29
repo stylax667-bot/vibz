@@ -1,246 +1,160 @@
-import { useState } from 'react'
-import { SITE_URL, SITE_HOST } from '../../lib/site'
+// Fenêtre de partage : chaque réseau reçoit le format qu'il attend (lien, texte, image story),
+// chaque lien porte l'invitation (?ref=) et sa source (utm) — voir lib/share.ts.
+import { useEffect, useMemo, useState } from 'react'
+import QRCode from 'qrcode'
+import { supabase } from '../../lib/supabase'
+import { useTheme } from '../../lib/theme'
+import {
+  PLATFORMS, payload, isMobileDevice, storyFile, copyText,
+  type ShareContext, type Platform,
+} from '../../lib/share'
 
-export type ShareContext =
-  | { type: 'profile'; name: string; instruments: string[]; city: string; userId: string }
-  | { type: 'match';   name: string; instrument: string; city: string }
-  | { type: 'collab';  name: string; instrument: string; city: string; genre: string }
-  | { type: 'app' }
+export type { ShareContext }
 
 interface Props {
   context: ShareContext
   onClose: () => void
 }
 
-const BASE_URL = SITE_URL
 const font = 'Nunito, sans-serif'
 
-// Génère le texte et l'URL selon le contexte
-function buildShare(ctx: ShareContext): { text: string; url: string; card: React.ReactNode } {
-  switch (ctx.type) {
-    case 'profile':
-      return {
-        text: `🎵 Je suis ${ctx.name}${ctx.instruments.length ? `, ${ctx.instruments[0]}` : ''}${ctx.city ? ` à ${ctx.city}` : ''} — retrouve-moi sur Vibz, l'appli de rencontre musicale 🦋`,
-        url: `${BASE_URL}/profil/${ctx.userId}`,
-        card: (
-          <div style={{ background:'linear-gradient(135deg,#1C2233,#2A1830)', borderRadius:20, padding:24, textAlign:'center', border:'1.5px solid rgba(224,122,154,0.3)' }}>
-            <div style={{ fontSize:48, marginBottom:8 }}>🦋</div>
-            <div style={{ fontSize:18, fontWeight:800, color:'#E2E8F8', marginBottom:4 }}>{ctx.name}</div>
-            {ctx.instruments.length > 0 && <div style={{ fontSize:13, color:'#E07A9A', fontWeight:700, marginBottom:4 }}>{ctx.instruments.map(i => `🎵 ${i}`).join(' · ')}</div>}
-            {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0' }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST}</div>
-          </div>
-        ),
-      }
-    case 'match':
-      return {
-        text: `💑 J'ai matchée avec ${ctx.name} sur Vibz${ctx.instrument ? ` — on adore tous les deux ${ctx.instrument}` : ''} ! Rejoins-nous sur l'appli de rencontre musicale 🎶`,
-        url: BASE_URL,
-        card: (
-          <div style={{ background:'linear-gradient(135deg,#2A1020,#1C2233)', borderRadius:20, padding:24, textAlign:'center', border:'1.5px solid rgba(224,122,154,0.5)' }}>
-            <div style={{ fontSize:44, marginBottom:8 }}>💑</div>
-            <div style={{ fontSize:15, fontWeight:800, color:'#E2E8F8', marginBottom:6 }}>Nouveau match sur Vibz !</div>
-            <div style={{ fontSize:13, color:'#E07A9A', fontWeight:700 }}>Avec {ctx.name} {ctx.instrument ? `· ${ctx.instrument}` : ''}</div>
-            {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0', marginTop:4 }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, padding:'8px 16px', borderRadius:20, background:'rgba(224,122,154,0.15)', display:'inline-block', fontSize:11, color:'#E07A9A', fontWeight:800 }}>🦋 {SITE_HOST}</div>
-          </div>
-        ),
-      }
-    case 'collab':
-      return {
-        text: `🎵 Je cherche un·e ${ctx.instrument} pour collaborer${ctx.genre ? ` sur du ${ctx.genre}` : ''}${ctx.city ? ` à ${ctx.city}` : ''} ! Trouve-moi sur Vibz 🦋`,
-        url: BASE_URL,
-        card: (
-          <div style={{ background:'linear-gradient(135deg,#0D1A10,#1C2233)', borderRadius:20, padding:24, textAlign:'center', border:'1.5px solid rgba(82,192,122,0.4)' }}>
-            <div style={{ fontSize:44, marginBottom:8 }}>🎵</div>
-            <div style={{ fontSize:15, fontWeight:800, color:'#E2E8F8', marginBottom:6 }}>Recherche collab musicale</div>
-            <div style={{ fontSize:13, color:'#52C07A', fontWeight:700 }}>{ctx.name} cherche un·e {ctx.instrument}</div>
-            {ctx.genre && <div style={{ fontSize:12, color:'#9BA8C0', marginTop:4 }}>🎼 {ctx.genre}</div>}
-            {ctx.city && <div style={{ fontSize:12, color:'#9BA8C0' }}>📍 {ctx.city}</div>}
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST}</div>
-          </div>
-        ),
-      }
-    case 'app':
-    default:
-      return {
-        text: `🦋 Je viens de rejoindre Vibz — l'appli de rencontre et de collab musicale ! Retrouve des musiciens près de chez toi, crée des salons Mix, match avec des artistes qui vibrent comme toi 🎵`,
-        url: BASE_URL,
-        card: (
-          <div style={{ background:'linear-gradient(135deg,#1C2233,#1A1030)', borderRadius:20, padding:24, textAlign:'center', border:'1.5px solid rgba(107,184,232,0.3)' }}>
-            <div style={{ fontSize:52, marginBottom:8 }}>🦋</div>
-            <div style={{ fontSize:20, fontWeight:800, color:'#E2E8F8', marginBottom:6 }}>Vibz</div>
-            <div style={{ fontSize:13, color:'#6BB8E8', fontWeight:700, marginBottom:4 }}>Rencontre · Musique · Collab</div>
-            <div style={{ fontSize:11, color:'#9BA8C0' }}>L'appli où les musiciens se rencontrent</div>
-            <div style={{ marginTop:16, fontSize:11, color:'#5A6A8A', fontWeight:700 }}>{SITE_HOST} · Gratuit 🎁</div>
-          </div>
-        ),
-      }
-  }
+const SUBTITLE: Record<ShareContext['type'], string> = {
+  app:     'Fais découvrir Vibz à tes amis musiciens',
+  profile: 'Ton profil, prêt à circuler',
+  collab:  'Trouve avec qui jouer',
+  member:  'Présente ce membre à quelqu’un',
+  match:   'Sans nommer personne : ton match reste privé',
+  mix:     'Invite du monde dans ton mélange',
+  badge:   'Montre jusqu’où va ton réseau',
 }
 
 export default function ShareModal({ context, onClose }: Props) {
-  const [copied, setCopied] = useState(false)
-  const { text, url, card } = buildShare(context)
-  const encoded = encodeURIComponent(text)
-  const encodedUrl = encodeURIComponent(url)
+  const { theme: t } = useTheme()
+  const [me, setMe] = useState<string | null>(null)
+  const [notice, setNotice] = useState('')
+  const [busy, setBusy] = useState('')
+  const [qr, setQr] = useState<string | null>(null)
+  const [mobile, setMobile] = useState(false)
+  const [canNative, setCanNative] = useState(false)
 
-  const PLATFORMS = [
-    {
-      name: 'X · Twitter',
-      emoji: '𝕏',
-      color: '#000000',
-      bg: '#1a1a1a',
-      href: `https://twitter.com/intent/tweet?text=${encoded}&url=${encodedUrl}`,
-    },
-    {
-      name: 'WhatsApp',
-      emoji: '💬',
-      color: '#25D366',
-      bg: '#0a1f0f',
-      href: `https://api.whatsapp.com/send?text=${encoded}%20${encodedUrl}`,
-    },
-    {
-      name: 'Facebook',
-      emoji: 'f',
-      color: '#1877F2',
-      bg: '#0a0f1f',
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encoded}`,
-    },
-    {
-      name: 'Instagram',
-      emoji: '📸',
-      color: '#C13584',
-      bg: '#1a0a12',
-      action: 'instagram',
-      href: '',
-    },
-    {
-      name: 'TikTok',
-      emoji: '🎵',
-      color: '#FF0050',
-      bg: '#1a0a0a',
-      action: 'tiktok',
-      href: '',
-    },
-    {
-      name: 'Telegram',
-      emoji: '✈️',
-      color: '#0088cc',
-      bg: '#0a121a',
-      href: `https://t.me/share/url?url=${encodedUrl}&text=${encoded}`,
-    },
-    {
-      name: 'Reddit',
-      emoji: '🤖',
-      color: '#FF4500',
-      bg: '#1a0f08',
-      href: `https://reddit.com/submit?url=${encodedUrl}&title=${encoded}`,
-    },
-    {
-      name: 'LinkedIn',
-      emoji: 'in',
-      color: '#0A66C2',
-      bg: '#0a101a',
-      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-    },
-  ]
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setMe(data.session?.user.id ?? null))
+    setMobile(isMobileDevice())
+    setCanNative(typeof navigator !== 'undefined' && 'share' in navigator)
+  }, [])
 
-  const handleShare = (p: typeof PLATFORMS[0]) => {
-    if (p.action === 'instagram' || p.action === 'tiktok') {
-      handleCopy()
+  const preview = useMemo(() => payload(context, me, 'apercu'), [context, me])
+  const platforms = PLATFORMS.filter(p => (mobile ? !p.desktopOnly : !p.mobileOnly))
+
+  const flash = (msg: string) => { setNotice(msg); setTimeout(() => setNotice(n => (n === msg ? '' : n)), 4500) }
+
+  const share = async (p: Platform) => {
+    const s = payload(context, me, p.id)
+    if (p.mode === 'link' && p.build) {
+      const href = p.build(s)
+      if (/^(https?:)/.test(href)) window.open(href, '_blank', 'noopener,noreferrer,width=640,height=640')
+      else window.location.href = href        // sms:, mailto:, fb-messenger:
       return
     }
-    if (p.href) window.open(p.href, '_blank', 'width=600,height=500')
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(`${text}\n${url}`)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2500)
-  }
-
-  // Web Share API (mobile natif)
-  const handleNativeShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Vibz 🦋', text, url })
-      } catch {/* annulé */}
+    if (p.mode === 'copy') {
+      await copyText(`${s.text}\n${s.url}`)
+      flash(`✅ ${p.hint}`)
+      return
     }
+    // Image (Instagram, TikTok, Snapchat) : story 1080×1920 + lien dans le presse-papiers
+    setBusy(p.id)
+    await copyText(s.url)
+    const file = await storyFile(s)
+    setBusy('')
+    if (file && navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: s.title }) } catch { /* annulé */ }
+      flash(`🔗 Lien copié. ${p.hint}`)
+    } else if (file) {
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(file); a.download = 'vibz-story.png'; a.click()
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000)
+      flash(`⬇️ Image téléchargée et lien copié. ${p.hint}`)
+    } else {
+      flash('🔗 Lien copié (image indisponible pour le moment)')
+    }
+  }
+
+  const nativeShare = async () => {
+    const s = payload(context, me, 'natif')
+    try { await navigator.share({ title: s.title, text: s.text, url: s.url }) } catch { /* annulé */ }
+  }
+
+  const copyLink = async () => {
+    const s = payload(context, me, 'lien')
+    flash((await copyText(s.url)) ? '✅ Lien copié' : 'Copie impossible : sélectionne le lien à la main')
+  }
+
+  const showQr = async () => {
+    if (qr) { setQr(null); return }
+    const s = payload(context, me, 'qr')
+    setQr(await QRCode.toDataURL(s.url, { width: 480, margin: 2, color: { dark: '#1A1E2E', light: '#FFFFFF' } }))
   }
 
   return (
-    <div onClick={onClose} style={{ position:'fixed', inset:0, zIndex:500, background:'rgba(0,0,0,0.75)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center', padding:16, fontFamily:font }}>
-      <div onClick={e => e.stopPropagation()} style={{ background:'#161B26', borderRadius:24, width:'100%', maxWidth:520, border:'1.5px solid rgba(255,255,255,0.08)', boxShadow:'0 32px 80px rgba(0,0,0,0.5)', overflow:'hidden' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 500, background: t.overlay, backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, fontFamily: font }}>
+      <div onClick={e => e.stopPropagation()} role="dialog" aria-label="Partager"
+        style={{ background: t.surface, borderRadius: 22, width: '100%', maxWidth: 520, maxHeight: '92vh', overflowY: 'auto', border: `1px solid ${t.border}`, boxShadow: `0 24px 70px ${t.shadow}` }}>
 
-        {/* Header */}
-        <div style={{ padding:'20px 24px 16px', borderBottom:'1.5px solid rgba(255,255,255,0.06)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-          <div>
-            <div style={{ fontSize:15, fontWeight:800, color:'#E2E8F8' }}>🚀 Partager sur la toile</div>
-            <div style={{ fontSize:11, color:'#5A6A8A', marginTop:2 }}>Fais vibrer ton réseau avec Vibz</div>
+        <div style={{ padding: '16px 18px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: t.text }}>🚀 Partager</div>
+            <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>{SUBTITLE[context.type]}</div>
           </div>
-          <button onClick={onClose} style={{ width:30, height:30, borderRadius:'50%', border:'1.5px solid rgba(255,255,255,0.1)', background:'transparent', color:'#9BA8C0', cursor:'pointer', fontSize:14 }}>✕</button>
+          <button onClick={onClose} aria-label="Fermer" style={{ width: 32, height: 32, borderRadius: '50%', border: `1px solid ${t.border}`, background: 'transparent', color: t.textMuted, cursor: 'pointer', fontSize: 14, flexShrink: 0 }}>✕</button>
         </div>
 
-        {/* Carte preview */}
-        <div style={{ padding:'16px 24px 0' }}>{card}</div>
+        {/* Aperçu : l'image exacte que verront tes contacts */}
+        <div style={{ padding: '0 18px' }}>
+          <div style={{ borderRadius: 14, overflow: 'hidden', border: `1px solid ${t.border}`, background: t.bg2 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={preview.image.replace(/^https?:\/\/[^/]+/, '')} alt="Aperçu du lien partagé" width={1200} height={630} style={{ width: '100%', height: 'auto', display: 'block', aspectRatio: '1200 / 630' }} />
+            <div style={{ padding: '8px 12px', fontSize: 12, color: t.textMuted, lineHeight: 1.45 }}>{preview.text}</div>
+          </div>
+        </div>
 
-        {/* Plateformes */}
-        <div style={{ padding:'16px 24px' }}>
-          <div style={{ fontSize:10, fontWeight:800, color:'#5A6A8A', letterSpacing:1, textTransform:'uppercase', marginBottom:10 }}>Partager sur</div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-            {PLATFORMS.map(p => (
-              <button
-                key={p.name}
-                onClick={() => handleShare(p)}
-                style={{
-                  padding:'10px 14px', borderRadius:12, border:`1.5px solid ${p.color}33`,
-                  background:`${p.bg}`, color:p.color,
-                  fontWeight:700, fontSize:12, cursor:'pointer', fontFamily:font,
-                  display:'flex', alignItems:'center', gap:8, transition:'all 0.15s',
-                  textAlign:'left',
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${p.color}18` }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = p.bg }}
-              >
-                <span style={{ fontSize:16, minWidth:20, textAlign:'center' }}>{p.emoji}</span>
-                {p.name}
-                {(p.action === 'instagram' || p.action === 'tiktok') && (
-                  <span style={{ fontSize:9, color:'#5A6A8A', marginLeft:'auto' }}>copier lien</span>
-                )}
+        {mobile && canNative && (
+          <div style={{ padding: '12px 18px 0' }}>
+            <button onClick={nativeShare}
+              style={{ width: '100%', padding: 13, borderRadius: 14, border: 'none', background: `linear-gradient(135deg, ${t.pink}, ${t.blue})`, color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: font }}>
+              📲 Partager avec une appli du téléphone
+            </button>
+          </div>
+        )}
+
+        <div style={{ padding: '12px 18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))', gap: 8 }}>
+            {platforms.map(p => (
+              <button key={p.id} onClick={() => share(p)} title={p.hint || `Partager sur ${p.name}`} disabled={busy === p.id}
+                style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, padding: '10px 4px', borderRadius: 14, border: `1px solid ${t.border}`, background: t.bg2, cursor: 'pointer', fontFamily: font, opacity: busy === p.id ? 0.5 : 1 }}>
+                <span style={{ width: 34, height: 34, borderRadius: 10, background: p.color, color: p.id === 'snapchat' ? '#111' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800 }}>{p.icon}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: t.text }}>{busy === p.id ? '…' : p.name}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Footer actions */}
-        <div style={{ padding:'0 24px 20px', display:'flex', gap:8 }}>
-          {/* Copier lien */}
-          <button
-            onClick={handleCopy}
-            style={{
-              flex:1, padding:'11px', borderRadius:14, border:'1.5px solid rgba(255,255,255,0.1)',
-              background: copied ? 'rgba(82,192,122,0.15)' : 'rgba(255,255,255,0.04)',
-              color: copied ? '#52C07A' : '#9BA8C0',
-              fontWeight:700, fontSize:13, cursor:'pointer', fontFamily:font, transition:'all 0.2s',
-            }}
-          >
-            {copied ? '✅ Lien copié !' : '🔗 Copier le lien'}
-          </button>
+        {notice && (
+          <div role="status" style={{ margin: '0 18px 10px', padding: '9px 12px', borderRadius: 12, background: t.greenLight, color: t.text, fontSize: 12.5, fontWeight: 700, lineHeight: 1.45 }}>{notice}</div>
+        )}
 
-          {/* Web Share API si dispo (mobile) */}
-          {typeof navigator !== 'undefined' && 'share' in navigator && (
-            <button
-              onClick={handleNativeShare}
-              style={{
-                flex:1, padding:'11px', borderRadius:14, border:'none',
-                background:'linear-gradient(135deg,#E07A9A,#6BB8E8)',
-                color:'white', fontWeight:800, fontSize:13, cursor:'pointer', fontFamily:font,
-                boxShadow:'0 4px 16px rgba(224,122,154,0.3)',
-              }}
-            >📲 Partager</button>
-          )}
+        <div style={{ padding: '0 18px 16px', display: 'flex', gap: 8 }}>
+          <button onClick={copyLink} style={{ flex: 1, padding: 11, borderRadius: 14, border: `1px solid ${t.border}`, background: 'transparent', color: t.text, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: font }}>🔗 Copier le lien</button>
+          <button onClick={showQr} style={{ flex: 1, padding: 11, borderRadius: 14, border: `1px solid ${t.border}`, background: qr ? t.pinkLight : 'transparent', color: t.text, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: font }}>▦ QR code</button>
         </div>
+
+        {qr && (
+          <div style={{ padding: '0 18px 18px', textAlign: 'center' }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qr} alt="QR code du lien" width={220} height={220} style={{ borderRadius: 12, border: `1px solid ${t.border}` }} />
+            <div style={{ fontSize: 12, color: t.textMuted, margin: '6px 0 8px' }}>À faire scanner en répète, en concert ou en jam : on arrive sur Vibz invité par toi.</div>
+            <a href={qr} download="vibz-qr.png" style={{ fontSize: 12, fontWeight: 800, color: t.pink }}>Télécharger le QR code (pour une affiche, un flyer…)</a>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -16,9 +16,10 @@ type PublicProfile = {
   music_genres: string[]
   avatar_url: string | null
   avatar_emoji: string | null
+  tagline: string | null
 }
 
-export const getServerSideProps: GetServerSideProps<{ p: PublicProfile }> = async ({ params, res }) => {
+export const getServerSideProps: GetServerSideProps<{ p: PublicProfile; collab: boolean }> = async ({ params, res, query }) => {
   const id = String(params?.id || '')
   if (!/^[0-9a-f-]{36}$/i.test(id)) return { notFound: true }
 
@@ -30,6 +31,7 @@ export const getServerSideProps: GetServerSideProps<{ p: PublicProfile }> = asyn
   res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600')
   return {
     props: {
+      collab: query.v === 'collab',
       p: {
         id: data.id,
         display_name: data.display_name || data.username || 'Membre Vibz',
@@ -39,16 +41,18 @@ export const getServerSideProps: GetServerSideProps<{ p: PublicProfile }> = asyn
         music_genres: data.music_genres || [],
         avatar_url: data.avatar_url || null,
         avatar_emoji: data.avatar_emoji || null,
+        tagline: data.tagline || null,
       },
     },
   }
 }
 
-export default function PublicProfilePage({ p }: { p: PublicProfile }) {
+export default function PublicProfilePage({ p, collab }: { p: PublicProfile; collab: boolean }) {
   const { theme: tk } = useTheme()
   const url = `${SITE_URL}/profil/${p.id}`
-  const title = `${p.display_name} sur Vibz`
-  const desc = [p.instruments.slice(0, 3).join(', '), p.city].filter(Boolean).join(' · ') || 'Rencontres entre musiciens et musiciennes'
+  const title = collab ? `${p.display_name} cherche des musiciens sur Vibz` : `${p.display_name} sur Vibz`
+  const image = `${SITE_URL}/api/og?t=${collab ? 'collab' : 'profile'}&id=${p.id}`
+  const desc = p.tagline || [p.instruments.slice(0, 3).join(', '), p.city].filter(Boolean).join(' · ') || 'Rencontres entre musiciens et musiciennes'
   const chip: React.CSSProperties = { padding: '5px 12px', borderRadius: 20, fontSize: 13, fontWeight: 700 }
 
   return (
@@ -62,7 +66,11 @@ export default function PublicProfilePage({ p }: { p: PublicProfile }) {
         <meta key="og:description" property="og:description" content={desc} />
         <meta key="og:url" property="og:url" content={url} />
         <meta key="og:type" property="og:type" content="profile" />
-        {p.avatar_url && <meta property="og:image" content={p.avatar_url} />}
+        <meta key="og:image" property="og:image" content={image} />
+        <meta key="og:image:alt" property="og:image:alt" content={title} />
+        <meta key="twitter:image" name="twitter:image" content={image} />
+        <meta key="twitter:title" name="twitter:title" content={title} />
+        <meta key="twitter:description" name="twitter:description" content={desc} />
       </Head>
       <main style={{ minHeight: '100vh', background: tk.bg2, color: tk.text, fontFamily: 'Nunito, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
         <div style={{ width: '100%', maxWidth: 420, background: tk.surface, border: `1px solid ${tk.border}`, borderRadius: 24, padding: '28px 22px', textAlign: 'center', boxShadow: `0 12px 40px ${tk.shadow}` }}>
@@ -70,6 +78,7 @@ export default function PublicProfilePage({ p }: { p: PublicProfile }) {
             <Avatar p={p} size={96} ring={tk.pink} online={false} />
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 800, margin: '0 0 4px', overflowWrap: 'anywhere' }}>{p.display_name}</h1>
+          {p.tagline && <div style={{ fontSize: 15, fontStyle: 'italic', color: tk.textSub, margin: '0 0 8px', overflowWrap: 'anywhere' }}>« {p.tagline} »</div>}
           {p.city && <div style={{ fontSize: 14, color: tk.textMuted, marginBottom: 12 }}>📍 {p.city}</div>}
           {p.instruments.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginBottom: 8 }}>
@@ -82,7 +91,7 @@ export default function PublicProfilePage({ p }: { p: PublicProfile }) {
             </div>
           )}
           {p.bio && <p style={{ fontSize: 14, lineHeight: 1.55, color: tk.textSub, margin: '12px 0 0', whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{p.bio}</p>}
-          <a href="/" style={{ display: 'inline-block', marginTop: 22, padding: '12px 24px', borderRadius: 24, background: tk.pink, color: 'white', fontWeight: 800, fontSize: 15, textDecoration: 'none' }}>
+          <a href={`/?ref=${p.id.slice(0, 8)}`} style={{ display: 'inline-block', marginTop: 22, padding: '12px 24px', borderRadius: 24, background: tk.pink, color: 'white', fontWeight: 800, fontSize: 15, textDecoration: 'none' }}>
             Rejoindre {p.display_name} sur Vibz 🦋
           </a>
           <div style={{ marginTop: 14, fontSize: 12, color: tk.textMuted }}>Rencontres entre musiciens et musiciennes</div>

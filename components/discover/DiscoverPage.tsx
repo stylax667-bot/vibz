@@ -27,6 +27,13 @@ interface Props {
 
 
 type MobileView = 'profils' | 'salon' | 'communaute'
+type ProfileView = 'cartes' | 'liste' | 'miniatures'
+const VIEW_KEY = 'vibz_discover_view'
+const VIEWS: { id: ProfileView; icon: string; label: string }[] = [
+  { id: 'cartes',     icon: '▦', label: 'Cartes' },
+  { id: 'liste',      icon: '☰', label: 'Liste' },
+  { id: 'miniatures', icon: '▣', label: 'Miniatures' },
+]
 
 export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Props) {
   const { theme: tk } = useTheme()
@@ -61,6 +68,12 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
   const [conns, setConns]               = useState<ConnectionRow[]>([])
   const [chainWith, setChainWith]       = useState<Profile | null>(null)
   const [networkOnly, setNetworkOnly]   = useState(false)
+  // Vue des profils (cartes / liste / miniatures), mémorisée sur cet appareil
+  const [view, setView]                 = useState<ProfileView>('cartes')
+  useEffect(() => {
+    try { const v = localStorage.getItem(VIEW_KEY) as ProfileView | null; if (v && VIEWS.some(x => x.id === v)) setView(v) } catch { /* rien */ }
+  }, [])
+  const chooseView = (v: ProfileView) => { setView(v); try { localStorage.setItem(VIEW_KEY, v) } catch { /* rien */ } }
   // Affinités musicales (historique des mélanges)
   const [affinity, setAffinity]         = useState<Map<string, Affinity>>(new Map())
 
@@ -236,6 +249,19 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             background: networkOnly ? tk.pinkLight : 'transparent', border: `1px solid ${networkOnly ? tk.pink : BDR}`, color: networkOnly ? tk.pinkDark : MUT }}>
           🕸️ Mon réseau
         </button>
+      </div>
+
+      {/* Vue + nombre de profils */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div role="radiogroup" aria-label="Affichage des profils" style={{ display: 'flex', padding: 3, borderRadius: 12, background: tk.bg2, border: `0.5px solid ${BDR}` }}>
+          {VIEWS.map(v => (
+            <button key={v.id} role="radio" aria-checked={view === v.id} onClick={() => chooseView(v.id)} title={v.label}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 10px', borderRadius: 9, border: 'none', cursor: 'pointer', fontFamily: 'Nunito,sans-serif', fontSize: 12, fontWeight: 800,
+                background: view === v.id ? SURF : 'transparent', color: view === v.id ? TXT : MUT, boxShadow: view === v.id ? `0 1px 4px ${tk.shadow}` : 'none' }}>
+              <span aria-hidden="true">{v.icon}</span>{v.label}
+            </button>
+          ))}
+        </div>
         <div style={{ fontSize: 11, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {filteredProfiles.length} profil{filteredProfiles.length > 1 ? 's' : ''}
         </div>
@@ -252,7 +278,9 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             : <>Aucun autre membre inscrit pour l&apos;instant.<br/>Invite tes amis musiciens à rejoindre Vibz 🎵</>}
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 210px), 1fr))', gap: 12 }}>
+        <div style={view === 'liste'
+          ? { display: 'flex', flexDirection: 'column', gap: 6 }
+          : { display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(min(100%, ${view === 'miniatures' ? (isMobile ? 140 : 160) : 210}px), 1fr))`, gap: view === 'miniatures' ? 10 : 12 }}>
           {filteredProfiles.map(p => {
             const inst = p.instruments?.[0] || ''
             const liked = likedIds.has(p.id)
@@ -262,6 +290,53 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             const why = aff && aff.score >= 15 ? affinityReason(aff) : null
             const live = withPresence(p, presence)
             const cs = connState(conns, user.id, p.id)
+            const name = p.display_name || p.username
+            const place = [p.show_location !== false ? p.city : null, p.country].filter(Boolean).join(' · ')
+            const small = (bg: string, color: string): React.CSSProperties => ({ ...actionBtn(bg, color), flex: '0 0 auto', minHeight: 34, width: 36, padding: 0, fontSize: 14 })
+
+            // ── Vue Liste : une ligne compacte par membre ──
+            if (view === 'liste') return (
+              <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', background: SURF, border: `0.5px solid ${BDR}`, borderRadius: 14, minWidth: 0 }}>
+                <Avatar p={live} size={46} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, minWidth: 0 }}>
+                    <span style={{ fontSize: 14, fontWeight: 800, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</span>
+                    {aff && aff.score >= 15 && <span style={{ fontSize: 10.5, fontWeight: 800, color: tk.isDark ? '#C9DEF7' : '#2B4C7E', flexShrink: 0 }}>✨ {aff.score} %</span>}
+                    {deg && <button onClick={() => setChainWith(p)} title="Voir la chaîne" style={{ fontSize: 10.5, fontWeight: 800, color: tk.pinkDark, background: 'none', border: 'none', padding: 0, cursor: 'pointer', flexShrink: 0, fontFamily: 'Nunito,sans-serif' }}>🕸️ {deg.degree}°</button>}
+                  </div>
+                  {p.tagline && <div style={{ fontSize: 12, color: TXT, opacity: 0.8, fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>« {p.tagline} »</div>}
+                  <div style={{ fontSize: 11.5, color: MUT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {[(p.instruments || []).slice(0, 2).join(', '), place].filter(Boolean).join(' · ') || ' '}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => handleLike(p.id, p.display_name || '')} title="J'aime" style={small(liked ? '#D4537E' : tk.pinkLight, liked ? 'white' : '#D4537E')}>{liked ? '❤️' : '🤍'}</button>
+                  <button onClick={() => onMessage(p)} title="Envoyer un message" style={small(tk.greenLight, '#1D9E75')}>💬</button>
+                  {!isMobile && <button onClick={() => handleWizzz(p.id, p.display_name || '')} title="Wizzz" style={small(tk.blueLight, '#3C3489')}>⚡</button>}
+                </div>
+              </div>
+            )
+
+            // ── Vue Miniatures : l'image du membre en grand ──
+            if (view === 'miniatures') return (
+              <div key={p.id} style={{ position: 'relative', borderRadius: 14, overflow: 'hidden', border: `0.5px solid ${BDR}`, background: SURF }}>
+                <Avatar p={live} fill ring="transparent" onClick={() => onMessage(p)} title={`Écrire à ${name}`} />
+                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '26px 30px 8px 10px', background: 'linear-gradient(transparent, rgba(10,12,20,0.82))', color: 'white', pointerEvents: 'none' }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+                  {p.tagline
+                    ? <div style={{ fontSize: 11, fontStyle: 'italic', opacity: 0.9, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>« {p.tagline} »</div>
+                    : <div style={{ fontSize: 11, opacity: 0.85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{(p.instruments || [])[0] || place || ' '}</div>}
+                </div>
+                {aff && aff.score >= 15 && (
+                  <div style={{ position: 'absolute', top: 8, left: 8, padding: '2px 8px', borderRadius: 10, background: 'rgba(255,255,255,0.9)', color: '#2B4C7E', fontSize: 10.5, fontWeight: 800 }}>✨ {aff.score} %</div>
+                )}
+                <button onClick={() => handleLike(p.id, p.display_name || '')} title="J'aime"
+                  style={{ position: 'absolute', top: 6, right: 6, width: 32, height: 32, borderRadius: '50%', border: 'none', background: liked ? '#D4537E' : 'rgba(255,255,255,0.9)', fontSize: 14, cursor: 'pointer' }}>
+                  {liked ? '❤️' : '🤍'}
+                </button>
+              </div>
+            )
+
             return (
               <div key={p.id} style={{ background: SURF, border: `0.5px solid ${BDR}`, borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ height: 56, background: BANNER_BG[inst] || (tk.isDark ? '#2A1E3E' : '#EEEDFE'), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, position: 'relative' }}>
@@ -275,6 +350,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                     <span style={{ fontSize: 15, fontWeight: 700, color: TXT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.display_name || p.username}</span>
                   </div>
+                  {p.tagline && <div style={{ fontSize: 12.5, color: TXT, opacity: 0.85, fontStyle: 'italic', marginBottom: 2, lineHeight: 1.35, overflowWrap: 'anywhere' }}>« {p.tagline} »</div>}
                   <div style={{ fontSize: 12, color: MUT, marginBottom: 8 }}>
                     {[p.show_location !== false ? p.city : null, p.country].filter(Boolean).join(' · ') || ' '}
                   </div>
@@ -316,7 +392,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
                       style={actionBtn(cs === 'connected' ? tk.blue : cs === 'received' ? tk.pink : tk.blueLight, cs === 'connected' || cs === 'received' ? 'white' : '#3C3489')}>
                       {cs === 'connected' ? '🔗' : cs === 'sent' ? '⏳' : cs === 'received' ? '✅' : '🤝'}
                     </button>
-                    <button onClick={() => setShareCtx({ type:'collab', name:p.display_name||'', instrument:p.instruments?.[0]||'', city:p.city||'', genre:p.music_genres?.[0]||'' })} title="Partager"
+                    <button onClick={() => setShareCtx({ type:'member', memberId:p.id, name:p.display_name||'Ce membre', instrument:p.instruments?.[0]||'', city:p.show_location !== false ? (p.city||'') : '' })} title="Présenter ce membre à quelqu’un"
                       style={{ ...actionBtn(SURF, MUT), flex: '0 0 auto', padding: '7px 10px', fontSize: 13 }}>🚀</button>
                   </div>
                 </div>
@@ -343,6 +419,12 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
         <div style={{ fontSize: 11, color: MUT, marginTop: 2 }}>Combine styles et instruments : touche, glisse ou recherche</div>
       </div>
       <VinylGalaxy onCreateSalon={handleCreateSalon} onFilterChange={setGalaxyFilters} isDark={tk.isDark} />
+      {galaxyFilters.length >= 2 && (
+        <button onClick={() => setShareCtx({ type: 'mix', tags: galaxyFilters })}
+          style={{ marginTop: 10, padding: '8px 16px', borderRadius: 20, border: `1px solid ${BDR}`, background: SURF, color: TXT, fontSize: 12, fontWeight: 800, cursor: 'pointer', fontFamily: 'Nunito,sans-serif' }}>
+          🚀 Partager ce mélange
+        </button>
+      )}
     </div>
   )
 
@@ -391,7 +473,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
       {matchName && (
         <div style={{ position:'fixed', top:80, left:'50%', transform:'translateX(-50%)', width:'max-content', maxWidth:'calc(100vw - 24px)', background:'linear-gradient(135deg,#D4537E,#A78BDB)', color:'white', padding:'14px 20px', borderRadius:20, fontWeight:700, fontSize:15, zIndex:999, boxShadow:'0 8px 40px rgba(212,83,126,0.5)', display:'flex', alignItems:'center', gap:14, flexWrap:'wrap', justifyContent:'center' }}>
           <span>🎉 Match avec {matchName} !</span>
-          <button onClick={() => setShareCtx({ type:'match', name:matchName, instrument:matchProfile?.instruments?.[0]||'', city:matchProfile?.city||'' })}
+          <button onClick={() => setShareCtx({ type:'match' })}
             style={{ padding:'6px 14px', borderRadius:20, border:'1.5px solid rgba(255,255,255,0.4)', background:'rgba(255,255,255,0.15)', color:'white', fontSize:12, fontWeight:800, cursor:'pointer', fontFamily:'Nunito, sans-serif' }}>
             🚀 Partager
           </button>

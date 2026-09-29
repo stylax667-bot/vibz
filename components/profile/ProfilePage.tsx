@@ -130,6 +130,7 @@ export default function ProfilePage({ user }: Props) {
   const [stats, setStats] = useState<{ likes: number; convs: number; matches: number } | null>(null)
   const [profile, setProfile] = useState({
     display_name: user.email?.split('@')[0]||'',
+    tagline:'',
     bio:'', city:'', country:'FR',
     instruments:[] as string[],
     music_genres:[] as string[],
@@ -202,9 +203,23 @@ export default function ProfilePage({ user }: Props) {
     setMusicProfile(p => ({ ...p, [field]: p[field].filter(x => x !== val) }))
   }
 
+  const [saveError, setSaveError] = useState('')
   const save = async () => {
-    // L'avatar n'est pas envoyé ici : seule l'API /api/avatar peut le modifier
-    await supabase.from('profiles').upsert({ id: user.id, ...profile, updated_at: new Date().toISOString() })
+    setSaveError('')
+    // Seuls les champs modifiables ici sont envoyés : l'avatar passe par /api/avatar, la présence,
+    // le réseau et les champs calculés sont gérés ailleurs (sinon on écraserait leur valeur à jour).
+    const {
+      avatar_url, avatar_emoji, avatar_locked_until, avatar_strikes, last_seen, is_online, presence_mode,
+      catalog_tags, invited_by, six_degres_visible, is_banned, created_at, ...editable
+    } = profile as typeof profile & Record<string, unknown>
+    void avatar_url; void avatar_emoji; void avatar_locked_until; void avatar_strikes; void last_seen; void is_online
+    void presence_mode; void catalog_tags; void invited_by; void six_degres_visible; void is_banned; void created_at
+    const { error } = await supabase.from('profiles')
+      .upsert({ id: user.id, ...editable, tagline: profile.tagline?.trim() || null, updated_at: new Date().toISOString() })
+    if (error) {
+      setSaveError(error.message.startsWith('vibzguard:') ? `Ta phrase n'a pas été acceptée : ${error.message.replace('vibzguard:', '').trim()}` : 'La sauvegarde a échoué, réessaie dans un instant.')
+      return
+    }
     await supabase.from('music_profiles').upsert({
       user_id: user.id,
       instruments: profile.instruments,
@@ -249,6 +264,7 @@ export default function ProfilePage({ user }: Props) {
         />
         <div style={{ flex:'1 1 220px', minWidth:0 }}>
           <div style={{ fontSize:isMobile ? 21 : 24, fontWeight:800, letterSpacing:-0.5 }}>{profile.display_name||'Mon profil'}</div>
+          {profile.tagline && <div style={{ fontSize:13, fontStyle:'italic', color:TXT, opacity:0.8, marginTop:2, overflowWrap:'anywhere' }}>« {profile.tagline} »</div>}
           <div style={{ fontSize:14, color:MUT, margin:'4px 0 12px', overflowWrap:'anywhere' }}>{profile.city||'Ajoute ta ville'} · {user.email}</div>
           <div style={{ display:'flex', gap:16, marginBottom:10 }}>
             {[
@@ -266,7 +282,7 @@ export default function ProfilePage({ user }: Props) {
               style={{ padding:'6px 14px', borderRadius:20, border:`1px solid ${BDR}`, background: SURF, color: TXT, fontSize:11, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center', gap:5 }}
             >🪪 Partager mon profil</button>
             <button
-              onClick={() => setShareCtx({ type:'collab', name: profile.display_name, instrument: profile.instruments[0]||'', city: profile.city, genre: profile.music_genres[0]||'' })}
+              onClick={() => setShareCtx({ type:'collab', userId: user.id, name: profile.display_name, instrument: profile.instruments[0]||'', city: profile.city, genre: profile.music_genres[0]||'' })}
               style={{ padding:'6px 14px', borderRadius:20, border:`1px solid ${BDR}`, background: SURF, color: TXT, fontSize:11, fontWeight:800, cursor:'pointer', fontFamily:'Nunito,sans-serif', display:'flex', alignItems:'center', gap:5 }}
             >🎵 Chercher une collab</button>
           </div>
@@ -279,6 +295,11 @@ export default function ProfilePage({ user }: Props) {
         <div className="vz-stack" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
           <div>
             <input style={inp} placeholder="Pseudo / Nom affiché" value={profile.display_name} onChange={e => setProfile(p => ({ ...p, display_name:e.target.value }))} />
+            <div style={{ position:'relative' }}>
+              <input style={{ ...inp, paddingRight:48 }} maxLength={90} placeholder="Ta phrase sous le pseudo (ex. « Batteur du dimanche, cherche groupe funk »)"
+                value={profile.tagline || ''} onChange={e => setProfile(p => ({ ...p, tagline:e.target.value }))} />
+              <span style={{ position:'absolute', right:12, top:11, fontSize:11, color:MUT }}>{(profile.tagline || '').length}/90</span>
+            </div>
             <input style={inp} placeholder="Ville" value={profile.city} onChange={e => setProfile(p => ({ ...p, city:e.target.value }))} />
           </div>
           <textarea style={{ ...inp, height:88, resize:'none', marginBottom:0 }} placeholder="Bio..." value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio:e.target.value }))} />
@@ -738,6 +759,7 @@ export default function ProfilePage({ user }: Props) {
       }}>
         {saved ? '✅ Profil sauvegardé !' : 'Sauvegarder mon profil'}
       </button>
+      {saveError && <div role="alert" style={{ marginTop:10, fontSize:13, fontWeight:700, color:'#D4537E' }}>{saveError}</div>}
 
       <DeleteAccount />
     </div>

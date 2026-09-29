@@ -80,7 +80,8 @@ const REF_KEY = 'vibz_ref'
 export function rememberRef() {
   try {
     const ref = new URLSearchParams(window.location.search).get('ref')
-    if (ref && /^[0-9a-f-]{8,36}$/i.test(ref)) localStorage.setItem(REF_KEY, ref)
+    // La première personne qui a fait découvrir Vibz garde l'invitation
+    if (ref && /^[0-9a-f-]{8,36}$/i.test(ref) && !localStorage.getItem(REF_KEY)) localStorage.setItem(REF_KEY, ref)
   } catch { /* stockage indisponible : l'invitation ne sera simplement pas comptée */ }
 }
 
