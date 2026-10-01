@@ -9,6 +9,7 @@ import ShareModal, { type ShareContext } from '../shared/ShareModal'
 import DonationBanner from '../shared/DonationBanner'
 import InviteWidget from '../shared/InviteWidget'
 import VinylGalaxy from './VinylGalaxy'
+import DiscoverMap, { emojiPourInstrument } from './DiscoverMap'
 import Avatar from '../shared/Avatar'
 import SixDegresChain from '../shared/SixDegresChain'
 import { fetchAffinity, logMix, affinityReason, type Affinity } from '../../lib/affinity'
@@ -27,12 +28,13 @@ interface Props {
 
 
 type MobileView = 'profils' | 'salon' | 'communaute'
-type ProfileView = 'cartes' | 'liste' | 'miniatures'
+type ProfileView = 'cartes' | 'liste' | 'miniatures' | 'carte'
 const VIEW_KEY = 'vibz_discover_view'
 const VIEWS: { id: ProfileView; icon: string; label: string }[] = [
   { id: 'cartes',     icon: '▦', label: 'Cartes' },
   { id: 'liste',      icon: '☰', label: 'Liste' },
   { id: 'miniatures', icon: '▣', label: 'Miniatures' },
+  { id: 'carte',      icon: '🗺️', label: 'Carte' },
 ]
 
 export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Props) {
@@ -57,6 +59,7 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
   const [matchName, setMatchName]       = useState<string|null>(null)
   const [notif, setNotif]               = useState<{ msg: string; color: string; undo?: () => void }|null>(null)
   const [currentUserName, setCurrentUserName] = useState('')
+  const [myInstrument, setMyInstrument] = useState<string | undefined>()
   const [shareCtx, setShareCtx]         = useState<ShareContext | null>(null)
   const [showDonation, setShowDonation] = useState(false)
   const [matchProfile, setMatchProfile] = useState<Profile | null>(null)
@@ -89,9 +92,10 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
       supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id),
       supabase.rpc('blocked_me'),
       supabase.from('likes').select('to_user').eq('from_user', user.id),
-      supabase.from('profiles').select('display_name').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('display_name, instruments').eq('id', user.id).maybeSingle(),
     ])
     if (myProfile?.display_name) setCurrentUserName(myProfile.display_name)
+    setMyInstrument((myProfile?.instruments as string[] | null)?.[0])
     setLikedIds(new Set((likes || []).map(l => l.to_user as string)))
     const hidden = [
       ...(blocks || []).map(b => b.blocked_id as string),
@@ -262,12 +266,14 @@ export default function DiscoverPage({ user, onMessage, onOpenSalon, onMix }: Pr
             </button>
           ))}
         </div>
-        <div style={{ fontSize: 11, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
+        {view !== 'carte' && <div style={{ fontSize: 11, color: MUT, fontWeight: 700, whiteSpace: 'nowrap' }}>
           {filteredProfiles.length} profil{filteredProfiles.length > 1 ? 's' : ''}
-        </div>
+        </div>}
       </div>
 
-      {loading ? (
+      {view === 'carte' ? (
+        <DiscoverMap defaultEmoji={emojiPourInstrument(myInstrument)} />
+      ) : loading ? (
         <div style={{ textAlign: 'center', padding: 48, color: MUT, fontSize: 14 }}>Chargement des profils...</div>
       ) : filteredProfiles.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '40px 16px', color: MUT, fontSize: 13, lineHeight: 1.6 }}>

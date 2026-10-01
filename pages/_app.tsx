@@ -4,6 +4,7 @@ import Head from 'next/head'
 import { ThemeProvider } from '../lib/theme'
 import FinanceWidget from '../components/shared/FinanceWidget'
 import '../styles/globals.css'
+import 'leaflet/dist/leaflet.css'
 
 import { SITE_URL } from '../lib/site'
 import { rememberRef } from '../lib/sixDegres'
