@@ -7,6 +7,10 @@ import { useTheme } from '../../lib/theme'
 import { useIsMobile } from '../../lib/useIsMobile'
 import { isGuardBlocked, guardBlockMessage, guardWarnMessage, BLOCKS_EVENT } from '../../lib/moderation'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
+import PhotoShareButton from '../troc/PhotoShareButton'
+import PhotoShareBubble from '../troc/PhotoShareBubble'
+import { usePhotoShares } from '../troc/usePhotoShares'
+import { openShareAsTrocDraft, type PhotoShare } from '../../lib/troc'
 
 interface Props {
   user: User
@@ -205,7 +209,15 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
     return () => { supabase.removeChannel(ch) }
   }, [user.id, loadAll])
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  // ── Photos partagées (le destinataire choisit de les voir) ──
+  const photos = usePhotoShares({ conversationId })
+  type Item = { kind: 'msg'; at: string; msg: ChatMsg } | { kind: 'photo'; at: string; share: PhotoShare }
+  const timeline = useMemo<Item[]>(() => [
+    ...messages.map(m => ({ kind: 'msg' as const, at: m.created_at, msg: m })),
+    ...photos.shares.map(s => ({ kind: 'photo' as const, at: s.created_at, share: s })),
+  ].sort((a, b) => a.at.localeCompare(b.at)), [messages, photos.shares])
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [timeline.length])
 
   // ── Envoi ──
   const canWrite = (() => {
@@ -426,9 +438,25 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
           <div style={{ margin: 'auto', textAlign: 'center', color: MUT, fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>
             Tu as bloqué {selectedBlocked.display_name}. Débloque ce membre pour reprendre la conversation.
           </div>
-        ) : messages.length === 0 && !confirmBlock && !reportOpen ? (
+        ) : timeline.length === 0 && !confirmBlock && !reportOpen ? (
           <div style={{ margin: 'auto', textAlign: 'center', color: MUT, fontSize: 13 }}>Dis bonjour à {selectedProfile.display_name} 👋</div>
-        ) : messages.map(msg => {
+        ) : timeline.map(item => {
+          if (item.kind === 'photo') {
+            const s = item.share
+            const mine = s.sender_id === user.id
+            return (
+              <div key={`p-${s.id}`} style={{ display: 'flex', flexDirection: mine ? 'row-reverse' : 'row' }}>
+                <div style={{ maxWidth: isMobile ? '80%' : 360 }}>
+                  <div style={{ fontSize: 10, color: MUT, margin: '0 4px 3px', textAlign: mine ? 'right' : 'left' }}>{timeOf(s.created_at)}</div>
+                  <PhotoShareBubble share={s} userId={user.id} consents={photos.consents.filter(c => c.share_id === s.id)}
+                    senderName={mine ? 'Toi' : selectedProfile.display_name} accent={pink}
+                    onDecided={photos.setDecision} onError={flash}
+                    onPublish={sh => openShareAsTrocDraft(user.id, sh).catch(e => flash((e as Error).message))} />
+                </div>
+              </div>
+            )
+          }
+          const msg = item.msg
           const mine = msg.sender_id === user.id
           const isWizz = msg.message_type === 'wizz'
           return (
@@ -468,6 +496,12 @@ export default function MessengerPage({ user, initialContact, onContactOpened }:
             <div style={{ padding: isMobile ? '10px' : '12px 16px', display: 'flex', gap: 8, alignItems: 'center' }}>
               <button onClick={() => setShowEmojis(v => !v)} aria-label="Émojis"
                 style={{ width: 40, height: 40, borderRadius: '50%', border: `1.5px solid ${BDR}`, background: showEmojis ? tk.pinkLight : 'transparent', fontSize: 18, cursor: 'pointer', flexShrink: 0 }}>😊</button>
+              <PhotoShareButton userId={user.id} recipientLabel={selectedProfile.display_name} onError={flash}
+                where={async () => {
+                  const id = selected?.conversationId || (selected ? await ensureConversation(selected.profile.id) : null)
+                  return id ? { conversation_id: id } : null
+                }}
+                onSent={s => { photos.add(s); if (!selected?.conversationId) loadAll() }} />
               <input
                 style={{ flex: 1, minWidth: 0, padding: '11px 16px', border: `1.5px solid ${BDR}`, borderRadius: 24, fontSize: 14, fontFamily: font, outline: 'none', background: BG, color: TXT }}
                 value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMsg()}

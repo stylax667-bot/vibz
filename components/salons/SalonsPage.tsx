@@ -14,6 +14,10 @@ import {
   type SalonInfo, type SalonState,
 } from '../../lib/salons'
 import MusicCard, { extractMusicUrl } from '../shared/MusicCard'
+import PhotoShareButton from '../troc/PhotoShareButton'
+import PhotoShareBubble from '../troc/PhotoShareBubble'
+import { usePhotoShares } from '../troc/usePhotoShares'
+import { openShareAsTrocDraft, type PhotoShare } from '../../lib/troc'
 import VinylMixCreator from '../shared/VinylMixCreator'
 import SalonProposal from './SalonProposal'
 import AssistantBox from '../shared/AssistantBox'
@@ -166,10 +170,19 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
     return () => { alive = false; supabase.removeChannel(ch) }
   }, [memberSalonId, resolveNames])
 
+  // Photos partagées dans le salon : chaque membre choisit de les voir ou non
+  const photos = usePhotoShares({ salonId: memberSalonId })
+  type Item = { kind: 'msg'; at: string; msg: Msg } | { kind: 'photo'; at: string; share: PhotoShare }
+  const timeline = useMemo<Item[]>(() => [
+    ...msgs.map(m => ({ kind: 'msg' as const, at: m.created_at, msg: m })),
+    ...photos.shares.map(s => ({ kind: 'photo' as const, at: s.created_at, share: s })),
+  ].sort((a, b) => a.at.localeCompare(b.at)), [msgs, photos.shares])
+  useEffect(() => { resolveNames(photos.shares.map(s => s.sender_id)) }, [photos.shares, resolveNames])
+
   useEffect(() => {
     const el = msgAreaRef.current
     if (el) el.scrollTop = el.scrollHeight
-  }, [msgs])
+  }, [timeline.length])
 
   const send = async () => {
     const content = input.trim()
@@ -534,9 +547,29 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
         </div>
         {loadingMsgs ? (
           <div style={{ textAlign: 'center', color: MUT, fontSize: 13, padding: 24 }}>Chargement des messages…</div>
-        ) : msgs.length === 0 ? (
-          <div style={{ textAlign: 'center', color: MUT, fontSize: 13, padding: 24 }}>Aucun message pour l&apos;instant. Lance la conversation 🎶 (tu peux coller un lien YouTube)</div>
-        ) : msgs.map(msg => {
+        ) : timeline.length === 0 ? (
+          <div style={{ textAlign: 'center', color: MUT, fontSize: 13, padding: 24 }}>Aucun message pour l&apos;instant. Lance la conversation 🎶 (tu peux coller un lien YouTube ou partager une photo 📸)</div>
+        ) : timeline.map(item => {
+          if (item.kind === 'photo') {
+            const s = item.share
+            const isMe = s.sender_id === user.id
+            const author = namesRef.current[s.sender_id] || 'Un membre'
+            return (
+              <div key={`p-${s.id}`} style={{ display: 'flex', flexDirection: isMe ? 'row-reverse' : 'row', gap: 8, alignItems: 'flex-end' }}>
+                <Avatar p={{ display_name: author, ...avatarsRef.current[s.sender_id] }} size={30} ring={`${current.color || '#A78BDB'}66`} online={false} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', maxWidth: isMobile ? '80%' : '62%' }}>
+                  <div style={{ display: 'flex', gap: 5, marginBottom: 3, flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: TXT }}>{isMe ? 'Moi' : author}</span>
+                    <span style={{ fontSize: 10, color: MUT }}>{timeOf(s.created_at)}</span>
+                  </div>
+                  <PhotoShareBubble share={s} userId={user.id} consents={photos.consents.filter(c => c.share_id === s.id)}
+                    senderName={author} accent={current.color || pink} onDecided={photos.setDecision} onError={flash}
+                    onPublish={sh => openShareAsTrocDraft(user.id, sh).catch(e => flash((e as Error).message))} />
+                </div>
+              </div>
+            )
+          }
+          const msg = item.msg
           const isMe = msg.sender_id === user.id
           const author = namesRef.current[msg.sender_id] || 'Membre'
           const color = current.color || '#A78BDB'
@@ -569,6 +602,8 @@ export default function SalonsPage({ user, initialSalonId, onInitialSalonOpened,
           <div style={{ padding: '10px 14px', background: tk.modBg, color: tk.modText, borderRadius: 10, fontSize: 13, fontWeight: 600, borderLeft: `3px solid ${tk.modBorder}` }}>{warning}</div>
         )}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <PhotoShareButton userId={user.id} recipientLabel="Chaque membre du salon" onError={flash}
+            where={{ salon_id: current.id! }} onSent={photos.add} />
           <input
             style={{ flex: 1, minWidth: 0, padding: '11px 16px', border: `1.5px solid ${BDR}`, borderRadius: 24, fontSize: 14, fontFamily: font, outline: 'none', background: BG, color: TXT }}
             value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()}

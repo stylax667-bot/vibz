@@ -1,14 +1,24 @@
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import AppLayout from '../components/layout/AppLayout'
 import LandingPage from '../components/layout/LandingPage'
+import { rememberTrocIntent } from '../lib/troc'
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Lien venu de TrocMusic (?tab=troc&chat=…&troc=…) : gardé le temps de la connexion, puis retiré de l'adresse
+  const router = useRouter()
+  const [cleanUrl, setCleanUrl] = useState<string | null>(null)
   useEffect(() => {
+    if (router.isReady && cleanUrl) { router.replace(cleanUrl, undefined, { shallow: true }); setCleanUrl(null) }
+  }, [router.isReady, cleanUrl]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    setCleanUrl(rememberTrocIntent())   // mémorisé AVANT de lire la session (AppLayout le lit au montage)
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)

@@ -10,6 +10,8 @@ import DiscoverPage from '../discover/DiscoverPage'
 import MessengerPage from '../chat/MessengerPage'
 import SalonsPage from '../salons/SalonsPage'
 import ProfilePage from '../profile/ProfilePage'
+import TrocPage from '../troc/TrocPage'
+import { takeTrocIntent, trocLinks, TROC_DRAFT_EVENT, type TrocDraft } from '../../lib/troc'
 import { SITE_URL } from '../../lib/site'
 import Avatar from '../shared/Avatar'
 import GuardAlert from '../shared/GuardAlert'
@@ -18,7 +20,7 @@ import { takeStoredMix } from '../../lib/share'
 import { usePresenceHeartbeat, setPresenceMode, PRESENCE_COLOR, type PresenceMode } from '../../lib/presence'
 import { AVATAR_EVENT, type AvatarFields } from '../../lib/avatar'
 
-type Tab = 'discover' | 'messenger' | 'salons' | 'profile'
+type Tab = 'discover' | 'messenger' | 'salons' | 'troc' | 'profile'
 interface Props { user: User }
 
 export default function AppLayout({ user }: Props) {
@@ -88,6 +90,27 @@ export default function AppLayout({ user }: Props) {
     if (tags) { setMixToOpen({ tags }); setTab('salons') }
   }, [])
 
+  // ── Troc (succursale de TrocMusic) ──
+  const [trocFocus, setTrocFocus] = useState<string | null>(null)
+  const [trocDraft, setTrocDraft] = useState<TrocDraft | null>(null)
+  // Arrivé depuis TrocMusic : « Contacter le vendeur » ouvre la messagerie, une annonce ouvre l'onglet Troc
+  useEffect(() => {
+    const intent = takeTrocIntent()
+    if (!intent) return
+    if (intent.chat && intent.chat !== user.id) {
+      supabase.from('profiles').select('*').eq('id', intent.chat).maybeSingle().then(({ data }) => {
+        if (data) { setChatWith(data as Profile); setTab('messenger') }
+      })
+    } else if (intent.troc) { setTrocFocus(intent.troc); setTab('troc') }
+    else if (intent.tab) setTab(intent.tab as Tab)
+  }, [user.id])
+  // « Publier en annonce Troc » depuis une photo partagée dans un tchat/salon
+  useEffect(() => {
+    const onDraft = (e: Event) => { setTrocDraft((e as CustomEvent<TrocDraft>).detail); setTab('troc') }
+    window.addEventListener(TROC_DRAFT_EVENT, onDraft)
+    return () => window.removeEventListener(TROC_DRAFT_EVENT, onDraft)
+  }, [])
+
   // Hauteur disponible pour le contenu des onglets — exposée aux pages via --vz-app-h
   const NAV_H    = isMobile ? 56 : 60
   const TABBAR_H = 62
@@ -111,6 +134,7 @@ export default function AppLayout({ user }: Props) {
     { id: 'discover'  as Tab, icon: '🔍', label: 'Découvrir' },
     { id: 'messenger' as Tab, icon: '💬', label: 'Messages'  },
     { id: 'salons'    as Tab, icon: '🎵', label: 'Salons'    },
+    { id: 'troc'      as Tab, icon: '🔁', label: 'Troc'      },
     { id: 'profile'   as Tab, icon: '👤', label: 'Profil'    },
   ]
 
@@ -218,6 +242,15 @@ export default function AppLayout({ user }: Props) {
 
           {!isMobile && (
             <>
+              {/* Site frère : TrocMusic */}
+              <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" title="TrocMusic — troc, don et revente de matériel"
+                style={{
+                  padding: '6px 14px', borderRadius: 20, border: '1px solid #D9822B55',
+                  background: t.isDark ? 'rgba(217,130,43,0.14)' : '#FCEBD7', color: t.isDark ? '#F0B070' : '#A35A12',
+                  fontSize: 12, fontWeight: 800, fontFamily: f, textDecoration: 'none', whiteSpace: 'nowrap',
+                }}
+              >🔁 TrocMusic ↗</a>
+
               {/* Partager l'app */}
               <button
                 onClick={handleShare}
@@ -345,6 +378,7 @@ export default function AppLayout({ user }: Props) {
               <span style={{ width:7, height:7, background:t.green, borderRadius:'50%' }}/> VibzGuard actif
             </div>
             {[
+              { label:'🔁 TrocMusic — troc de matos ↗', onClick: () => { setShowMenu(false); window.open(trocLinks.home(), '_blank', 'noopener') }, danger: false },
               { label:'🚀 Partager Vibz', onClick: () => { setShowMenu(false); handleShare() }, danger: false },
               { label:'☕ Soutenir Vibz', onClick: () => { setShowMenu(false); setShowDon(true) }, danger: false },
               { label:'🚪 Déconnexion',   onClick: () => supabase.auth.signOut(), danger: true },
@@ -369,6 +403,8 @@ export default function AppLayout({ user }: Props) {
         {tab === 'discover'  && <DiscoverPage user={user} onMessage={p => { setChatWith(p); setTab('messenger') }} onOpenSalon={openSalon} onMix={openMix} />}
         {tab === 'messenger' && <MessengerPage user={user} initialContact={chatWith} onContactOpened={() => setChatWith(null)} />}
         {tab === 'salons'    && <SalonsPage user={user} initialSalonId={salonToOpen} onInitialSalonOpened={() => setSalonToOpen(null)} initialMix={mixToOpen} onInitialMixUsed={() => setMixToOpen(null)} />}
+        {tab === 'troc'      && <TrocPage user={user} onMessage={p => { setChatWith(p); setTab('messenger') }}
+          focusId={trocFocus} onFocusUsed={() => setTrocFocus(null)} draft={trocDraft} onDraftUsed={() => setTrocDraft(null)} />}
         {tab === 'profile'   && <ProfilePage user={user} />}
       </div>
 
@@ -450,6 +486,8 @@ export default function AppLayout({ user }: Props) {
             onMouseEnter={e=>(e.currentTarget.style.color=t.pink)}
             onMouseLeave={e=>(e.currentTarget.style.color=t.textMuted)}
           >☕ Soutenir Vibz</button>
+          <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer"
+            style={{ fontSize: 11, color: '#D9822B', fontFamily: f, textDecoration: 'none', fontWeight: 800 }}>🔁 TrocMusic, le troc de matos ↗</a>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: t.textMuted, fontWeight: 700 }}>
             <span style={{ display: 'inline-block', width: 6, height: 6, background: t.green, borderRadius: '50%' }}/>
             RGPD · VibzGuard actif
