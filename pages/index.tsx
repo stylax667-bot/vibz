@@ -10,7 +10,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Lien venu de TrocMusic (?tab=troc&chat=…&troc=…) : gardé le temps de la connexion, puis retiré de l'adresse
+  // Lien venu de Vibz Troc (?tab=troc&chat=…&troc=…) : gardé le temps de la connexion, puis retiré de l'adresse
   const router = useRouter()
   const [cleanUrl, setCleanUrl] = useState<string | null>(null)
   useEffect(() => {

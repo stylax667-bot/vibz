@@ -9,7 +9,7 @@ import {
 } from '../../lib/troc'
 import Avatar from '../shared/Avatar'
 
-// Onglet Troc : succursale de TrocMusic dans Vibz. Mêmes annonces, en temps réel ;
+// Onglet Troc : succursale de Vibz Troc dans Vibz. Mêmes annonces, en temps réel ;
 // contact direct par la messagerie Vibz ; renvois fréquents vers le site complet.
 const AMBER = '#D9822B', AMBER_DARK = '#A35A12', AMBER_LIGHT = '#FCEBD7'
 
@@ -50,7 +50,7 @@ export default function TrocPage({ user, onMessage, focusId, onFocusUsed, draft,
 
   useEffect(() => { const h = setTimeout(load, q ? 300 : 0); return () => clearTimeout(h) }, [load, q])
 
-  // Nouvelles annonces (TrocMusic ou Vibz) en direct
+  // Nouvelles annonces (Vibz Troc ou Vibz) en direct
   useEffect(() => {
     const ch = supabase.channel('troc-listings')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'troc_listings' }, () => load())
@@ -58,7 +58,7 @@ export default function TrocPage({ user, onMessage, focusId, onFocusUsed, draft,
     return () => { supabase.removeChannel(ch) }
   }, [load])
 
-  // Arrivée depuis TrocMusic (?troc=<annonce>) : on ouvre la fiche
+  // Arrivée depuis Vibz Troc (?troc=<annonce>) : on ouvre la fiche
   useEffect(() => {
     if (!focusId) return
     supabase.from('troc_listings').select(TROC_SELECT).eq('id', focusId).maybeSingle()
@@ -83,15 +83,15 @@ export default function TrocPage({ user, onMessage, focusId, onFocusUsed, draft,
       {/* ── En-tête : la succursale renvoie au site complet ── */}
       <div style={{ borderRadius: 22, padding: isMobile ? 16 : 22, background: `linear-gradient(135deg, ${AMBER} 0%, #E07A9A 70%, #6BB8E8 100%)`, color: 'white', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 14 }}>
         <div style={{ flex: '1 1 260px' }}>
-          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.5, opacity: 0.85, textTransform: 'uppercase' }}>Vibz × TrocMusic</div>
+          <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: 1.5, opacity: 0.85, textTransform: 'uppercase' }}>Vibz Troc</div>
           <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, lineHeight: 1.15, marginTop: 4 }}>🔁 Troc, don & revente de matos</div>
           <div style={{ fontSize: 13, opacity: 0.92, marginTop: 6, lineHeight: 1.5 }}>
-            Les annonces de TrocMusic, ici dans Vibz. Même compte, contact par ta messagerie Vibz. Aucun paiement sur le site.
+            Les annonces de Vibz Troc, ici dans Vibz. Même compte, contact par ta messagerie Vibz. Aucun paiement sur le site.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => setForm({ photos: [] })} style={{ padding: '11px 18px', borderRadius: 24, border: 'none', background: 'white', color: AMBER_DARK, fontWeight: 800, fontSize: 14, cursor: 'pointer', fontFamily: f }}>📸 Publier une annonce</button>
-          <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" style={{ padding: '11px 18px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.7)', color: 'white', fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>Ouvrir TrocMusic ↗</a>
+          <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" style={{ padding: '11px 18px', borderRadius: 24, border: '1.5px solid rgba(255,255,255,0.7)', color: 'white', fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>Ouvrir Vibz Troc ↗</a>
         </div>
       </div>
 
@@ -124,22 +124,22 @@ export default function TrocPage({ user, onMessage, focusId, onFocusUsed, draft,
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? 150 : 200}px, 1fr))`, gap: 12, marginTop: 14 }}>
           {items.flatMap((l, i) => {
             const card = <Card key={l.id} l={l} onOpen={() => setOpen(l)} />
-            // Un encart TrocMusic s'intercale après la 8e annonce (ou en fin de liste si moins)
-            return i === Math.min(7, items.length - 1) ? [card, <TrocMusicPromo key="promo" />] : [card]
+            // Un encart Vibz Troc s'intercale après la 8e annonce (ou en fin de liste si moins)
+            return i === Math.min(7, items.length - 1) ? [card, <TrocSitePromo key="promo" />] : [card]
           })}
         </div>
       )}
 
       <div style={{ textAlign: 'center', margin: '22px 0 8px' }}>
         <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" style={{ color: AMBER_DARK, fontWeight: 800, fontSize: 14, textDecoration: 'none' }}>
-          Toutes les annonces, favoris et recherche avancée sur TrocMusic ↗
+          Toutes les annonces, favoris et recherche avancée sur Vibz Troc ↗
         </a>
       </div>
 
       {open && <Detail l={open} me={user.id} onClose={() => setOpen(null)} onContact={() => { contact(open); setOpen(null) }}
         onChanged={() => { setOpen(null); load() }} onError={flash} />}
       {form && <PublishForm user={user} draft={form} onClose={() => setForm(null)}
-        onDone={id => { setForm(null); flash('✅ Annonce publiée sur Vibz et TrocMusic'); load(); supabase.from('troc_listings').select(TROC_SELECT).eq('id', id).maybeSingle().then(({ data }) => data && setOpen(data as TrocListing)) }} />}
+        onDone={id => { setForm(null); flash('✅ Annonce publiée sur Vibz et Vibz Troc'); load(); supabase.from('troc_listings').select(TROC_SELECT).eq('id', id).maybeSingle().then(({ data }) => data && setOpen(data as TrocListing)) }} />}
 
       {toast && <div style={{ position: 'fixed', top: 76, left: '50%', transform: 'translateX(-50%)', zIndex: 700, background: t.text, color: t.surface, padding: '10px 18px', borderRadius: 12, fontSize: 13, fontWeight: 700, maxWidth: 'calc(100vw - 24px)' }}>{toast}</div>}
     </div>
@@ -167,12 +167,12 @@ function Card({ l, onOpen }: { l: TrocListing; onOpen: () => void }) {
   )
 }
 
-function TrocMusicPromo() {
+function TrocSitePromo() {
   return (
     <a href={trocLinks.deposer()} target="_blank" rel="noopener noreferrer" style={{ borderRadius: 16, padding: 16, background: '#1F1A17', color: 'white', textDecoration: 'none', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 180, fontFamily: 'Nunito, sans-serif' }}>
       <div style={{ fontSize: 30 }}>🔁</div>
       <div>
-        <div style={{ fontWeight: 800, fontSize: 16 }}>troc<span style={{ color: AMBER }}>music</span></div>
+        <div style={{ fontWeight: 800, fontSize: 16 }}>Vibz <span style={{ color: AMBER }}>Troc</span></div>
         <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4, lineHeight: 1.45 }}>Le site complet : jusqu’à 8 photos, favoris, partage de tes annonces.</div>
         <div style={{ marginTop: 10, fontWeight: 800, fontSize: 13, color: AMBER }}>Y aller ↗</div>
       </div>
@@ -214,7 +214,7 @@ function Detail({ l, me, onClose, onContact, onChanged, onError }: {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', fontSize: 11, fontWeight: 800 }}>
             <span style={{ padding: '3px 9px', borderRadius: 12, background: AMBER_LIGHT, color: AMBER_DARK }}>{k.icon} {k.label}</span>
             <span style={{ padding: '3px 9px', borderRadius: 12, background: t.bg2, color: t.textSub }}>{c.icon} {c.label}</span>
-            {l.source === 'trocmusic' && <span style={{ padding: '3px 9px', borderRadius: 12, background: t.bg2, color: t.textSub }}>publiée sur TrocMusic</span>}
+            {l.source === 'trocmusic' && <span style={{ padding: '3px 9px', borderRadius: 12, background: t.bg2, color: t.textSub }}>publiée sur Vibz Troc</span>}
           </div>
           <div style={{ fontSize: 21, fontWeight: 800, marginTop: 10, lineHeight: 1.2 }}>{l.title}</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: AMBER_DARK, marginTop: 4 }}>{trocPrice(l)}</div>
@@ -235,14 +235,14 @@ function Detail({ l, me, onClose, onContact, onChanged, onError }: {
                 {l.status !== 'active' && <button onClick={() => setStatus('active')} style={btn(AMBER)}>Remettre en ligne</button>}
                 {l.status === 'active' && <button onClick={() => setStatus('reserve')} style={btn(AMBER)}>Marquer réservé</button>}
                 {l.status !== 'termine' && <button onClick={() => setStatus('termine')} style={btn(t.textSub)}>Terminé</button>}
-                <a href={trocLinks.mine()} target="_blank" rel="noopener noreferrer" style={{ ...btn('#E07A9A'), textDecoration: 'none' }}>Modifier sur TrocMusic ↗</a>
+                <a href={trocLinks.mine()} target="_blank" rel="noopener noreferrer" style={{ ...btn('#E07A9A'), textDecoration: 'none' }}>Modifier sur Vibz Troc ↗</a>
               </>
             ) : (
               <button onClick={onContact} style={{ ...btn('#E07A9A'), flex: '1 1 200px' }}>💬 Écrire à {name}</button>
             )}
-            <a href={trocLinks.listing(l.id)} target="_blank" rel="noopener noreferrer" style={{ ...btn(AMBER_DARK, true), textDecoration: 'none' }}>Voir sur TrocMusic ↗</a>
+            <a href={trocLinks.listing(l.id)} target="_blank" rel="noopener noreferrer" style={{ ...btn(AMBER_DARK, true), textDecoration: 'none' }}>Voir sur Vibz Troc ↗</a>
           </div>
-          <div style={{ marginTop: 14, fontSize: 11, color: t.textMuted, lineHeight: 1.5 }}>🛡️ Aucun paiement ne passe par Vibz ni TrocMusic. Préfère la remise en main propre ; ne paie jamais par carte cadeau ou mandat.</div>
+          <div style={{ marginTop: 14, fontSize: 11, color: t.textMuted, lineHeight: 1.5 }}>🛡️ Aucun paiement ne passe par Vibz ni Vibz Troc. Préfère la remise en main propre ; ne paie jamais par carte cadeau ou mandat.</div>
         </div>
       </div>
     </div>
@@ -314,7 +314,7 @@ function PublishForm({ user, draft, onClose, onDone }: { user: User; draft: Troc
           <div style={{ flex: 1, fontSize: 18, fontWeight: 800 }}>📸 Publier une annonce</div>
           <button onClick={onClose} aria-label="Fermer" style={{ border: 'none', background: 'transparent', fontSize: 18, cursor: 'pointer', color: t.textMuted }}>✕</button>
         </div>
-        <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>Visible aussitôt ici et sur TrocMusic. Les membres te contactent par ta messagerie Vibz.</div>
+        <div style={{ fontSize: 12, color: t.textMuted, marginTop: 2 }}>Visible aussitôt ici et sur Vibz Troc. Les membres te contactent par ta messagerie Vibz.</div>
 
         <span style={label}>Photos</span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -367,7 +367,7 @@ function PublishForm({ user, draft, onClose, onDone }: { user: User; draft: Troc
         <button disabled={busy || uploading} onClick={submit} style={{ width: '100%', marginTop: 14, padding: 13, borderRadius: 14, border: 'none', background: AMBER, color: 'white', fontWeight: 800, fontSize: 15, cursor: 'pointer', fontFamily: f, opacity: busy ? 0.6 : 1 }}>
           {busy ? 'Publication…' : 'Publier'}
         </button>
-        <a href={trocLinks.deposer()} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: 10, fontSize: 12, color: AMBER_DARK, fontWeight: 800, textDecoration: 'none' }}>Plus d’options (8 photos, état, marque, troc souhaité) sur TrocMusic ↗</a>
+        <a href={trocLinks.deposer()} target="_blank" rel="noopener noreferrer" style={{ display: 'block', textAlign: 'center', marginTop: 10, fontSize: 12, color: AMBER_DARK, fontWeight: 800, textDecoration: 'none' }}>Plus d’options (8 photos, état, marque, troc souhaité) sur Vibz Troc ↗</a>
       </div>
     </div>
   )

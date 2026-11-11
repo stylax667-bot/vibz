@@ -74,7 +74,7 @@ export default function PhotoShareButton({ userId, where, onSent, onError, recip
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `1.5px solid ${t.border}`, background: t.inputBg, color: t.text, fontFamily: f, fontSize: 14, outline: 'none', marginBottom: 10, boxSizing: 'border-box' }} />
                 <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', fontSize: 13, lineHeight: 1.45, padding: 10, borderRadius: 12, background: isTroc ? '#FCEBD7' : t.bg2, color: isTroc ? '#A35A12' : t.textSub, cursor: 'pointer', marginBottom: 14 }}>
                   <input type="checkbox" checked={isTroc} onChange={e => setIsTroc(e.target.checked)} style={{ marginTop: 2, accentColor: '#D9822B' }} />
-                  <span><strong>🔁 C’est du matos à troquer, donner ou vendre.</strong> Tu pourras ensuite publier cette photo en annonce sur TrocMusic (toi seul peux le faire).</span>
+                  <span><strong>🔁 C’est du matos à troquer, donner ou vendre.</strong> Tu pourras ensuite publier cette photo en annonce sur Vibz Troc (toi seul peux le faire).</span>
                 </label>
               </>
             )}

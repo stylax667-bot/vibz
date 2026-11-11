@@ -1,9 +1,9 @@
-// Onglet Troc de Vibz = succursale de TrocMusic (site de troc / don / revente de matériel).
-// Même base Supabase : les annonces sont celles de TrocMusic (table troc_listings),
-// les comptes sont les mêmes. Tous les liens vers TrocMusic passent par ici.
+// Onglet Troc de Vibz = succursale de Vibz Troc (site de troc / don / revente de matériel).
+// Même base Supabase : les annonces sont celles de Vibz Troc (table troc_listings),
+// les comptes sont les mêmes. Tous les liens vers Vibz Troc passent par ici.
 import { supabase } from './supabase'
 
-export const TROC_URL = (process.env.NEXT_PUBLIC_TROC_URL || 'https://www.trocmusic.fr').replace(/\/$/, '')
+export const TROC_URL = (process.env.NEXT_PUBLIC_TROC_URL || 'https://troc.vibzmusic.fr').replace(/\/$/, '')
 
 const tag = (path: string) => `${TROC_URL}${path}${path.includes('?') ? '&' : '?'}from=vibz`
 export const trocLinks = {
@@ -58,7 +58,7 @@ export function trocError(msg: string) {
   return msg
 }
 
-// ── Liens entrants depuis TrocMusic : ?tab=troc|messenger &chat=<membre> &troc=<annonce> ──
+// ── Liens entrants depuis Vibz Troc : ?tab=troc|messenger &chat=<membre> &troc=<annonce> ──
 // Gardés en sessionStorage pour survivre à la connexion, puis retirés de l'adresse.
 export type TrocIntent = { tab?: string; chat?: string; troc?: string }
 const INTENT_KEY = 'vibz_troc_intent'
@@ -103,7 +103,7 @@ export async function compressPhoto(file: Blob, max = 1600): Promise<Blob> {
 
 const fileName = (uid: string) => `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
 
-/** Photo d'annonce (bucket public troc-photos, partagé avec TrocMusic) */
+/** Photo d'annonce (bucket public troc-photos, partagé avec Vibz Troc) */
 export async function uploadTrocPhoto(uid: string, file: Blob): Promise<string> {
   const path = fileName(uid)
   const { error } = await supabase.storage.from('troc-photos').upload(path, await compressPhoto(file), { contentType: 'image/jpeg', cacheControl: '31536000' })

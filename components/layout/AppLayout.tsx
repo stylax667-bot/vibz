@@ -90,10 +90,10 @@ export default function AppLayout({ user }: Props) {
     if (tags) { setMixToOpen({ tags }); setTab('salons') }
   }, [])
 
-  // ── Troc (succursale de TrocMusic) ──
+  // ── Troc (succursale de Vibz Troc) ──
   const [trocFocus, setTrocFocus] = useState<string | null>(null)
   const [trocDraft, setTrocDraft] = useState<TrocDraft | null>(null)
-  // Arrivé depuis TrocMusic : « Contacter le vendeur » ouvre la messagerie, une annonce ouvre l'onglet Troc
+  // Arrivé depuis Vibz Troc : « Contacter le vendeur » ouvre la messagerie, une annonce ouvre l'onglet Troc
   useEffect(() => {
     const intent = takeTrocIntent()
     if (!intent) return
@@ -242,14 +242,14 @@ export default function AppLayout({ user }: Props) {
 
           {!isMobile && (
             <>
-              {/* Site frère : TrocMusic */}
-              <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" title="TrocMusic — troc, don et revente de matériel"
+              {/* Site frère : Vibz Troc */}
+              <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer" title="Vibz Troc — troc, don et revente de matériel"
                 style={{
                   padding: '6px 14px', borderRadius: 20, border: '1px solid #D9822B55',
                   background: t.isDark ? 'rgba(217,130,43,0.14)' : '#FCEBD7', color: t.isDark ? '#F0B070' : '#A35A12',
                   fontSize: 12, fontWeight: 800, fontFamily: f, textDecoration: 'none', whiteSpace: 'nowrap',
                 }}
-              >🔁 TrocMusic ↗</a>
+              >🔁 Vibz Troc ↗</a>
 
               {/* Partager l'app */}
               <button
@@ -378,7 +378,7 @@ export default function AppLayout({ user }: Props) {
               <span style={{ width:7, height:7, background:t.green, borderRadius:'50%' }}/> VibzGuard actif
             </div>
             {[
-              { label:'🔁 TrocMusic — troc de matos ↗', onClick: () => { setShowMenu(false); window.open(trocLinks.home(), '_blank', 'noopener') }, danger: false },
+              { label:'🔁 Vibz Troc — troc de matos ↗', onClick: () => { setShowMenu(false); window.open(trocLinks.home(), '_blank', 'noopener') }, danger: false },
               { label:'🚀 Partager Vibz', onClick: () => { setShowMenu(false); handleShare() }, danger: false },
               { label:'☕ Soutenir Vibz', onClick: () => { setShowMenu(false); setShowDon(true) }, danger: false },
               { label:'🚪 Déconnexion',   onClick: () => supabase.auth.signOut(), danger: true },
@@ -487,7 +487,7 @@ export default function AppLayout({ user }: Props) {
             onMouseLeave={e=>(e.currentTarget.style.color=t.textMuted)}
           >☕ Soutenir Vibz</button>
           <a href={trocLinks.home()} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: '#D9822B', fontFamily: f, textDecoration: 'none', fontWeight: 800 }}>🔁 TrocMusic, le troc de matos ↗</a>
+            style={{ fontSize: 11, color: '#D9822B', fontFamily: f, textDecoration: 'none', fontWeight: 800 }}>🔁 Vibz Troc, le troc de matos ↗</a>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: t.textMuted, fontWeight: 700 }}>
             <span style={{ display: 'inline-block', width: 6, height: 6, background: t.green, borderRadius: '50%' }}/>
             RGPD · VibzGuard actif

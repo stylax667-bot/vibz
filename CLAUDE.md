@@ -16,11 +16,11 @@ Stack : Next.js (TypeScript, pages/) + Supabase (auth, PostgreSQL, Realtime, edg
 - `start-vibz-local.bat` (lancement local, chemin G:), `.claude/launch.json` (`npm run dev`, port 3000)
 - Poste actuel (compte Windows `chens`) : Git 2.56 + Node 26 / npm 11 installés le 11/11/2026 ; dépôt marqué `safe.directory` (créé sous l'ancien compte). Sous PowerShell, utiliser `npm.cmd` / `npx.cmd`
 
-## Onglet Troc ↔ TrocMusic (11–12/11/2026, non poussé)
-- Site frère : `G:\Users\Stylax\Documents\TrocMusic` (même base Supabase, voir son CLAUDE.md). Adresse via `NEXT_PUBLIC_TROC_URL` (défaut https://www.trocmusic.fr ; `http://localhost:3001` dans `.env.local`)
+## Onglet Troc ↔ Vibz Troc (en ligne le 12/11/2026, commit 6172f23 ; site frère sur https://troc.vibzmusic.fr)
+- Site frère : `G:\Users\Stylax\Documents\TrocMusic` (dossier), site « Vibz Troc » (même base Supabase, voir son CLAUDE.md). Adresse via `NEXT_PUBLIC_TROC_URL` (défaut https://troc.vibzmusic.fr ; `http://localhost:3001` dans `.env.local`)
 - `components/troc/TrocPage.tsx` (5e onglet 🔁 : annonces en temps réel, fiche, publication rapide avec photo, `source='vibz'`), `lib/troc.ts` (liens, types, photos, intentions)
 - Photos dans tchats/salons avec consentement : `PhotoShareButton` (📸), `PhotoShareBubble` (Voir / Non merci), `usePhotoShares` ; bucket PRIVÉ `chat-photos`, tables `photo_shares` + `photo_share_consents` ; l'auteur seul peut en faire une annonce
-- Liens entrants depuis TrocMusic : `?tab=troc|messenger&chat=<membre>&troc=<annonce>` mémorisés (sessionStorage) le temps de la connexion — `pages/index.tsx` + `AppLayout`
+- Liens entrants depuis Vibz Troc : `?tab=troc|messenger&chat=<membre>&troc=<annonce>` mémorisés (sessionStorage) le temps de la connexion — `pages/index.tsx` + `AppLayout`
 - Migrations, dans l'ordre, AVANT de pousser : `TrocMusic/supabase/migrations/20261111_trocmusic.sql` puis `supabase/migrations/20261112_troc_photos.sql`
 
 ## Documents liés hors de ce dossier

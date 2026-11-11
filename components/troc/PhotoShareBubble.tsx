@@ -79,7 +79,7 @@ export default function PhotoShareBubble({ share, userId, consents, senderName, 
             </div>
           )}
           {share.listing_id ? (
-            <a href={trocLinks.listing(share.listing_id)} target="_blank" rel="noopener noreferrer" style={{ ...small, display: 'block', textAlign: 'center', textDecoration: 'none', border: 'none', background: '#D9822B', color: 'white' }}>Voir l’annonce sur TrocMusic ↗</a>
+            <a href={trocLinks.listing(share.listing_id)} target="_blank" rel="noopener noreferrer" style={{ ...small, display: 'block', textAlign: 'center', textDecoration: 'none', border: 'none', background: '#D9822B', color: 'white' }}>Voir l’annonce sur Vibz Troc ↗</a>
           ) : mine && share.is_troc ? (
             <button onClick={() => onPublish(share)} style={{ ...small, border: 'none', background: '#D9822B', color: 'white' }}>📦 Publier en annonce Troc</button>
           ) : null}
